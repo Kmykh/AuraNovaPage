@@ -144,10 +144,10 @@ export async function POST(request: Request) {
                   <!-- Roman Aesthetic Framing -->
                   <table width="100%" border="0" cellspacing="0" cellpadding="0">
                     <tr>
-                      <td width="30%" align="left" valign="bottom">
-                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/muroromano.png" width="100%" style="display: block; max-width: 140px; opacity: 0.85;" alt="" />
+                      <td width="30%" align="left" valign="middle">
+                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/muroromano.png" width="70" style="display: block; max-width: 70px; opacity: 0.85;" alt="" />
                       </td>
-                      <td width="40%" align="center" valign="bottom" style="padding-bottom: 20px;">
+                      <td width="40%" align="center" valign="middle">
                         <p style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 18px; color: #d38b8b; font-style: italic; margin: 0 0 10px 0;">
                           Hecho en Huancayo<br>con amor
                         </p>
@@ -156,8 +156,8 @@ export async function POST(request: Request) {
                           WhatsApp: <span style="color: #c8a96b;">950 482 596</span>
                         </p>
                       </td>
-                      <td width="30%" align="right" valign="bottom">
-                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/angeles.png" width="100%" style="display: block; max-width: 160px; opacity: 0.85;" alt="" />
+                      <td width="30%" align="right" valign="middle">
+                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/angeles.png" width="130" style="display: block; max-width: 130px; opacity: 0.85;" alt="" />
                       </td>
                     </tr>
                   </table>
