@@ -16,6 +16,8 @@ export function FeaturedProductsSection() {
 
   // Limit to 4 products for the featured section
   const featured = products?.slice(0, 4) || [];
+  
+  const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
 
   return (
     <section className="py-12 md:py-16 lg:py-20 relative">
@@ -36,11 +38,13 @@ export function FeaturedProductsSection() {
               Explora una selección de nuestras creaciones más queridas.
             </p>
           </div>
-          <Link href="/productos" tabIndex={-1}>
-            <Button className="hidden md:flex bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg px-8 h-12 shadow-sm hover:shadow-md hover:-translate-y-0.5">
-              Ver catálogo completo
-            </Button>
-          </Link>
+          {!isMaintenanceMode && (
+            <Link href="/productos" tabIndex={-1}>
+              <Button className="hidden md:flex bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg px-8 h-12 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                Ver catálogo completo
+              </Button>
+            </Link>
+          )}
         </div>
 
         {isLoading ? (
@@ -49,12 +53,15 @@ export function FeaturedProductsSection() {
               <ProductCardSkeleton key={i} />
             ))}
           </div>
-        ) : isError ? (
-          <Alert 
-            variant="warning" 
-            title="No pudimos cargar los destacados en este momento."
-            message="Por favor, visita el catálogo principal para ver nuestros productos."
-          />
+        ) : isError || (isMaintenanceMode && featured.length === 0) ? (
+          <div className="text-center py-12 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm max-w-2xl mx-auto">
+            <p className="text-[#5C4B41] font-serif text-2xl mb-3">
+              Preparando nuevas sorpresas...
+            </p>
+            <p className="text-[#8C7B71]">
+              Estamos organizando nuestras creaciones. Vuelve muy pronto para descubrir nuestros nuevos detalles.
+            </p>
+          </div>
         ) : featured.length === 0 ? (
           <p className="text-sage italic text-center py-10">
             Pronto añadiremos nuevos detalles.
@@ -67,13 +74,15 @@ export function FeaturedProductsSection() {
           </div>
         )}
 
-        <div className="mt-12 md:hidden flex justify-center">
-          <Link href="/productos" tabIndex={-1} className="w-full">
-            <Button className="w-full bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg h-12 shadow-sm">
-              Ver catálogo completo
-            </Button>
-          </Link>
-        </div>
+        {!isMaintenanceMode && (
+          <div className="mt-12 md:hidden flex justify-center">
+            <Link href="/productos" tabIndex={-1} className="w-full">
+              <Button className="w-full bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg h-12 shadow-sm">
+                Ver catálogo completo
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
