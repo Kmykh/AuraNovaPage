@@ -5,13 +5,13 @@ export default function MaintenanceScreen() {
   return (
     <div className={styles.container}>
       <div className={styles.content}>
-        <div className={styles.icon}>🛠️</div>
-        <h1 className={styles.title}>Modo Mantenimiento</h1>
+        <h4 className={styles.kicker}>PRÓXIMAMENTE</h4>
+        <h1 className={styles.title}>Nuevas creaciones en camino</h1>
         <p className={styles.message}>
-          Mejorando esta sección. Volveremos mañana a las 12pm.
+          Estamos preparando más detalles hermosos para ti. Volveremos mañana a las 12pm.
         </p>
         <p className={styles.submessage}>
-          Estamos trabajando para ofrecerte una mejor experiencia. ¡Gracias por tu paciencia!
+          Gracias por tu paciencia. ¡Estamos emocionados por mostrarte lo que viene!
         </p>
       </div>
     </div>
