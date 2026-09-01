@@ -53,12 +53,12 @@ export function FeaturedProductsSection() {
               <ProductCardSkeleton key={i} />
             ))}
           </div>
-        ) : isError || (isMaintenanceMode && featured.length === 0) ? (
-          <div className="text-center py-12 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm max-w-2xl mx-auto">
-            <p className="text-[#5C4B41] font-serif text-2xl mb-3">
+        ) : (isError || isMaintenanceMode) ? (
+          <div className="text-center py-16 max-w-2xl mx-auto">
+            <p className="text-[#5C4B41] font-serif text-2xl mb-4 italic">
               Preparando nuevas sorpresas...
             </p>
-            <p className="text-[#8C7B71]">
+            <p className="text-[#8C7B71] text-lg">
               Estamos organizando nuestras creaciones. Vuelve muy pronto para descubrir nuestros nuevos detalles.
             </p>
           </div>
