@@ -1,54 +1,105 @@
 .container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 80vh;
   padding: 2rem;
-  background-color: #FDFBF7; /* Beige muy claro, como el fondo del catálogo */
+  background-color: #FDFBF7;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-image: radial-gradient(#F3EBE1 1px, transparent 1px);
   background-size: 20px 20px;
+  overflow: hidden;
+}
+
+.decoTopRight {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.decoBottomLeft {
+  position: absolute;
+  bottom: -50px;
+  left: -50px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.decoCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floatingImage {
+  animation: float 6s ease-in-out infinite;
+}
+
+.floatingImageAlt {
+  animation: float 7s ease-in-out infinite reverse;
+}
+
+.subtleImage {
+  animation: pulse 10s ease-in-out infinite;
 }
 
 .content {
+  position: relative;
+  z-index: 10;
   text-align: center;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  padding: 4rem 3rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  max-width: 600px;
+  padding: 2rem;
+  max-width: 700px;
   width: 100%;
 }
 
 .kicker {
-  color: #C19A6B; /* Dorado/Arena similar a "CATÁLOGO" */
-  font-size: 0.85rem;
+  color: #C19A6B;
+  font-size: 0.9rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  margin-bottom: 1rem;
+  letter-spacing: 0.25em;
+  margin-bottom: 1.5rem;
   text-transform: uppercase;
 }
 
 .title {
-  color: #5C4B41; /* Marrón oscuro elegante, similar a "Nuestros detalles" */
-  font-size: 3rem;
-  font-family: 'Playfair Display', serif; /* Fuente serif elegante */
+  color: #5C4B41;
+  font-size: 3.5rem;
+  font-family: 'Playfair Display', serif;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   line-height: 1.2;
 }
 
 .message {
   color: #8C7B71;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   font-weight: 400;
   margin-bottom: 1rem;
 }
 
 .submessage {
   color: #A3968F;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1.6;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.1; }
+  50% { transform: scale(1.05); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.1; }
 }
