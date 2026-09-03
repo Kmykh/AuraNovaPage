@@ -110,7 +110,19 @@ export function CheckoutClient() {
         phone: customer.phone.trim(),
         email: customer.email.trim()
       },
-      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+      items: items.map(i => ({ 
+        productId: i.productId, 
+        quantity: i.quantity,
+        selectedPrimaryColor: i.selectedPrimaryColor,
+        selectedSecondaryColor: i.selectedSecondaryColor,
+        selectedFlowerType: i.selectedFlowerType,
+        selectedFlowerColor: i.selectedFlowerColor,
+        hasLights: i.hasLights,
+        hasButterfly: i.hasButterfly,
+        hasPhraseCard: i.hasPhraseCard,
+        phraseText: i.phraseText,
+        phraseFont: i.phraseFont
+      })),
       delivery: {
         type: deliveryType.toString(),
         deliveryZoneId: deliveryType === DeliveryType.Delivery ? deliveryZoneId : undefined,
@@ -464,6 +476,15 @@ export function CheckoutClient() {
                 <div className="flex-1 flex flex-col min-w-0">
                   <span className="text-sm font-bold text-[#4a3933] truncate">{item.name}</span>
                   <span className="text-xs text-[#887870] mt-0.5">Cant: {item.quantity}</span>
+                  {(item.selectedPrimaryColor || item.selectedFlowerType || item.hasLights || item.hasButterfly || item.hasPhraseCard) && (
+                    <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-[#887870]">
+                      {item.selectedPrimaryColor && <span className="bg-[#e8dcdc]/40 px-1.5 py-0.5 rounded">{item.selectedPrimaryColor}</span>}
+                      {item.selectedFlowerType && <span className="bg-[#e8dcdc]/40 px-1.5 py-0.5 rounded">{item.selectedFlowerType}</span>}
+                      {item.hasLights && <span className="bg-[#c8a96b]/10 text-[#b59555] px-1.5 py-0.5 rounded">Luces</span>}
+                      {item.hasButterfly && <span className="bg-[#c8a96b]/10 text-[#b59555] px-1.5 py-0.5 rounded">Mariposa</span>}
+                      {item.hasPhraseCard && <span className="bg-[#e8dcdc]/40 px-1.5 py-0.5 rounded">Tarjeta</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="text-[#4a3933] font-medium text-sm whitespace-nowrap">
                   {formatCurrency(item.price * item.quantity)}

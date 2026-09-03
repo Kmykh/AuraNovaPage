@@ -9,6 +9,15 @@ export interface CreateOrderCustomerRequest {
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
+  selectedPrimaryColor?: string;
+  selectedSecondaryColor?: string;
+  selectedFlowerType?: string;
+  selectedFlowerColor?: string;
+  hasLights?: boolean;
+  hasButterfly?: boolean;
+  hasPhraseCard?: boolean;
+  phraseText?: string;
+  phraseFont?: string;
 }
 
 export interface CreateOrderDeliveryRequest {
@@ -61,6 +70,15 @@ export interface AdminOrderDetailItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  selectedPrimaryColor?: string;
+  selectedSecondaryColor?: string;
+  selectedFlowerType?: string;
+  selectedFlowerColor?: string;
+  hasLights?: boolean;
+  hasButterfly?: boolean;
+  hasPhraseCard?: boolean;
+  phraseText?: string;
+  phraseFont?: string;
 }
 
 export interface AdminOrderDetailCustomer {

@@ -6,6 +6,11 @@ export interface ProductResponse {
   stock: number;
   imageUrl: string | null;
   isAvailable: boolean;
+  availableColors: string[];
+  availableFlowerTypes: string[];
+  allowsLights: boolean;
+  allowsButterfly: boolean;
+  allowsPhraseCard: boolean;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -16,6 +21,11 @@ export interface CreateProductRequest {
   price: number;
   stock: number;
   imageUrl?: string;
+  availableColors?: string[];
+  availableFlowerTypes?: string[];
+  allowsLights?: boolean;
+  allowsButterfly?: boolean;
+  allowsPhraseCard?: boolean;
 }
 
 export interface UpdateProductRequest {
@@ -23,6 +33,11 @@ export interface UpdateProductRequest {
   description?: string;
   price: number;
   imageUrl?: string;
+  availableColors?: string[];
+  availableFlowerTypes?: string[];
+  allowsLights?: boolean;
+  allowsButterfly?: boolean;
+  allowsPhraseCard?: boolean;
 }
 
 export interface UpdateProductStockRequest {

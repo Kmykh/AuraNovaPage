@@ -168,10 +168,28 @@ export function AdminOrderDetail({ id }: { id: string }) {
                 <tbody className="divide-y divide-sage/10">
                   {order.items.map((item, idx) => (
                     <tr key={idx} className="hover:bg-[#FAFAFA]">
-                      <td className="px-5 py-3">{item.productName}</td>
-                      <td className="px-5 py-3 font-medium">{item.quantity}</td>
-                      <td className="px-5 py-3 text-right">{formatCurrency(item.unitPrice)}</td>
-                      <td className="px-5 py-3 text-right font-medium">{formatCurrency(item.subtotal)}</td>
+                      <td className="px-5 py-3 align-top">
+                        <div className="font-medium mb-1">{item.productName}</div>
+                        {(item.selectedPrimaryColor || item.selectedSecondaryColor || item.selectedFlowerType || item.selectedFlowerColor || item.hasLights || item.hasButterfly || item.hasPhraseCard) && (
+                          <div className="mt-2 space-y-1 text-xs text-sage bg-white p-3 rounded-xl border border-sage/10 shadow-sm inline-block min-w-[200px]">
+                            {item.selectedPrimaryColor && <div><span className="font-bold text-brown">Color P.:</span> {item.selectedPrimaryColor}</div>}
+                            {item.selectedSecondaryColor && <div><span className="font-bold text-brown">Color S.:</span> {item.selectedSecondaryColor}</div>}
+                            {item.selectedFlowerType && <div><span className="font-bold text-brown">Flor:</span> {item.selectedFlowerType} {item.selectedFlowerColor ? `(${item.selectedFlowerColor})` : ''}</div>}
+                            {(item.hasLights || item.hasButterfly) && (
+                               <div><span className="font-bold text-brown">Extras:</span> {[item.hasLights && 'Luces', item.hasButterfly && 'Mariposa'].filter(Boolean).join(', ')}</div>
+                            )}
+                            {item.hasPhraseCard && (
+                              <div className="mt-2 pt-2 border-t border-sage/10">
+                                <div className="font-bold text-brown mb-1 flex justify-between">Tarjeta <span className="font-normal text-[10px] bg-sage/10 px-1 rounded">{item.phraseFont}</span></div>
+                                <div className="italic text-[#887870] bg-[#faf7f2] p-2 rounded">"{item.phraseText}"</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 font-medium align-top pt-4">{item.quantity}</td>
+                      <td className="px-5 py-3 text-right align-top pt-4">{formatCurrency(item.unitPrice)}</td>
+                      <td className="px-5 py-3 text-right font-medium align-top pt-4">{formatCurrency(item.subtotal)}</td>
                     </tr>
                   ))}
                 </tbody>

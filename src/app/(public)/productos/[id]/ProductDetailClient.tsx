@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useProduct } from '@/hooks/use-product';
@@ -21,6 +21,27 @@ interface ProductDetailClientProps {
 export function ProductDetailClient({ id }: ProductDetailClientProps) {
   const { data: product, isLoading, error, refetch } = useProduct(id);
   const addItem = useCartStore(state => state.addItem);
+
+  const [selectedPrimaryColor, setSelectedPrimaryColor] = useState<string>('');
+  const [selectedSecondaryColor, setSelectedSecondaryColor] = useState<string>('');
+  const [selectedFlowerType, setSelectedFlowerType] = useState<string>('');
+  const [selectedFlowerColor, setSelectedFlowerColor] = useState<string>('');
+  const [hasLights, setHasLights] = useState(false);
+  const [hasButterfly, setHasButterfly] = useState(false);
+  const [hasPhraseCard, setHasPhraseCard] = useState(false);
+  const [phraseText, setPhraseText] = useState('');
+  const [phraseFont, setPhraseFont] = useState('Elegante/Cursiva');
+
+  useEffect(() => {
+    if (product) {
+      if (product.availableColors && product.availableColors.length > 0) {
+        setSelectedPrimaryColor(product.availableColors[0]);
+      }
+      if (product.availableFlowerTypes && product.availableFlowerTypes.length > 0) {
+        setSelectedFlowerType(product.availableFlowerTypes[0]);
+      }
+    }
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -73,6 +94,13 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
   const handleAddToCart = () => {
     if (isOutOfStock) return;
     
+    if (hasPhraseCard && !phraseText.trim()) {
+      toast.error('Falta la dedicatoria', {
+        description: 'Por favor, escribe una frase para la tarjeta o desmarca la opción.'
+      });
+      return;
+    }
+    
     addItem({
       productId: product.id,
       name: product.name,
@@ -80,7 +108,16 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
       quantity: 1,
       imageUrl: getImageUrl(product.imageUrl),
       stock: product.stock,
-      isAvailable: product.isAvailable
+      isAvailable: product.isAvailable,
+      selectedPrimaryColor: product.availableColors?.length > 0 ? selectedPrimaryColor : undefined,
+      selectedSecondaryColor: product.availableColors?.length > 0 ? selectedSecondaryColor : undefined,
+      selectedFlowerType: product.availableFlowerTypes?.length > 0 ? selectedFlowerType : undefined,
+      selectedFlowerColor: product.availableFlowerTypes?.length > 0 ? selectedFlowerColor : undefined,
+      hasLights: product.allowsLights ? hasLights : undefined,
+      hasButterfly: product.allowsButterfly ? hasButterfly : undefined,
+      hasPhraseCard: product.allowsPhraseCard ? hasPhraseCard : undefined,
+      phraseText: hasPhraseCard ? phraseText : undefined,
+      phraseFont: hasPhraseCard ? phraseFont : undefined,
     });
     
     toast.success('Detalle agregado al carrito', {
@@ -153,11 +190,138 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
             <div className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#c8a96b]/60" />
           </div>
 
-          <div className="prose prose-sage mb-12">
+          <div className="prose prose-sage mb-8">
             <p className="text-[#887870] leading-[2] whitespace-pre-wrap font-medium tracking-wide text-base md:text-lg">
               {product.description}
             </p>
           </div>
+
+          {/* --- Opciones de Personalización --- */}
+          <div className="space-y-6 mb-12">
+            {product.availableColors && product.availableColors.length > 0 && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Color Principal</label>
+                  <select 
+                    value={selectedPrimaryColor} 
+                    onChange={e => setSelectedPrimaryColor(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold bg-[#FFFDF8]"
+                  >
+                    {product.availableColors.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Color Secundario</label>
+                  <select 
+                    value={selectedSecondaryColor} 
+                    onChange={e => setSelectedSecondaryColor(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold bg-[#FFFDF8]"
+                  >
+                    <option value="">Ninguno</option>
+                    {product.availableColors.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {product.availableFlowerTypes && product.availableFlowerTypes.length > 0 && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Tipo de Flor</label>
+                  <select 
+                    value={selectedFlowerType} 
+                    onChange={e => setSelectedFlowerType(e.target.value)}
+                    className="w-full h-11 px-4 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold bg-[#FFFDF8]"
+                  >
+                    {product.availableFlowerTypes.map(flower => (
+                      <option key={flower} value={flower}>{flower}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Color de Flor</label>
+                  <input 
+                    type="text"
+                    value={selectedFlowerColor}
+                    onChange={e => setSelectedFlowerColor(e.target.value)}
+                    placeholder="Ej. Rojo intenso"
+                    className="w-full h-11 px-4 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold bg-[#FFFDF8]"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(product.allowsLights || product.allowsButterfly) && (
+              <div className="flex flex-wrap gap-6 pt-2">
+                {product.allowsLights && (
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${hasLights ? 'bg-gold border-gold' : 'border-sage/40 group-hover:border-gold'}`}>
+                      {hasLights && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={hasLights} onChange={e => setHasLights(e.target.checked)} />
+                    <span className="text-sm font-medium text-[#4a3933]">Añadir Luces</span>
+                  </label>
+                )}
+                
+                {product.allowsButterfly && (
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${hasButterfly ? 'bg-gold border-gold' : 'border-sage/40 group-hover:border-gold'}`}>
+                      {hasButterfly && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={hasButterfly} onChange={e => setHasButterfly(e.target.checked)} />
+                    <span className="text-sm font-medium text-[#4a3933]">Añadir Mariposas</span>
+                  </label>
+                )}
+              </div>
+            )}
+
+            {product.allowsPhraseCard && (
+              <div className="border border-sage/20 rounded-2xl overflow-hidden bg-[#FFFDF8] transition-all">
+                <label className="flex items-center gap-3 p-4 cursor-pointer hover:bg-gold/5 transition-colors">
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${hasPhraseCard ? 'bg-gold border-gold' : 'border-sage/40'}`}>
+                    {hasPhraseCard && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={hasPhraseCard} onChange={e => {
+                    setHasPhraseCard(e.target.checked);
+                    if (!e.target.checked) setPhraseText('');
+                  }} />
+                  <span className="text-sm font-bold text-[#4a3933]">Incluir Tarjeta con Dedicatoria</span>
+                </label>
+                
+                {hasPhraseCard && (
+                  <div className="p-4 pt-0 border-t border-sage/10 space-y-4 animate-in slide-in-from-top-2 duration-300 mt-2">
+                    <div>
+                      <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Tu Frase (Máx 150 car.)</label>
+                      <textarea
+                        value={phraseText}
+                        onChange={e => setPhraseText(e.target.value.slice(0, 150))}
+                        placeholder="Escribe algo hermoso aquí..."
+                        className="w-full p-3 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold resize-none h-20 bg-white"
+                      />
+                      <div className="text-right text-[10px] text-sage font-medium mt-1">{phraseText.length}/150</div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#887870] uppercase tracking-widest mb-2">Tipografía</label>
+                      <select 
+                        value={phraseFont} 
+                        onChange={e => setPhraseFont(e.target.value)}
+                        className="w-full h-11 px-4 rounded-xl border border-sage/20 text-[#4a3933] text-sm focus:outline-none focus:border-gold bg-white"
+                      >
+                        <option value="Elegante/Cursiva">Elegante / Cursiva</option>
+                        <option value="Clásica">Clásica / Serif</option>
+                        <option value="Moderna">Moderna / Sans-serif</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {/* --- Fin Opciones de Personalización --- */}
 
           <div className="mt-auto space-y-5">
             <Button 

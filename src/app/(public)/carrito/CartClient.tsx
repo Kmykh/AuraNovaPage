@@ -55,25 +55,25 @@ export function CartClient() {
     );
   }
 
-  const handleDecreaseQuantity = (productId: string, currentQuantity: number, name: string) => {
+  const handleDecreaseQuantity = (cartItemId: string, currentQuantity: number, name: string) => {
     if (currentQuantity <= 1) {
-      removeItem(productId);
+      removeItem(cartItemId);
       toast.success('Producto eliminado del carrito', { description: name, icon: <Trash2 className="h-4 w-4" /> });
     } else {
-      updateQuantity(productId, currentQuantity - 1);
+      updateQuantity(cartItemId, currentQuantity - 1);
     }
   };
 
-  const handleIncreaseQuantity = (productId: string, currentQuantity: number, stock: number) => {
+  const handleIncreaseQuantity = (cartItemId: string, currentQuantity: number, stock: number) => {
     if (currentQuantity < stock) {
-      updateQuantity(productId, currentQuantity + 1);
+      updateQuantity(cartItemId, currentQuantity + 1);
     } else {
       toast.warning('No hay más stock disponible', { description: 'Has alcanzado el límite para este producto.' });
     }
   };
 
-  const handleRemoveItem = (productId: string, name: string) => {
-    removeItem(productId);
+  const handleRemoveItem = (cartItemId: string, name: string) => {
+    removeItem(cartItemId);
     toast.success('Producto eliminado del carrito', { description: name, icon: <Trash2 className="h-4 w-4" /> });
   };
 
@@ -93,7 +93,7 @@ export function CartClient() {
             {items.map((item, index) => {
               const isUnavailable = !item.isAvailable;
               return (
-                <div key={item.productId} className={`bg-white rounded-[2rem] p-6 shadow-sm border border-[#e8dcdc]/50 flex flex-col sm:flex-row gap-6 items-start sm:items-center transition-all hover:shadow-md ${isUnavailable ? 'opacity-60' : ''}`}>
+                <div key={item.cartItemId || item.productId} className={`bg-white rounded-[2rem] p-6 shadow-sm border border-[#e8dcdc]/50 flex flex-col sm:flex-row gap-6 items-start sm:items-center transition-all hover:shadow-md ${isUnavailable ? 'opacity-60' : ''}`}>
                   
                   {/* Image */}
                   <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden bg-[#faf7f2] flex-shrink-0">
@@ -119,6 +119,16 @@ export function CartClient() {
                           {item.name}
                         </h3>
                         <p className="text-[#887870] font-medium">{formatCurrency(item.price)} <span className="text-xs font-normal">c/u</span></p>
+                        
+                        {(item.selectedPrimaryColor || item.selectedFlowerType || item.hasLights || item.hasButterfly || item.hasPhraseCard) && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {item.selectedPrimaryColor && <span className="bg-[#e8dcdc]/40 text-[#887870] text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full">{item.selectedPrimaryColor}</span>}
+                            {item.selectedFlowerType && <span className="bg-[#e8dcdc]/40 text-[#887870] text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full">{item.selectedFlowerType}</span>}
+                            {item.hasLights && <span className="bg-[#c8a96b]/10 text-[#b59555] text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full">Luces</span>}
+                            {item.hasButterfly && <span className="bg-[#c8a96b]/10 text-[#b59555] text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full">Mariposa</span>}
+                            {item.hasPhraseCard && <span className="bg-[#e8dcdc]/40 text-[#887870] text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded-full">Tarjeta</span>}
+                          </div>
+                        )}
                         {isUnavailable && (
                           <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-widest text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
                             Agotado
@@ -137,7 +147,7 @@ export function CartClient() {
                       <div className="flex items-center bg-[#faf7f2] rounded-full p-1 shadow-inner border border-[#e8dcdc]/50">
                         <button 
                           className="w-8 h-8 rounded-full flex items-center justify-center text-[#4a3933] hover:bg-white hover:shadow-sm disabled:opacity-50 transition-all"
-                          onClick={() => handleDecreaseQuantity(item.productId, item.quantity, item.name)}
+                          onClick={() => handleDecreaseQuantity(item.cartItemId || item.productId, item.quantity, item.name)}
                           aria-label={item.quantity === 1 ? "Eliminar producto" : "Disminuir cantidad"}
                         >
                           {item.quantity === 1 ? <Trash2 size={14} className="text-rose-400" /> : <Minus size={14} />}
@@ -147,7 +157,7 @@ export function CartClient() {
                         </span>
                         <button 
                           className="w-8 h-8 rounded-full flex items-center justify-center text-[#4a3933] hover:bg-white hover:shadow-sm disabled:opacity-50 transition-all"
-                          onClick={() => handleIncreaseQuantity(item.productId, item.quantity, item.stock)}
+                          onClick={() => handleIncreaseQuantity(item.cartItemId || item.productId, item.quantity, item.stock)}
                           disabled={item.quantity >= item.stock || isUnavailable}
                           aria-label="Aumentar cantidad"
                         >
@@ -156,7 +166,7 @@ export function CartClient() {
                       </div>
                       
                       <button 
-                        onClick={() => handleRemoveItem(item.productId, item.name)}
+                        onClick={() => handleRemoveItem(item.cartItemId || item.productId, item.name)}
                         className="text-[#887870] hover:text-rose-500 text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-rose-50"
                         aria-label="Eliminar producto"
                       >

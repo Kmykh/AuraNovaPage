@@ -25,6 +25,13 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [description, setDescription] = useState(initialData?.description || '');
   const [price, setPrice] = useState<string>(initialData?.price?.toString() || '');
   
+  // Customization State
+  const [availableColorsStr, setAvailableColorsStr] = useState(initialData?.availableColors?.join(', ') || '');
+  const [availableFlowerTypesStr, setAvailableFlowerTypesStr] = useState(initialData?.availableFlowerTypes?.join(', ') || '');
+  const [allowsLights, setAllowsLights] = useState<boolean>(initialData?.allowsLights ?? false);
+  const [allowsButterfly, setAllowsButterfly] = useState<boolean>(initialData?.allowsButterfly ?? false);
+  const [allowsPhraseCard, setAllowsPhraseCard] = useState<boolean>(initialData?.allowsPhraseCard ?? false);
+  
   // Step 3: Inventory & Visibility
   const [stock, setStock] = useState<string>(initialData?.stock?.toString() || '0');
   const [isAvailable, setIsAvailable] = useState<boolean>(initialData?.isAvailable ?? true);
@@ -92,6 +99,11 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
           price: parseFloat(price),
           stock: parseInt(stock, 10),
           imageUrl: finalImageUrl || undefined,
+          availableColors: availableColorsStr ? availableColorsStr.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+          availableFlowerTypes: availableFlowerTypesStr ? availableFlowerTypesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+          allowsLights,
+          allowsButterfly,
+          allowsPhraseCard,
         });
 
         if (isAvailable === false) {
@@ -106,6 +118,11 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
           description: description || undefined,
           price: parseFloat(price),
           imageUrl: finalImageUrl || undefined,
+          availableColors: availableColorsStr ? availableColorsStr.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+          availableFlowerTypes: availableFlowerTypesStr ? availableFlowerTypesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+          allowsLights,
+          allowsButterfly,
+          allowsPhraseCard,
         });
 
         setShowPreviewModal(false);
@@ -264,12 +281,83 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         </div>
       </div>
 
-      {/* PASO 3: INVENTARIO Y VISIBILIDAD (Solo al crear) */}
+      {/* PASO 3: PERSONALIZACIÓN */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
+        <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
+          <span className="w-6 h-6 flex items-center justify-center bg-gold/10 text-gold rounded-full text-sm">✨</span>
+          Paso 3: Opciones de Personalización
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="md:col-span-2">
+            <label htmlFor="colors" className="block text-sm font-medium text-brown mb-2">Colores disponibles</label>
+            <input
+              id="colors"
+              type="text"
+              value={availableColorsStr}
+              onChange={(e) => setAvailableColorsStr(e.target.value)}
+              disabled={isPending}
+              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+              placeholder="Ej. Rojo, Rosado, Blanco (separados por coma)"
+            />
+            <p className="text-xs text-sage mt-2">Déjalo vacío si el producto no tiene variantes de color de empaque o detalle principal.</p>
+          </div>
+
+          <div className="md:col-span-2">
+            <label htmlFor="flowers" className="block text-sm font-medium text-brown mb-2">Tipos de flores disponibles</label>
+            <input
+              id="flowers"
+              type="text"
+              value={availableFlowerTypesStr}
+              onChange={(e) => setAvailableFlowerTypesStr(e.target.value)}
+              disabled={isPending}
+              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+              placeholder="Ej. Rosas, Girasoles, Tulipanes (separados por coma)"
+            />
+            <p className="text-xs text-sage mt-2">Déjalo vacío si el producto no permite cambiar el tipo de flor.</p>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+            <div>
+              <p className="text-sm font-bold text-brown">¿Permite luces?</p>
+              <p className="text-xs text-sage">Opción para añadir luces al arreglo</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={allowsLights} onChange={(e) => setAllowsLights(e.target.checked)} disabled={isPending} />
+              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+            <div>
+              <p className="text-sm font-bold text-brown">¿Permite mariposas?</p>
+              <p className="text-xs text-sage">Opción para añadir mariposas</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={allowsButterfly} onChange={(e) => setAllowsButterfly(e.target.checked)} disabled={isPending} />
+              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+            </label>
+          </div>
+
+          <div className="md:col-span-2 flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+            <div>
+              <p className="text-sm font-bold text-brown">¿Permite Tarjeta con Frase?</p>
+              <p className="text-xs text-sage">El cliente podrá escribir una dedicatoria y escoger tipografía</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={allowsPhraseCard} onChange={(e) => setAllowsPhraseCard(e.target.checked)} disabled={isPending} />
+              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* PASO 4: INVENTARIO Y VISIBILIDAD (Solo al crear) */}
       {mode === 'create' && (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
           <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
             <Box className="w-6 h-6 text-gold" />
-            Paso 3: Inventario y Disponibilidad
+            Paso 4: Inventario y Disponibilidad
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">

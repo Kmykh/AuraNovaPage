@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAdminPayment, useConfirmPayment, useRejectPayment } from '@/hooks/use-admin-payments';
+import { useChangeOrderStatus } from '@/hooks/use-admin-orders';
 import { getPaymentStatusInfo, getPaymentMethodLabel } from '@/lib/payment-helpers';
 import { formatDate } from '@/lib/order-helpers';
 import { formatCurrency, getImageUrl } from '@/lib/formatters';
@@ -25,6 +26,7 @@ export function AdminPaymentDetail({ id }: { id: string }) {
   const orderId = payment?.orderId || '';
   const { mutate: confirmPayment, isPending: isConfirming } = useConfirmPayment(id, orderId);
   const { mutate: rejectPayment, isPending: isRejecting } = useRejectPayment(id, orderId);
+  const { mutate: changeStatus } = useChangeOrderStatus(orderId);
 
   if (isLoading) {
     return (
@@ -65,7 +67,15 @@ export function AdminPaymentDetail({ id }: { id: string }) {
 
   const handleConfirm = () => {
     confirmPayment(undefined, {
-      onSuccess: () => setShowConfirmModal(false)
+      onSuccess: () => {
+        if (orderId) {
+          changeStatus({ status: 5 }, {
+            onSettled: () => setShowConfirmModal(false)
+          });
+        } else {
+          setShowConfirmModal(false);
+        }
+      }
     });
   };
 
