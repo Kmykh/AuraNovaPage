@@ -5,24 +5,18 @@ import { ProductGrid } from './ProductGrid';
 
 export function ProductCardSkeleton() {
   return (
-    <Card className="flex flex-col h-full border-sage/5">
-      <div className="relative aspect-square w-full">
-        <Skeleton variant="rect" className="w-full h-full rounded-b-none" />
+    <div className="flex flex-col h-full animate-pulse">
+      <div className="relative w-full aspect-[4/5] bg-cream/50 rounded-2xl overflow-hidden border border-sage/5">
       </div>
-      <CardContent className="flex flex-col flex-1 p-5">
-        <Skeleton variant="text" className="w-3/4 mb-4" />
-        <Skeleton variant="text" className="w-full mb-2" />
-        <Skeleton variant="text" className="w-2/3 mb-6" />
-        
-        <div className="flex justify-between items-end mt-auto pt-4 border-t border-sage/10">
-          <div className="w-1/3">
-            <Skeleton variant="text" className="w-1/2 mb-2" />
-            <Skeleton variant="text" className="w-full h-5" />
-          </div>
-          <Skeleton variant="rect" className="w-24 h-8" />
+      
+      <div className="flex flex-col pt-4 px-1 gap-1">
+        <Skeleton variant="text" className="w-3/4 h-6 rounded-md" />
+        <div className="flex items-center justify-between mt-1">
+          <Skeleton variant="text" className="w-1/3 h-5 rounded-md" />
+          <div className="md:hidden w-8 h-8 rounded-full bg-cream/80" />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
