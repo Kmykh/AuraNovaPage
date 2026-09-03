@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ProductResponse } from '../../types/products';
 import { Badge } from '../ui/Badge';
 import { formatCurrency, getImageUrl } from '../../lib/formatters';
-import { PackageOpen, ShoppingBag } from 'lucide-react';
+import { PackageOpen, ShoppingBag, Paintbrush } from 'lucide-react';
 import { useCartStore } from '../../store/cart.store';
 import { toast } from 'sonner';
 import estatuo from '../../app/(public)/images/estatuo.png';
@@ -90,27 +90,34 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Hover Action Button (Desktop only) without dark overlay */}
-        <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hidden md:flex justify-center z-20">
-          <button 
-            onClick={(e) => {
-              if (hasCustomizations) {
-                // If it has customizations, let the Link handle the click to go to detail page
-                // We don't prevent default.
-                return;
-              }
-              handleAddToCart(e);
-            }}
-            disabled={isOutOfStock}
-            className="bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] hover:shadow-[0_8px_30px_rgba(200,169,107,0.2)] transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-[#4a3933] flex items-center gap-2 border border-white"
-          >
-            {isOutOfStock ? (
-              <>Agotado</>
-            ) : hasCustomizations ? (
-              <>Personalizar</>
-            ) : (
-              <><ShoppingBag size={16} /> Agregar al carrito</>
-            )}
-          </button>
+        <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hidden md:flex justify-center w-full z-20">
+          {isOutOfStock ? (
+            <button disabled className="bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm px-6 py-2.5 rounded-full opacity-50 flex items-center gap-2 border border-white">
+              Agotado
+            </button>
+          ) : hasCustomizations ? (
+            <div className="flex gap-2 w-full px-2 max-w-[220px]">
+              <button 
+                className="flex-1 bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] transition-all flex items-center justify-center gap-1.5 border border-white"
+              >
+                <Paintbrush size={14} /> Personalizar
+              </button>
+              <button 
+                onClick={(e) => handleAddToCart(e)}
+                className="w-10 h-10 shrink-0 bg-[#c8a96b] text-white rounded-full shadow-md hover:bg-[#b89759] transition-all flex items-center justify-center border border-transparent"
+                title="Añadir rápido al carrito"
+              >
+                <ShoppingBag size={15} />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleAddToCart}
+              className="bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] transition-all flex items-center gap-2 border border-white"
+            >
+              <ShoppingBag size={16} /> Agregar al carrito
+            </button>
+          )}
         </div>
       </Link>
 
@@ -130,23 +137,32 @@ export function ProductCard({ product }: ProductCardProps) {
           </span>
           
           {/* Mobile "Add to Cart" Button */}
-          <button 
-            onClick={(e) => {
-              if (hasCustomizations) {
-                return;
-              }
-              handleAddToCart(e);
-            }}
-            disabled={isOutOfStock}
-            className="md:hidden p-2 rounded-full bg-cream text-brown hover:bg-gold hover:text-white transition-colors disabled:opacity-50"
-            aria-label={hasCustomizations ? "Personalizar" : "Agregar al carrito"}
-          >
-            {hasCustomizations ? (
-              <span className="text-xs font-medium px-2 py-0.5">Personalizar</span>
-            ) : (
+          {hasCustomizations && !isOutOfStock ? (
+            <div className="md:hidden flex gap-1.5">
+              <button 
+                className="p-2 rounded-full bg-cream text-brown hover:bg-[#c8a96b] hover:text-white transition-colors"
+                aria-label="Personalizar"
+              >
+                <Paintbrush size={16} />
+              </button>
+              <button 
+                onClick={handleAddToCart}
+                className="p-2 rounded-full bg-[#c8a96b] text-white hover:bg-[#b89759] transition-colors"
+                aria-label="Agregar al carrito"
+              >
+                <ShoppingBag size={16} />
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className="md:hidden p-2 rounded-full bg-cream text-brown hover:bg-gold hover:text-white transition-colors disabled:opacity-50"
+              aria-label="Agregar al carrito"
+            >
               <ShoppingBag size={18} />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </div>
     </div>
