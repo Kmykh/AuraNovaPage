@@ -20,6 +20,13 @@ export function ProductCard({ product }: ProductCardProps) {
   // Derive visual stock availability
   const isOutOfStock = !isAvailable || stock <= 0;
   const isLowStock = !isOutOfStock && stock > 0 && stock <= 3;
+  
+  const hasCustomizations = 
+    (product.availableColors && product.availableColors.length > 0) ||
+    (product.availableFlowerTypes && product.availableFlowerTypes.length > 0) ||
+    product.allowsLights ||
+    product.allowsButterfly ||
+    product.allowsPhraseCard;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,15 +89,27 @@ export function ProductCard({ product }: ProductCardProps) {
           <Image src={estatuo} alt="" fill className="object-contain object-bottom right-0" />
         </div>
 
-        {/* Hover "Add to Cart" Button (Desktop only) without dark overlay */}
+        {/* Hover Action Button (Desktop only) without dark overlay */}
         <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 hidden md:flex justify-center z-20">
           <button 
-            onClick={handleAddToCart}
+            onClick={(e) => {
+              if (hasCustomizations) {
+                // If it has customizations, let the Link handle the click to go to detail page
+                // We don't prevent default.
+                return;
+              }
+              handleAddToCart(e);
+            }}
             disabled={isOutOfStock}
             className="bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm px-6 py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] hover:shadow-[0_8px_30px_rgba(200,169,107,0.2)] transition-all disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-[#4a3933] flex items-center gap-2 border border-white"
           >
-            <ShoppingBag size={16} />
-            {isOutOfStock ? 'Agotado' : 'Agregar al carrito'}
+            {isOutOfStock ? (
+              <>Agotado</>
+            ) : hasCustomizations ? (
+              <>Personalizar</>
+            ) : (
+              <><ShoppingBag size={16} /> Agregar al carrito</>
+            )}
           </button>
         </div>
       </Link>
@@ -112,12 +131,21 @@ export function ProductCard({ product }: ProductCardProps) {
           
           {/* Mobile "Add to Cart" Button */}
           <button 
-            onClick={handleAddToCart}
+            onClick={(e) => {
+              if (hasCustomizations) {
+                return;
+              }
+              handleAddToCart(e);
+            }}
             disabled={isOutOfStock}
             className="md:hidden p-2 rounded-full bg-cream text-brown hover:bg-gold hover:text-white transition-colors disabled:opacity-50"
-            aria-label="Agregar al carrito"
+            aria-label={hasCustomizations ? "Personalizar" : "Agregar al carrito"}
           >
-            <ShoppingBag size={18} />
+            {hasCustomizations ? (
+              <span className="text-xs font-medium px-2 py-0.5">Personalizar</span>
+            ) : (
+              <ShoppingBag size={18} />
+            )}
           </button>
         </div>
       </div>
