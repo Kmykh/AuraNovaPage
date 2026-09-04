@@ -96,18 +96,24 @@ export function ProductCard({ product }: ProductCardProps) {
               Agotado
             </button>
           ) : hasCustomizations ? (
-            <div className="flex gap-2 w-full px-2 max-w-[220px]">
+            <div className="flex gap-2 w-full px-2 max-w-[220px] group/actions justify-center">
               <button 
-                className="flex-1 bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm py-2.5 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] transition-all flex items-center justify-center gap-1.5 border border-white"
+                className="group/btn1 bg-white/95 backdrop-blur-md text-[#4a3933] font-medium text-sm h-10 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:bg-white hover:text-[#c8a96b] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center border border-white w-[140px] group-hover/actions:w-10 hover:!w-[140px] px-4 group-hover/actions:px-0 hover:!px-4 shrink-0"
               >
-                <Paintbrush size={14} /> Personalizar
+                <Paintbrush size={14} className="shrink-0" />
+                <span className="whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden opacity-100 group-hover/actions:opacity-0 group-hover/btn1:!opacity-100 max-w-[120px] group-hover/actions:max-w-0 group-hover/btn1:!max-w-[120px] ml-1.5 group-hover/actions:ml-0 group-hover/btn1:!ml-1.5">
+                  Personalizar
+                </span>
               </button>
               <button 
                 onClick={(e) => handleAddToCart(e)}
-                className="w-10 h-10 shrink-0 bg-[#c8a96b] text-white rounded-full shadow-md hover:bg-[#b89759] transition-all flex items-center justify-center border border-transparent"
+                className="group/btn2 bg-[#c8a96b] text-white h-10 rounded-full shadow-md hover:bg-[#b89759] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center border border-transparent w-10 hover:w-[140px] px-0 hover:px-4 shrink-0"
                 title="Añadir rápido al carrito"
               >
-                <ShoppingBag size={15} />
+                <ShoppingBag size={15} className="shrink-0" />
+                <span className="whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden opacity-0 group-hover/btn2:opacity-100 max-w-0 group-hover/btn2:max-w-[120px] ml-0 group-hover/btn2:ml-1.5 text-sm font-medium">
+                  Al carrito
+                </span>
               </button>
             </div>
           ) : (

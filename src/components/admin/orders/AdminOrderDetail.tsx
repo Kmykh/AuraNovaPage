@@ -171,17 +171,29 @@ export function AdminOrderDetail({ id }: { id: string }) {
                       <td className="px-5 py-3 align-top">
                         <div className="font-medium mb-1">{item.productName}</div>
                         {(item.selectedPrimaryColor || item.selectedSecondaryColor || item.selectedFlowerType || item.selectedFlowerColor || item.hasLights || item.hasButterfly || item.hasPhraseCard) && (
-                          <div className="mt-2 space-y-1 text-xs text-sage bg-white p-3 rounded-xl border border-sage/10 shadow-sm inline-block min-w-[200px]">
-                            {item.selectedPrimaryColor && <div><span className="font-bold text-brown">Color P.:</span> {item.selectedPrimaryColor}</div>}
-                            {item.selectedSecondaryColor && <div><span className="font-bold text-brown">Color S.:</span> {item.selectedSecondaryColor}</div>}
-                            {item.selectedFlowerType && <div><span className="font-bold text-brown">Flor:</span> {item.selectedFlowerType} {item.selectedFlowerColor ? `(${item.selectedFlowerColor})` : ''}</div>}
+                          <div className="mt-3 flex flex-col gap-1.5 pl-3 border-l-[3px] border-[#c8a96b]/40">
+                            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#c8a96b] mb-0.5 flex items-center gap-1.5">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                              El cliente personalizó:
+                            </div>
+                            {item.selectedPrimaryColor && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Color Principal:</span> {item.selectedPrimaryColor}</div>}
+                            {item.selectedSecondaryColor && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Color Secundario:</span> {item.selectedSecondaryColor}</div>}
+                            {item.selectedFlowerType && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Flor:</span> {item.selectedFlowerType} {item.selectedFlowerColor ? <span className="italic opacity-80">({item.selectedFlowerColor})</span> : ''}</div>}
                             {(item.hasLights || item.hasButterfly) && (
-                               <div><span className="font-bold text-brown">Extras:</span> {[item.hasLights && 'Luces', item.hasButterfly && 'Mariposa'].filter(Boolean).join(', ')}</div>
+                               <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Extras:</span> {[item.hasLights && 'Luces', item.hasButterfly && 'Mariposa'].filter(Boolean).join(', ')}</div>
                             )}
                             {item.hasPhraseCard && (
-                              <div className="mt-2 pt-2 border-t border-sage/10">
-                                <div className="font-bold text-brown mb-1 flex justify-between">Tarjeta <span className="font-normal text-[10px] bg-sage/10 px-1 rounded">{item.phraseFont}</span></div>
-                                <div className="italic text-[#887870] bg-[#faf7f2] p-2 rounded">"{item.phraseText}"</div>
+                              <div className="mt-1.5 flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-semibold text-brown flex items-center gap-1">
+                                    <svg className="w-3 h-3 text-[#c8a96b]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    Tarjeta Dedicatoria
+                                  </span>
+                                  <span className="text-[9px] uppercase tracking-wider text-[#c8a96b] bg-[#c8a96b]/10 px-2 py-0.5 rounded-full font-medium">{item.phraseFont}</span>
+                                </div>
+                                <div className="text-sm italic font-serif text-brown/90 leading-relaxed bg-[#faf7f2]/50 px-3 py-2 rounded-lg border border-sage/5">
+                                  "{item.phraseText}"
+                                </div>
                               </div>
                             )}
                           </div>
