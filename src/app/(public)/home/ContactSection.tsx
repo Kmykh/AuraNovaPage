@@ -1,7 +1,10 @@
+"use client";
+
 import React from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Phone, Mail, Sparkles, MessageCircleHeart } from 'lucide-react';
+import { useBusinessSettings } from '@/hooks/use-info';
 
 import flo4 from '../images/flo4.png';
 import flo from '../images/flo.png';
@@ -10,9 +13,14 @@ import flo from '../images/flo.png';
 // [/] 6. Update src/app/(public)/home/ContactSection.tsx redesign.
 
 export function ContactSection() {
+  const { data: settings } = useBusinessSettings();
+  const rawNumber = settings?.whatsappNumber || '51950482596';
+  const cleanNumber = rawNumber.replace(/\D/g, '');
+  const displayNumber = rawNumber.length > 9 ? rawNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{3})/, '+$1 $2 $3 $4') : rawNumber;
+
   const handleWhatsAppClick = () => {
     const message = encodeURIComponent("¡Hola Aura Nova! Tengo una duda y me gustaría pedirles más información.");
-    window.open(`https://wa.me/51950482596?text=${message}`, '_blank');
+    window.open(`https://wa.me/${cleanNumber}?text=${message}`, '_blank');
   };
 
   return (
@@ -95,7 +103,7 @@ export function ContactSection() {
             </a>
             <span className="flex items-center gap-2">
               <Phone size={16} />
-              950 482 596
+              {displayNumber}
             </span>
           </div>
         </div>

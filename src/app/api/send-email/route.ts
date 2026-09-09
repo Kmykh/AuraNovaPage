@@ -15,6 +15,22 @@ export async function POST(request: Request) {
       },
     });
 
+    let whatsappNumber = '950 482 596';
+    let displayNumber = whatsappNumber;
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://auranova-backend.onrender.com';
+      const res = await fetch(`${backendUrl}/api/business-settings`, { next: { revalidate: 300 } });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.whatsappNumber) {
+          whatsappNumber = data.whatsappNumber;
+          displayNumber = whatsappNumber.length > 9 ? whatsappNumber.replace(/(\d{2})(\d{3})(\d{3})(\d{3})/, '+$1 $2 $3 $4') : whatsappNumber;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch business settings for email', e);
+    }
+
     const formatCurrency = (val: number) => `S/ ${val.toFixed(2)}`;
 
     const itemsHtml = items.map((item: any) => `
@@ -171,7 +187,7 @@ export async function POST(request: Request) {
                         </p>
                         <p style="font-size: 11px; color: #887870; line-height: 1.8; margin: 0; letter-spacing: 0.5px;">
                           <a href="mailto:auranova1606@gmail.com" style="color: #b89759; text-decoration: none;">auranova1606@gmail.com</a><br>
-                          WhatsApp: <span style="color: #b89759;">950 482 596</span>
+                          WhatsApp: <span style="color: #b89759;">${displayNumber}</span>
                         </p>
                       </td>
                       <td width="30%" align="right" valign="middle">
