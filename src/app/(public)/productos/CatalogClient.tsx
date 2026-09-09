@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useProducts } from '@/hooks/use-products';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { ProductGrid } from '@/components/shared/ProductGrid';
@@ -8,11 +8,22 @@ import { ProductGridSkeleton } from '@/components/shared/ProductSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { PackageOpen } from 'lucide-react';
+import { CatalogFilters } from '@/components/shared/CatalogFilters';
 
 import { CustomOrderBanner } from '@/components/quotes/CustomOrderBanner';
 
 export function CatalogClient() {
   const { data: products, isLoading, isError, refetch } = useProducts();
+  const searchParams = useSearchParams();
+  
+  const currentCategorySlug = searchParams.get('category');
+  const currentAudience = searchParams.get('audience');
+
+  const filteredProducts = products?.filter((product) => {
+    if (currentCategorySlug && product.category?.slug !== currentCategorySlug) return false;
+    if (currentAudience && product.audience !== currentAudience) return false;
+    return true;
+  });
 
   // The personalized order pill always sits at the top
   const topBar = (
@@ -43,13 +54,14 @@ export function CatalogClient() {
     );
   }
 
-  if (!products || products.length === 0) {
+  if (!filteredProducts || filteredProducts.length === 0) {
     return (
       <div className="py-12">
         {topBar}
+        <CatalogFilters />
         <EmptyState 
-          title="Pronto tendremos nuevos detalles para ti" 
-          description="Estamos preparando una nueva colección de productos premium que te encantará."
+          title="No encontramos productos" 
+          description="Intenta cambiar los filtros seleccionados para ver más resultados."
           icon={<PackageOpen size={32} />}
         />
       </div>
@@ -59,8 +71,9 @@ export function CatalogClient() {
   return (
     <>
       {topBar}
+      <CatalogFilters />
       <ProductGrid>
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </ProductGrid>

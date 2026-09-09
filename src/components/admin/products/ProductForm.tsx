@@ -4,8 +4,10 @@ import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCreateProduct, useUpdateProduct } from '@/hooks/use-admin-products';
+import { useCategories } from '@/hooks/use-categories';
 import { AdminProductsService } from '@/services/admin-products.service';
 import { ProductResponse } from '@/types/products';
+import { ProductAudience } from '@/types/categories';
 import { Button } from '@/components/ui/Button';
 import { AlertCircle, Image as ImageIcon, Box, List, Eye } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
@@ -24,7 +26,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [price, setPrice] = useState<string>(initialData?.price?.toString() || '');
-  
+  const [categoryId, setCategoryId] = useState<string>(initialData?.category?.id || '');
+  const [audience, setAudience] = useState<ProductAudience | ''>(initialData?.audience || '');
+
   // Customization State
   const [availableColorsStr, setAvailableColorsStr] = useState(initialData?.availableColors?.join(', ') || '');
   const [availableFlowerTypesStr, setAvailableFlowerTypesStr] = useState(initialData?.availableFlowerTypes?.join(', ') || '');
@@ -47,8 +51,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
   const { mutateAsync: createProductAsync, isPending: isCreating } = useCreateProduct();
   const { mutateAsync: updateProductAsync, isPending: isUpdating } = useUpdateProduct(initialData?.id || '');
+  const { data: categories, isLoading: isLoadingCategories } = useCategories();
 
-  const isPending = isCreating || isUpdating || isUploading;
+  const isPending = isCreating || isUpdating || isUploading || isLoadingCategories;
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,6 +109,8 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
           allowsLights,
           allowsButterfly,
           allowsPhraseCard,
+          categoryId: categoryId || undefined,
+          audience: audience || undefined,
         });
 
         if (isAvailable === false) {
@@ -123,6 +130,8 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
           allowsLights,
           allowsButterfly,
           allowsPhraseCard,
+          categoryId: categoryId || undefined,
+          audience: audience || undefined,
         });
 
         setShowPreviewModal(false);
@@ -151,6 +160,14 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!categoryId) {
+      setErrorMsg('Selecciona una categoría.');
+      return;
+    }
+    if (!audience) {
+      setErrorMsg('Selecciona el público objetivo.');
+      return;
+    }
     setShowPreviewModal(true);
   };
 
@@ -277,6 +294,46 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
               className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none text-lg font-medium"
               placeholder="79.90"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-brown mb-2">Categoría *</label>
+              <select
+                id="category"
+                required
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                disabled={isPending}
+                className="block w-full px-4 py-3 rounded-xl border border-sage/30 bg-white focus:ring-1 focus:ring-gold focus:border-gold outline-none text-brown"
+              >
+                <option value="" disabled>
+                  {isLoadingCategories ? 'Cargando categorías...' : 'Seleccionar categoría'}
+                </option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="audience" className="block text-sm font-medium text-brown mb-2">Público objetivo *</label>
+              <select
+                id="audience"
+                required
+                value={audience}
+                onChange={(e) => setAudience(e.target.value as ProductAudience)}
+                disabled={isPending}
+                className="block w-full px-4 py-3 rounded-xl border border-sage/30 bg-white focus:ring-1 focus:ring-gold focus:border-gold outline-none text-brown"
+              >
+                <option value="" disabled>Seleccionar público</option>
+                <option value="Chicos">Chicos</option>
+                <option value="Chicas">Chicas</option>
+                <option value="Unisex">Unisex</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

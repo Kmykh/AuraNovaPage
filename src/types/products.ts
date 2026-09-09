@@ -1,3 +1,5 @@
+import { Category, ProductAudience } from './categories';
+
 export interface ProductResponse {
   id: string;
   name: string;
@@ -13,6 +15,8 @@ export interface ProductResponse {
   allowsPhraseCard: boolean;
   createdAt: string;
   updatedAt: string | null;
+  category?: Category | null;
+  audience?: ProductAudience | null;
 }
 
 export interface CreateProductRequest {
@@ -26,6 +30,8 @@ export interface CreateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  categoryId?: string | null;
+  audience?: ProductAudience | null;
 }
 
 export interface UpdateProductRequest {
@@ -38,6 +44,8 @@ export interface UpdateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  categoryId?: string | null;
+  audience?: ProductAudience | null;
 }
 
 export interface UpdateProductStockRequest {

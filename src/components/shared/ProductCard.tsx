@@ -8,6 +8,8 @@ import { PackageOpen, ShoppingBag, Paintbrush } from 'lucide-react';
 import { useCartStore } from '../../store/cart.store';
 import { toast } from 'sonner';
 import estatuo from '../../app/(public)/images/estatuo.png';
+import { CategoryBadge } from './CategoryBadge';
+import { AudienceBadge } from './AudienceBadge';
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -136,6 +138,11 @@ export function ProductCard({ product }: ProductCardProps) {
             {name}
           </h3>
         </Link>
+        
+        <div className="flex flex-wrap gap-1.5 mb-1 mt-0.5">
+          <CategoryBadge categoryName={product.category?.name} className="scale-90 origin-left" />
+          <AudienceBadge audience={product.audience} className="scale-90 origin-left" />
+        </div>
         
         <div className="flex items-center justify-between mt-1">
           <span className="font-semibold text-brown/80 text-base">

@@ -45,7 +45,9 @@ export default function ProductsPage() {
           </p>
         </div>
         
-        <CatalogClient />
+        <React.Suspense fallback={<div className="text-center py-12">Cargando catálogo...</div>}>
+          <CatalogClient />
+        </React.Suspense>
       </div>
     </div>
   );

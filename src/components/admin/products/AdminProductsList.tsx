@@ -8,6 +8,8 @@ import { ProductResponse } from '@/types/products';
 import { formatCurrency, getImageUrl } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { CategoryBadge } from '@/components/shared/CategoryBadge';
+import { AudienceBadge } from '@/components/shared/AudienceBadge';
 import { Modal } from '@/components/ui/Modal';
 import { AlertCircle, Plus, Search, Edit2, ArchiveX, ArchiveRestore, PackageOpen } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
@@ -138,7 +140,11 @@ export function AdminProductsList() {
                     <span>•</span>
                     <span>Stock: {p.stock}</span>
                   </div>
-                  <div className="mt-2">
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    <CategoryBadge categoryName={p.category?.name} className="scale-75 origin-left -ml-1" />
+                    <AudienceBadge audience={p.audience} className="scale-75 origin-left -ml-2" />
+                  </div>
+                  <div className="mt-1">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${p.isAvailable ? 'bg-gold/10 text-gold' : 'bg-sage/10 text-sage'}`}>
                       {p.isAvailable ? 'Disponible' : 'No disponible'}
                     </span>
@@ -172,6 +178,8 @@ export function AdminProductsList() {
             <thead className="bg-cream/30 text-sage border-b border-sage/10">
               <tr>
                 <th className="px-6 py-4 font-medium">Producto</th>
+                <th className="px-6 py-4 font-medium">Categoría</th>
+                <th className="px-6 py-4 font-medium">Público</th>
                 <th className="px-6 py-4 font-medium">Precio</th>
                 <th className="px-6 py-4 font-medium">Stock</th>
                 <th className="px-6 py-4 font-medium">Estado</th>
@@ -195,6 +203,12 @@ export function AdminProductsList() {
                         <p className="text-sage text-xs max-w-[200px] truncate" title={p.description ?? undefined}>{p.description || 'Sin descripción'}</p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <CategoryBadge categoryName={p.category?.name} />
+                  </td>
+                  <td className="px-6 py-4">
+                    <AudienceBadge audience={p.audience} />
                   </td>
                   <td className="px-6 py-4 font-medium">{formatCurrency(p.price)}</td>
                   <td className="px-6 py-4">
@@ -228,7 +242,7 @@ export function AdminProductsList() {
               ))}
               {filteredProducts?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sage">
+                  <td colSpan={7} className="px-6 py-12 text-center text-sage">
                     No se encontraron productos que coincidan con tu búsqueda.
                   </td>
                 </tr>
