@@ -164,9 +164,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl">
+    <form onSubmit={handleSubmit} className="space-y-10 max-w-4xl mx-auto pb-12">
       {errorMsg && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm flex gap-3 border border-red-200 shadow-sm">
+        <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-sm flex gap-3 border border-red-200 shadow-sm items-center">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p>{errorMsg}</p>
         </div>
@@ -490,19 +490,31 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         </div>
       )}
 
-      <div className="pt-6 flex justify-end gap-4">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => router.back()}
-          disabled={isPending}
-          className="px-8"
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isPending} className="px-8">
-          {isPending ? 'Guardando...' : mode === 'create' ? 'Crear producto' : 'Guardar producto'}
-        </Button>
+      <div className="pt-8 mt-4 flex items-center justify-between border-t border-sage/15">
+        <p className="text-xs text-sage/70 font-medium tracking-wide">
+          Asegúrate de revisar todos los campos antes de continuar.
+        </p>
+        <div className="flex gap-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => router.back()}
+            disabled={isPending}
+            className="px-8 rounded-full border-sage/30 text-sage hover:bg-sage/5 hover:text-brown transition-all"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isPending} 
+            className="px-10 rounded-full bg-brown hover:bg-brown/90 text-white shadow-lg shadow-brown/20 transition-all hover:-translate-y-0.5 group"
+          >
+            <span className="flex items-center gap-2">
+              {isPending ? 'Guardando...' : mode === 'create' ? 'Crear Producto' : 'Guardar Cambios'}
+              {!isPending && <span className="transition-transform group-hover:translate-x-1">→</span>}
+            </span>
+          </Button>
+        </div>
       </div>
 
       <Modal 
