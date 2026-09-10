@@ -41,7 +41,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [isAvailable, setIsAvailable] = useState<boolean>(initialData?.isAvailable ?? true);
   
   // Step 1: Image
-  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || '');
+  const [imageUrl] = useState(initialData?.imageUrl || '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -85,7 +85,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         setIsUploading(true);
         const res = await AdminProductsService.uploadImage(selectedFile);
         finalImageUrl = res.imageUrl;
-      } catch (err) {
+      } catch {
         setIsUploading(false);
         setErrorMsg('Error al subir la imagen. Verifica el formato e inténtalo de nuevo.');
         setShowPreviewModal(false);
@@ -138,7 +138,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
         router.refresh();
         router.push(`/admin/productos`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setShowPreviewModal(false);
       if (error instanceof ApiProblemDetails) {
         if (error.status === 400) {
@@ -173,16 +173,19 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       )}
 
       {/* PASO 1: IMAGEN */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
-        <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
-          <ImageIcon className="w-6 h-6 text-gold" />
-          Paso 1: Fotografía del Producto
+      <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gold/5 to-transparent rounded-bl-full pointer-events-none transition-transform duration-700 group-hover:scale-110" />
+        <h2 className="text-xl sm:text-2xl font-serif font-bold text-brown mb-6 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-full bg-cream/80 flex items-center justify-center">
+            <ImageIcon className="w-4 h-4 text-gold" />
+          </span>
+          Fotografía Principal
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div 
-            className={`relative border-2 border-dashed rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px] transition-colors ${
-              isDragging ? 'border-gold bg-gold/5' : 'border-sage/30 hover:bg-sage/5'
+            className={`relative border-2 border-dashed rounded-[20px] p-8 text-center flex flex-col items-center justify-center min-h-[220px] transition-all duration-300 ${
+              isDragging ? 'border-gold bg-gold/5 scale-[1.02]' : 'border-sage/20 hover:border-gold/50 hover:bg-[#FAFAFA]'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -199,38 +202,43 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                 }
               }}
               disabled={isPending}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold">
-                <ImageIcon size={24} />
+            <div className="flex flex-col items-center gap-3 relative z-0 pointer-events-none">
+              <div className="w-14 h-14 rounded-full bg-cream flex items-center justify-center text-gold shadow-sm">
+                <ImageIcon size={28} strokeWidth={1.5} />
               </div>
-              <p className="text-brown font-medium">Arrastra tu imagen aquí</p>
-              <p className="text-xs text-sage">o haz clic para explorar tus archivos</p>
-              <p className="text-xs text-sage mt-2 opacity-70">Soporta PNG, JPG, JPEG</p>
+              <div>
+                <p className="text-brown font-semibold text-sm">Arrastra tu imagen aquí</p>
+                <p className="text-xs text-sage mt-1">o haz clic para explorar tus archivos</p>
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-sage/70 font-medium bg-white px-3 py-1 rounded-full border border-sage/10">
+                Soporta PNG, JPG
+              </span>
             </div>
           </div>
           
           <div className="flex flex-col items-center justify-center">
             {previewUrl ? (
-              <div className="relative w-full aspect-square max-w-[240px] rounded-2xl overflow-hidden border border-sage/20 shadow-sm">
-                <Image src={getImageUrl(previewUrl)} alt="Vista previa" fill className="object-cover" />
+              <div className="relative w-full aspect-square max-w-[220px] rounded-[20px] overflow-hidden border border-sage/15 shadow-md group/preview">
+                <Image src={getImageUrl(previewUrl)} alt="Vista previa" fill className="object-cover transition-transform duration-700 group-hover/preview:scale-105" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[20px] pointer-events-none" />
               </div>
             ) : (
-              <div className="w-full aspect-square max-w-[240px] rounded-2xl border border-sage/10 bg-cream flex items-center justify-center flex-col text-sage gap-2">
-                <ImageIcon size={32} className="opacity-50" />
-                <span className="text-sm font-medium">Sin imagen</span>
+              <div className="w-full aspect-square max-w-[220px] rounded-[20px] border border-sage/10 bg-[#FAFAFA] flex items-center justify-center flex-col text-sage/50 gap-3">
+                <ImageIcon size={40} strokeWidth={1} />
+                <span className="text-xs font-medium uppercase tracking-widest">Sin imagen</span>
               </div>
             )}
             
             {selectedFile && (
-              <p className="text-xs text-gold mt-4 font-medium text-center">
-                ✅ Archivo seleccionado: {selectedFile.name}
+              <p className="text-[11px] text-emerald-600 mt-4 font-semibold text-center bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                ✅ {selectedFile.name}
               </p>
             )}
             {mode === 'edit' && !selectedFile && imageUrl && (
-               <p className="text-xs text-sage mt-4 text-center px-4">
-                 Actualmente usando la imagen guardada.
+               <p className="text-[11px] text-sage mt-4 text-center px-4 font-medium">
+                 Usando la imagen actual del producto.
                </p>
             )}
           </div>
@@ -238,15 +246,17 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       </div>
 
       {/* PASO 2: INFORMACIÓN PRINCIPAL */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
-        <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
-          <List className="w-6 h-6 text-gold" />
-          Paso 2: Detalles del Producto
+      <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden group">
+        <h2 className="text-xl sm:text-2xl font-serif font-bold text-brown mb-8 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-full bg-cream/80 flex items-center justify-center">
+            <List className="w-4 h-4 text-gold" />
+          </span>
+          Detalles del Producto
         </h2>
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-7">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-brown mb-2">Nombre del producto *</label>
+            <label htmlFor="name" className="block text-sm font-semibold text-brown mb-2">Nombre del producto <span className="text-rose-500">*</span></label>
             <input
               id="name"
               type="text"
@@ -254,52 +264,57 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isPending}
-              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+              className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown placeholder:text-sage/40"
               placeholder="Ej. Taza Personalizada Floral"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-brown mb-2">Descripción</label>
+            <label htmlFor="description" className="block text-sm font-semibold text-brown mb-2">Descripción</label>
             <textarea
               id="description"
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isPending}
-              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none resize-none"
+              className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown placeholder:text-sage/40 resize-none leading-relaxed"
               placeholder="Describe los detalles, materiales y cuidados de este producto..."
             />
           </div>
 
-          <div className="w-full sm:w-1/2">
-            <label htmlFor="price" className="block text-sm font-medium text-brown mb-2">Precio de venta (S/) *</label>
-            <input
-              id="price"
-              type="number"
-              step="0.10"
-              min="0"
-              required
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              disabled={isPending}
-              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none text-lg font-medium"
-              placeholder="79.90"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
+            <div className="sm:col-span-1">
+              <label htmlFor="price" className="block text-sm font-semibold text-brown mb-2">Precio de venta (S/) <span className="text-rose-500">*</span></label>
+              <div className="relative">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sage font-medium">S/</span>
+                <input
+                  id="price"
+                  type="number"
+                  step="0.10"
+                  min="0"
+                  required
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  disabled={isPending}
+                  className="block w-full pl-12 pr-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-lg font-bold text-brown"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-brown mb-2">Categoría</label>
+              <label htmlFor="category" className="block text-sm font-semibold text-brown mb-2">Categoría</label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 disabled={isPending}
-                className="block w-full px-4 py-3 rounded-xl border border-sage/30 bg-white focus:ring-1 focus:ring-gold focus:border-gold outline-none text-brown"
+                className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown appearance-none"
               >
                 <option value="">
-                  {isLoadingCategories ? 'Cargando categorías...' : 'Sin categoría'}
+                  {isLoadingCategories ? 'Cargando categorías...' : 'Sin categoría (Seleccionar)'}
                 </option>
                 {categories?.map((cat) => (
                   <option key={cat.id} value={cat.id}>
@@ -310,15 +325,15 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
             </div>
 
             <div>
-              <label htmlFor="audience" className="block text-sm font-medium text-brown mb-2">Público objetivo</label>
+              <label htmlFor="audience" className="block text-sm font-semibold text-brown mb-2">Público objetivo</label>
               <select
                 id="audience"
                 value={audience}
                 onChange={(e) => setAudience(e.target.value as ProductAudience)}
                 disabled={isPending}
-                className="block w-full px-4 py-3 rounded-xl border border-sage/30 bg-white focus:ring-1 focus:ring-gold focus:border-gold outline-none text-brown"
+                className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown appearance-none"
               >
-                <option value="">Sin público</option>
+                <option value="">Cualquier público (Seleccionar)</option>
                 <option value="Chicos">Chicos</option>
                 <option value="Chicas">Chicas</option>
                 <option value="Unisex">Unisex</option>
@@ -329,71 +344,74 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       </div>
 
       {/* PASO 3: PERSONALIZACIÓN */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
-        <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
-          <span className="w-6 h-6 flex items-center justify-center bg-gold/10 text-gold rounded-full text-sm">✨</span>
-          Paso 3: Opciones de Personalización
+      <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden group">
+        <h2 className="text-xl sm:text-2xl font-serif font-bold text-brown mb-8 flex items-center gap-3">
+          <span className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
+            <span className="text-sm">✨</span>
+          </span>
+          Opciones de Personalización
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
           <div className="md:col-span-2">
-            <label htmlFor="colors" className="block text-sm font-medium text-brown mb-2">Colores disponibles</label>
+            <label htmlFor="colors" className="block text-sm font-semibold text-brown mb-2">Colores disponibles</label>
             <input
               id="colors"
               type="text"
               value={availableColorsStr}
               onChange={(e) => setAvailableColorsStr(e.target.value)}
               disabled={isPending}
-              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+              className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown placeholder:text-sage/40"
               placeholder="Ej. Rojo, Rosado, Blanco (separados por coma)"
             />
-            <p className="text-xs text-sage mt-2">Déjalo vacío si el producto no tiene variantes de color de empaque o detalle principal.</p>
+            <p className="text-[11px] text-sage mt-2 flex items-center gap-1.5"><AlertCircle size={12}/> Déjalo vacío si no tiene variantes de color.</p>
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="flowers" className="block text-sm font-medium text-brown mb-2">Tipos de flores disponibles</label>
+            <label htmlFor="flowers" className="block text-sm font-semibold text-brown mb-2">Tipos de flores disponibles</label>
             <input
               id="flowers"
               type="text"
               value={availableFlowerTypesStr}
               onChange={(e) => setAvailableFlowerTypesStr(e.target.value)}
               disabled={isPending}
-              className="block w-full px-4 py-3 rounded-xl border border-sage/30 focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+              className="block w-full px-5 py-3.5 bg-[#FAFAFA] rounded-xl border border-sage/15 focus:bg-white focus:ring-2 focus:ring-gold/30 focus:border-gold outline-none transition-all text-brown placeholder:text-sage/40"
               placeholder="Ej. Rosas, Girasoles, Tulipanes (separados por coma)"
             />
-            <p className="text-xs text-sage mt-2">Déjalo vacío si el producto no permite cambiar el tipo de flor.</p>
+            <p className="text-[11px] text-sage mt-2 flex items-center gap-1.5"><AlertCircle size={12}/> Déjalo vacío si no permite cambiar el tipo de flor.</p>
           </div>
 
-          <div className="flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+          {/* Custom Toggle Switches */}
+          <div className="flex items-center justify-between p-5 border border-sage/15 rounded-[16px] bg-white shadow-sm hover:shadow-md transition-shadow">
             <div>
               <p className="text-sm font-bold text-brown">¿Permite luces?</p>
-              <p className="text-xs text-sage">Opción para añadir luces al arreglo</p>
+              <p className="text-[11px] text-sage mt-0.5">Opción para añadir luces LED</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={allowsLights} onChange={(e) => setAllowsLights(e.target.checked)} disabled={isPending} />
-              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+              <div className="w-12 h-6 bg-sage/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+          <div className="flex items-center justify-between p-5 border border-sage/15 rounded-[16px] bg-white shadow-sm hover:shadow-md transition-shadow">
             <div>
               <p className="text-sm font-bold text-brown">¿Permite mariposas?</p>
-              <p className="text-xs text-sage">Opción para añadir mariposas</p>
+              <p className="text-[11px] text-sage mt-0.5">Opción para añadir mariposas deco</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={allowsButterfly} onChange={(e) => setAllowsButterfly(e.target.checked)} disabled={isPending} />
-              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+              <div className="w-12 h-6 bg-sage/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
             </label>
           </div>
 
-          <div className="md:col-span-2 flex items-center justify-between p-4 border border-sage/10 rounded-xl bg-[#F9F8F6]">
+          <div className="md:col-span-2 flex items-center justify-between p-5 border border-sage/15 rounded-[16px] bg-white shadow-sm hover:shadow-md transition-shadow">
             <div>
               <p className="text-sm font-bold text-brown">¿Permite Tarjeta con Frase?</p>
-              <p className="text-xs text-sage">El cliente podrá escribir una dedicatoria y escoger tipografía</p>
+              <p className="text-[11px] text-sage mt-0.5">El cliente podrá escribir una dedicatoria y escoger tipografía al comprar</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={allowsPhraseCard} onChange={(e) => setAllowsPhraseCard(e.target.checked)} disabled={isPending} />
-              <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+              <div className="w-12 h-6 bg-sage/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
             </label>
           </div>
         </div>
@@ -401,21 +419,23 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
       {/* PASO 4: INVENTARIO Y VISIBILIDAD (Solo al crear) */}
       {mode === 'create' && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
-          <h2 className="text-xl font-serif font-bold text-brown mb-6 flex items-center gap-2">
-            <Box className="w-6 h-6 text-gold" />
-            Paso 4: Inventario y Disponibilidad
+        <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden group">
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-brown mb-8 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-full bg-cream/80 flex items-center justify-center">
+              <Box className="w-4 h-4 text-gold" />
+            </span>
+            Inventario y Disponibilidad
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             
             {/* Stock - Premium */}
-            <div className="bg-[#FFFDF8] p-6 rounded-2xl border border-sage/20 shadow-sm flex flex-col justify-between">
+            <div className="bg-gradient-to-b from-cream/40 to-white p-6 rounded-[20px] border border-sage/15 shadow-sm flex flex-col justify-between">
               <div>
-                <label htmlFor="stock" className="block text-sm font-bold text-brown mb-2 uppercase tracking-wide">Inventario Físico *</label>
-                <p className="text-sm text-sage mb-6 leading-relaxed">Indica cuántas unidades tienes armadas y listas para enviar inmediatamente.</p>
+                <label htmlFor="stock" className="block text-xs font-bold text-brown mb-2 uppercase tracking-widest">Inventario Físico <span className="text-rose-500">*</span></label>
+                <p className="text-[13px] text-sage mb-6 leading-relaxed">Indica cuántas unidades tienes armadas y listas para enviar inmediatamente.</p>
               </div>
-              <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-sage/30 shadow-inner focus-within:ring-2 focus-within:ring-gold/50 focus-within:border-gold transition-all">
+              <div className="flex items-center gap-4 bg-white p-2 rounded-xl border border-sage/20 shadow-inner focus-within:ring-2 focus-within:ring-gold/30 focus-within:border-gold transition-all">
                 <input
                   id="stock"
                   type="number"
@@ -425,19 +445,19 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                   value={stock}
                   onChange={(e) => setStock(e.target.value)}
                   disabled={isPending}
-                  className="block w-full px-4 py-2 bg-transparent focus:outline-none text-3xl text-center font-serif text-brown"
+                  className="block w-full px-4 py-2 bg-transparent focus:outline-none text-4xl text-center font-serif text-brown"
                   placeholder="0"
                 />
-                <span className="text-sage font-medium pr-4 uppercase tracking-widest text-xs">Unidades</span>
+                <span className="text-sage/60 font-medium pr-4 uppercase tracking-widest text-[10px]">Unidades</span>
               </div>
             </div>
 
             {/* Visibilidad - Elegante */}
-            <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all duration-300 ${!isAvailable ? 'bg-cream/40 border-sage/20 opacity-90' : 'bg-white border-gold/40 shadow-sm'}`}>
+            <div className={`p-6 rounded-[20px] border flex flex-col justify-between transition-all duration-300 ${!isAvailable ? 'bg-[#FAFAFA] border-sage/15' : 'bg-white border-gold/30 shadow-md ring-1 ring-gold/5'}`}>
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-bold text-brown uppercase tracking-wide flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-gold" />
+                  <label className="block text-xs font-bold text-brown uppercase tracking-widest flex items-center gap-2">
+                    <Eye className="w-3.5 h-3.5 text-gold" />
                     Catálogo Público
                   </label>
                   
@@ -449,18 +469,18 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                       onChange={(e) => setIsAvailable(e.target.checked)}
                       disabled={isPending}
                     />
-                    <div className="w-11 h-6 bg-sage/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
+                    <div className="w-12 h-6 bg-sage/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold"></div>
                   </label>
                 </div>
-                <p className="text-sm text-sage leading-relaxed mb-6">Controla si los clientes pueden ver y comprar este producto en tu tienda virtual.</p>
+                <p className="text-[13px] text-sage leading-relaxed mb-6">Controla si los clientes pueden ver y comprar este producto en tu tienda virtual.</p>
               </div>
               
-              <div className="flex items-center gap-3 bg-[#F9F8F6] p-3 rounded-xl border border-sage/10">
-                <div className="relative flex items-center justify-center">
-                  <div className={`w-3 h-3 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-400'}`} />
-                  {isAvailable && <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-30" />}
+              <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isAvailable ? 'bg-emerald-50/50 border-emerald-100' : 'bg-stone-50 border-stone-100'}`}>
+                <div className="relative flex items-center justify-center shrink-0">
+                  <div className={`w-3 h-3 rounded-full ${isAvailable ? 'bg-emerald-500' : 'bg-stone-400'}`} />
+                  {isAvailable && <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-30" />}
                 </div>
-                <span className={`text-sm font-medium ${isAvailable ? 'text-brown' : 'text-sage/70'}`}>
+                <span className={`text-[13px] font-semibold ${isAvailable ? 'text-emerald-700' : 'text-stone-500'}`}>
                   {isAvailable ? 'Visible para los clientes' : 'Oculto temporalmente'}
                 </span>
               </div>
