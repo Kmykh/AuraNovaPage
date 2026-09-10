@@ -29,7 +29,6 @@ export function BusinessSettingsForm() {
   const [businessName, setBusinessName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [yapeHolderName, setYapeHolderName] = useState('');
-  const [trackingBaseUrl, setTrackingBaseUrl] = useState('');
   const [textErrorMsg, setTextErrorMsg] = useState<string | null>(null);
   
   // File state
@@ -50,7 +49,6 @@ export function BusinessSettingsForm() {
     setBusinessName(settings.businessName || '');
     setWhatsappNumber(settings.whatsappNumber || '');
     setYapeHolderName(settings.yapeHolderName || '');
-    setTrackingBaseUrl(settings.trackingBaseUrl || '');
     setInitialized(true);
   }
 
@@ -93,22 +91,12 @@ export function BusinessSettingsForm() {
     e.preventDefault();
     setTextErrorMsg(null);
 
-    if (!businessName.trim() || !whatsappNumber.trim() || !yapeHolderName.trim() || !trackingBaseUrl.trim()) {
+    if (!businessName.trim() || !whatsappNumber.trim() || !yapeHolderName.trim()) {
       setTextErrorMsg('Todos los campos de texto son obligatorios.');
       return;
     }
 
-    try {
-      new URL(trackingBaseUrl);
-    } catch {
-      setTextErrorMsg('La URL de seguimiento no tiene un formato válido (ej. https://auranova.pe/seguimiento).');
-      return;
-    }
 
-    if (trackingBaseUrl.toLowerCase().startsWith('javascript:') || trackingBaseUrl.toLowerCase().startsWith('data:')) {
-      setTextErrorMsg('Formato de URL no permitido.');
-      return;
-    }
 
     // Open confirmation modal instead of saving directly
     setShowTextPreviewModal(true);
@@ -120,7 +108,7 @@ export function BusinessSettingsForm() {
         businessName: businessName.trim(),
         whatsappNumber: whatsappNumber.trim(),
         yapeHolderName: yapeHolderName.trim(),
-        trackingBaseUrl: trackingBaseUrl.trim()
+        trackingBaseUrl: settings.trackingBaseUrl || '' // Preserve existing or dummy if required by backend
       },
       {
         onSuccess: () => {
@@ -241,8 +229,7 @@ export function BusinessSettingsForm() {
   const hasUnsavedTextChanges = 
     businessName !== settings.businessName || 
     whatsappNumber !== settings.whatsappNumber || 
-    yapeHolderName !== settings.yapeHolderName || 
-    trackingBaseUrl !== settings.trackingBaseUrl;
+    yapeHolderName !== settings.yapeHolderName;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -308,25 +295,7 @@ export function BusinessSettingsForm() {
                 <p className="text-xs text-sage mt-2">Los clientes verán este número en la página de inicio y contacto.</p>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-brown mb-2 uppercase tracking-wide" htmlFor="trackingUrl">
-                  URL base de seguimiento <span className="text-rose">*</span>
-                </label>
-                <div className="relative">
-                  <input 
-                    id="trackingUrl"
-                    type="url"
-                    required
-                    value={trackingBaseUrl}
-                    onChange={(e) => setTrackingBaseUrl(e.target.value)}
-                    disabled={isUpdating}
-                    className={`w-full px-4 py-3 pl-11 bg-white border rounded-xl outline-none transition-all ${trackingBaseUrl !== settings.trackingBaseUrl ? 'border-gold bg-gold/5 focus:ring-2 focus:ring-gold/50' : 'border-sage/30 focus:ring-2 focus:ring-sage/20'}`}
-                    placeholder="https://auranova.pe/seguimiento"
-                  />
-                  <LinkIcon className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${trackingBaseUrl !== settings.trackingBaseUrl ? 'text-gold' : 'text-sage/60'}`} />
-                </div>
-                <p className="text-xs text-sage mt-2">Esta URL se usará para construir los enlaces de seguimiento. (ej. /seguimiento?token=X)</p>
-              </div>
+
 
               <div>
                 <label className="block text-xs font-bold text-brown mb-2 uppercase tracking-wide" htmlFor="yapeHolder">

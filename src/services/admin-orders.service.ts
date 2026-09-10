@@ -38,5 +38,25 @@ export const AdminOrdersService = {
   prepareWhatsapp: async (orderId: string, notificationId: string): Promise<WhatsAppPreparationResponse> => {
     const { data } = await apiClient.post<WhatsAppPreparationResponse>(`/api/admin/orders/${orderId}/notifications/${notificationId}/prepare-whatsapp`);
     return data;
+  },
+
+  startPreparation: async (id: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${id}/start-preparation`);
+    return data;
+  },
+
+  setEstimatedReadyDate: async (id: string, request: { estimatedDate: string }): Promise<{ message: string }> => {
+    const { data } = await apiClient.patch<{ message: string }>(`/api/admin/orders/${id}/estimated-date`, request);
+    return data;
+  },
+
+  markAsReady: async (id: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${id}/mark-ready`);
+    return data;
+  },
+
+  deliverToAgency: async (id: string, request: { provider: string; trackingCode: string; proofUrl?: string | null }): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${id}/deliver-to-agency`, request);
+    return data;
   }
 };

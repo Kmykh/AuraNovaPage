@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PublicTrackingResponse } from '@/types/tracking';
-import { OrderStatus } from '@/types/checkout';
+import { OrderStatus } from '@/types/enums';
 import { Button } from '@/components/ui/Button';
 import { Link2, CreditCard, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';

@@ -421,7 +421,7 @@ export function CustomOrderClient() {
                         />
                       </div>
                       <p className="text-xs text-[#887870] italic">
-                        * El costo de envío a provincia se agregará a la cotización final.
+                        * El costo del envío a provincia será pagado por ti en la agencia al recoger el paquete (Pago en destino).
                       </p>
                     </div>
                   )}
@@ -461,7 +461,7 @@ export function CustomOrderClient() {
                   </div>
                   <div className="flex justify-between text-[#887870]">
                     <span className="font-medium">{deliveryType === DeliveryType.Delivery ? 'Delivery' : deliveryType === DeliveryType.MeetingPoint ? 'Punto de encuentro' : 'Envío nacional'}</span>
-                    <span className="text-[#4a3933] font-bold italic">Por cotizar</span>
+                    <span className="text-[#4a3933] font-bold italic">{deliveryType === DeliveryType.NationalShipping ? 'Pago en destino' : 'Por cotizar'}</span>
                   </div>
                 </div>
                 

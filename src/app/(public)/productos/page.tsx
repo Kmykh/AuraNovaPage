@@ -35,9 +35,9 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col gap-8 pt-28 pb-12 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-6">
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold text-brown mb-4">
+      <div className="relative z-10 flex flex-col gap-6 pt-24 pb-12 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-2">
+          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold text-brown mb-3">
             Nuestros detalles
           </h1>
           <p className="text-sage text-base md:text-lg">

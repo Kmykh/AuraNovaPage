@@ -7,13 +7,15 @@ import { getOrderStatusInfo, getDeliveryTypeLabel, formatDate } from '@/lib/orde
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
-import { AlertCircle, ArrowLeft, User, Truck, Package } from 'lucide-react';
+import { AlertCircle, ArrowLeft, User, Truck, Package, ExternalLink } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { DeliveryType } from '@/types/enums';
 
 import { OrderStatusChangeForm } from './OrderStatusChangeForm';
 import { OrderStatusHistory } from './OrderStatusHistory';
 import { OrderNotifications } from './OrderNotifications';
+import { OrderTimeline } from './OrderTimeline';
+import { OrderActions } from './OrderActions';
 
 export function AdminOrderDetail({ id }: { id: string }) {
   const { data: order, isLoading, error, refetch } = useAdminOrder(id);
@@ -57,7 +59,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
     );
   }
 
-  const statusInfo = getOrderStatusInfo(order.status);
+  const statusInfo = getOrderStatusInfo(order.status, order.deliveryType);
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -96,6 +98,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Columna Principal */}
         <div className="lg:col-span-2 space-y-6">
+          <OrderTimeline order={order} />
           
           {/* Tarjetas de Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -122,6 +125,25 @@ export function AdminOrderDetail({ id }: { id: string }) {
                 {order.delivery?.deliveryAddress && <p><span className="font-medium text-brown">Dirección:</span> {order.delivery.deliveryAddress}</p>}
               </div>
             </div>
+
+            {order.deliveryType === DeliveryType.NationalShipping && order.shippingProvider && (
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gold/30">
+                <div className="flex items-center gap-2 mb-4 text-brown font-medium">
+                  <Package size={18} className="text-gold" /> Datos de Agencia
+                </div>
+                <div className="space-y-2 text-sm text-sage">
+                  <p><span className="font-medium text-brown">Proveedor:</span> {order.shippingProvider}</p>
+                  <p><span className="font-medium text-brown">Tracking:</span> {order.shippingTrackingCode}</p>
+                  {order.shippingProofUrl && (
+                    <p>
+                      <a href={order.shippingProofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gold hover:underline">
+                        Ver constancia de entrega <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Pedido Personalizado Info */}
@@ -214,7 +236,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
               </div>
               <div className="flex justify-between w-48 text-sage">
                 <span>Envío:</span>
-                <span>{order.deliveryCost !== null ? formatCurrency(order.deliveryCost) : 'Por cotizar'}</span>
+                <span>{order.deliveryType === DeliveryType.NationalShipping ? 'Pago en destino' : order.deliveryCost !== null ? formatCurrency(order.deliveryCost) : 'Por cotizar'}</span>
               </div>
               {order.isCustomOrder && order.customizationCost !== undefined && order.customizationCost !== null && (
                 <div className="flex justify-between w-48 text-sage">
@@ -229,12 +251,14 @@ export function AdminOrderDetail({ id }: { id: string }) {
             </div>
           </div>
 
-          <OrderStatusHistory orderId={id} />
+          <OrderStatusHistory orderId={id} deliveryType={order.deliveryType} />
 
         </div>
 
         {/* Columna Lateral (Máquina de estados y Acciones) */}
         <div className="space-y-6">
+          <OrderActions order={order} />
+          
           <OrderStatusChangeForm 
             orderId={id} 
             currentStatus={order.status} 

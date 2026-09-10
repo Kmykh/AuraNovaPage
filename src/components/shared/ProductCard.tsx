@@ -8,9 +8,7 @@ import { PackageOpen, ShoppingBag, Paintbrush } from 'lucide-react';
 import { useCartStore } from '../../store/cart.store';
 import { toast } from 'sonner';
 import estatuo from '../../app/(public)/images/estatuo.png';
-import { CategoryBadge } from './CategoryBadge';
-import { AudienceBadge } from './AudienceBadge';
-
+// Removed CategoryBadge and AudienceBadge imports as we use custom premium labels over image
 interface ProductCardProps {
   product: ProductResponse;
 }
@@ -73,14 +71,30 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         
         {/* Availability Badges */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2 items-end z-10">
+        {/* Premium Category & Audience Overlay */}
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-10">
+          {product.category?.name && (
+            <div className="bg-white/80 backdrop-blur-md text-brown text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-bold px-3 py-1.5 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.08)] border border-white/50 flex items-center gap-1.5 group-hover:bg-white transition-colors duration-500">
+              <span className="w-1 h-1 rounded-full bg-gold"></span>
+              {product.category.name}
+            </div>
+          )}
+          {product.audience && (
+            <div className="bg-sage/80 backdrop-blur-md text-white text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-semibold px-2.5 py-1 rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.08)] border border-white/20 ml-1">
+              Para {product.audience}
+            </div>
+          )}
+        </div>
+
+        {/* Availability Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end z-10">
           {isOutOfStock ? (
             <span className="bg-red-500/90 backdrop-blur text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full shadow-sm">
               Agotado
             </span>
           ) : isLowStock ? (
             <span className="bg-gold/90 backdrop-blur text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full shadow-sm">
-              Últimas {stock} unidades
+              Últimas {stock}
             </span>
           ) : null}
         </div>
@@ -138,11 +152,6 @@ export function ProductCard({ product }: ProductCardProps) {
             {name}
           </h3>
         </Link>
-        
-        <div className="flex flex-wrap gap-1.5 mb-1 mt-0.5">
-          <CategoryBadge categoryName={product.category?.name} className="scale-90 origin-left" />
-          <AudienceBadge audience={product.audience} className="scale-90 origin-left" />
-        </div>
         
         <div className="flex items-center justify-between mt-1">
           <span className="font-semibold text-brown/80 text-base">

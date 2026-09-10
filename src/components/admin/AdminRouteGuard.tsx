@@ -19,6 +19,11 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
       // Proteger Open Redirects
       const returnUrl = encodeURIComponent(pathname);
       router.push(`/admin/login?returnUrl=${returnUrl}`);
+    } else if (authStatus === true && pathname.startsWith('/admin/auditoria')) {
+      const role = AuthSession.getRole();
+      if (role !== 'SuperAdmin') {
+        router.push('/admin');
+      }
     }
   }, [pathname, router]);
 

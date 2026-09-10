@@ -71,3 +71,56 @@ export function usePrepareWhatsapp(orderId: string) {
     },
   });
 }
+
+export function useStartPreparation(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => AdminOrdersService.startPreparation(id),
+    onSuccess: () => {
+      toast.success('Elaboración iniciada.');
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.history(id) });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });
+    },
+  });
+}
+
+export function useSetEstimatedReadyDate(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: { estimatedDate: string }) => AdminOrdersService.setEstimatedReadyDate(id, request),
+    onSuccess: () => {
+      toast.success('Fecha estimada de disponibilidad actualizada.');
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
+    },
+  });
+}
+
+export function useMarkAsReady(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => AdminOrdersService.markAsReady(id),
+    onSuccess: () => {
+      toast.success('Pedido marcado como listo.');
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.history(id) });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });
+    },
+  });
+}
+
+export function useDeliverToAgency(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: { provider: string; trackingCode: string; proofUrl?: string | null }) => AdminOrdersService.deliverToAgency(id, request),
+    onSuccess: () => {
+      toast.success('Pedido entregado a agencia.');
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.history(id) });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });
+    },
+  });
+}

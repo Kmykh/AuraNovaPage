@@ -420,7 +420,7 @@ export function CheckoutClient() {
                 <div className="bg-[#fcf9f2] text-[#c8a96b] border border-[#c8a96b]/20 p-5 rounded-2xl flex gap-3 items-start">
                   <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
                   <p className="text-xs leading-relaxed font-medium text-[#887870]">
-                    <strong className="text-[#c8a96b]">Importante:</strong> El costo del envío a provincia será cotizado según tu destino y peso del paquete tras generar el pedido.
+                    <strong className="text-[#c8a96b]">Importante:</strong> El costo del envío a provincia no es administrado por Aura Nova. Será asumido por ti en la agencia al recoger el paquete (Pago en destino).
                   </p>
                 </div>
                 <div className="grid grid-cols-1 gap-6">
@@ -500,7 +500,7 @@ export function CheckoutClient() {
             </div>
             <div className="flex justify-between text-[#887870]">
               <span className="font-medium">{deliveryType === DeliveryType.Delivery ? 'Delivery' : deliveryType === DeliveryType.MeetingPoint ? 'Punto de encuentro' : 'Envío nacional'}</span>
-              <span className="text-[#4a3933] font-bold">{deliveryType === DeliveryType.NationalShipping ? 'Por cotizar' : formatCurrency(estimatedDeliveryCost)}</span>
+              <span className="text-[#4a3933] font-bold">{deliveryType === DeliveryType.NationalShipping ? 'Pago en destino' : formatCurrency(estimatedDeliveryCost)}</span>
             </div>
           </div>
           
@@ -508,7 +508,7 @@ export function CheckoutClient() {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-[10px] uppercase tracking-widest font-bold text-[#887870]">Total a pagar</div>
             <div className="flex justify-between items-end text-[#4a3933] mt-4">
               <span className="text-xs font-bold uppercase tracking-widest text-[#887870] mb-2">Total</span>
-              <span className="text-4xl font-serif font-bold text-[#c8a96b]">{deliveryType === DeliveryType.NationalShipping ? 'Por cotizar' : formatCurrency(subtotal + estimatedDeliveryCost)}</span>
+              <span className="text-4xl font-serif font-bold text-[#c8a96b]">{formatCurrency(subtotal + estimatedDeliveryCost)}</span>
             </div>
           </div>
           

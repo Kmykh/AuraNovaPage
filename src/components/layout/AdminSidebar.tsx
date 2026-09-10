@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AuthSession } from '@/lib/auth-storage';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -12,6 +13,7 @@ import {
   Settings, 
   ShieldAlert,
   Truck,
+  Tags,
   X
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
@@ -25,7 +27,8 @@ const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
   { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
-  { name: 'Cotizaciones', href: '/admin/cotizaciones', icon: FileText },
+  { name: 'Categorías', href: '/admin/categorias', icon: Tags },
+  { name: 'Pedidos Personalizados', href: '/admin/cotizaciones', icon: FileText },
   { name: 'Pagos', href: '/admin/pagos', icon: CreditCard },
   { name: 'Envíos', href: '/admin/envios', icon: Truck },
   { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
@@ -34,6 +37,20 @@ const navItems = [
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [role, setRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setRole(AuthSession.getRole());
+  }, []);
+
+  const visibleNavItems = React.useMemo(() => {
+    return navItems.filter(item => {
+      if (item.name === 'Auditoría' && role !== 'SuperAdmin') {
+        return false;
+      }
+      return true;
+    });
+  }, [role]);
 
   return (
     <>
@@ -68,7 +85,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         </div>
 
         <nav className="flex flex-1 flex-col overflow-y-auto pt-6 px-4 pb-4 gap-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = item.href === '/admin' 
               ? pathname === '/admin' 
               : pathname?.startsWith(item.href);

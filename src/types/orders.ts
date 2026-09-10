@@ -96,6 +96,29 @@ export interface AdminOrderDetailDelivery {
   district: string | null;
 }
 
+export interface AdminOrderQuote {
+  quoteStatus: string;
+  shippingCost: number;
+  customizationCost: number;
+  notes?: string | null;
+  quotedAt?: string | null;
+}
+
+export interface AdminOrderPayment {
+  paymentStatus: string;
+  paymentMethod: string;
+  amount: number;
+  createdAt: string;
+  verifiedAt?: string | null;
+}
+
+export interface AdminOrderNotification {
+  type: string;
+  channel: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface AdminOrderDetailResponse {
   id: string;
   orderCode: string;
@@ -103,17 +126,44 @@ export interface AdminOrderDetailResponse {
   status: OrderStatus;
   subtotal: number;
   deliveryCost: number | null;
+  customizationCost: number;
   total: number | null;
   deliveryType: DeliveryType;
   hasPaymentEvidence?: boolean;
   isCustomOrder?: boolean;
   referenceImageUrl?: string | null;
   customizationNotes?: string | null;
-  customizationCost?: number | null;
+  
+  // Timing
+  startedAt?: string | null;
+  estimatedReadyAt?: string | null;
+  readyAt?: string | null;
+  deliveredToAgencyAt?: string | null;
+
+  // Shipping
+  shippingProvider?: string | null;
+  shippingTrackingCode?: string | null;
+  shippingProofUrl?: string | null;
+
   customer: AdminOrderDetailCustomer;
   delivery: AdminOrderDetailDelivery;
+  quote?: AdminOrderQuote | null;
+  payment?: AdminOrderPayment | null;
   items: AdminOrderDetailItem[];
+  statusHistory: OrderStatusHistoryResponse[];
+  notifications: AdminOrderNotification[];
   createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface SetEstimatedReadyDateRequest {
+  estimatedDate: string; // ISO 8601 string
+}
+
+export interface DeliverToAgencyRequest {
+  provider: string;
+  trackingCode: string;
+  proofUrl?: string | null;
 }
 
 export interface ChangeOrderStatusRequest {

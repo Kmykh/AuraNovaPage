@@ -6,7 +6,7 @@ interface DashboardKpiCardProps {
   value: string | number;
   description: string;
   icon: LucideIcon;
-  color?: 'gold' | 'rose' | 'sage';
+  color?: 'gold' | 'rose' | 'sage' | 'brown';
 }
 
 const colorStyles = {
@@ -24,6 +24,11 @@ const colorStyles = {
     bg: 'bg-sage/10',
     text: 'text-sage',
     border: 'border-sage/20'
+  },
+  brown: {
+    bg: 'bg-brown/10',
+    text: 'text-brown',
+    border: 'border-brown/20'
   }
 };
 

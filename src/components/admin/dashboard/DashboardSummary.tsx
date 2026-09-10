@@ -1,7 +1,8 @@
 "use client";
 
 import React from 'react';
-import { ShoppingBag, CircleDollarSign, ClipboardList, Coins, Package, AlertCircle } from 'lucide-react';
+import { ShoppingBag, CircleDollarSign, ClipboardList, Coins, Package, AlertCircle, Clock, CheckCircle2, Truck } from 'lucide-react';
+import Link from 'next/link';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useAdminProducts } from '@/hooks/use-admin-products';
 import { DashboardHeader } from './DashboardHeader';
@@ -56,28 +57,55 @@ export function DashboardSummary() {
         lastUpdated={dataUpdatedAt} 
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {data && data.orders.paymentReported > 0 && (
+        <div className="mb-6 bg-gold/10 border-l-4 border-gold p-4 rounded-r-2xl flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-gold mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-brown">Pagos Reportados Pendientes</h3>
+            <p className="text-sm text-sage mt-1">
+              Tienes {data.orders.paymentReported} pedido(s) con pago reportado. Revisa la evidencia y confirma el pago para poder iniciar la elaboración.
+            </p>
+            <Link href="/admin/pedidos?status=3">
+              <Button variant="outline" className="mt-3 h-8 border-gold text-gold hover:bg-gold/10 bg-transparent">
+                Revisar pedidos
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardKpiCard
-          title="Pedidos pendientes"
-          value={data ? (data.orders.waitingQuote + data.orders.paymentReported + data.orders.preparing) : 0}
-          description="Pedidos que requieren atención"
+          title="Pedidos recibidos"
+          value={data?.orders.paymentConfirmed ?? 0}
+          description="Pagos confirmados"
           icon={ShoppingBag}
           color="rose"
         />
         <DashboardKpiCard
-          title="Pagos pendientes"
-          value={data?.payments.pendingVerification ?? 0}
-          description="Pagos por revisar"
-          icon={CircleDollarSign}
+          title="En elaboración"
+          value={data?.orders.preparing ?? 0}
+          description="En taller"
+          icon={Clock}
           color="gold"
         />
         <DashboardKpiCard
-          title="Cotizaciones pendientes"
-          value={data?.quotes.pending ?? 0}
-          description="Envíos esperando cotización"
+          title="Listos"
+          value={data?.orders.ready ?? 0}
+          description="Para entrega/envío"
+          icon={CheckCircle2}
+          color="sage"
+        />
+        <DashboardKpiCard
+          title="Personalizados"
+          value={data?.orders.waitingQuote ?? 0}
+          description="Por cotizar"
           icon={ClipboardList}
           color="gold"
         />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         <DashboardKpiCard
           title="Ingresos de hoy"
           value={formatCurrency(data?.today.sales ?? 0)}
@@ -86,11 +114,11 @@ export function DashboardSummary() {
           color="gold"
         />
         <DashboardKpiCard
-          title="Productos activos"
-          value={productsData ? productsData.filter((p: any) => p.isAvailable).length : 0}
-          description="Productos visibles en catálogo"
-          icon={Package}
-          color="sage"
+          title="Entregados a agencia"
+          value={data?.orders.shipped ?? 0}
+          description="Envíos nacionales"
+          icon={Truck}
+          color="brown"
         />
       </div>
     </div>

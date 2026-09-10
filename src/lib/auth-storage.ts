@@ -26,6 +26,23 @@ export const AuthSession = {
     return localStorage.getItem(ADMIN_NAME_KEY);
   },
 
+  getRole: (): string | null => {
+    const token = AuthTokenStorage.getToken();
+    if (!token) return null;
+    
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      const parsed = JSON.parse(decoded);
+      return parsed['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || parsed['role'] || null;
+    } catch (error) {
+      console.error('[AuthSession] Error parsing token', error);
+      return null;
+    }
+  },
+
   setSession: (token: string, adminName: string): void => {
     if (typeof window === 'undefined') return;
     

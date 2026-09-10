@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TrackingService } from '@/services/tracking.service';
 import { PublicTrackingResponse } from '@/types/tracking';
-import { OrderStatus } from '@/types/checkout';
+import { OrderStatus } from '@/types/enums';
 
 interface UseTrackingProps {
   orderCode: string;

@@ -7,7 +7,12 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { History, MessageSquare } from 'lucide-react';
 import { OrderStatus } from '@/types/checkout';
 
-export function OrderStatusHistory({ orderId }: { orderId: string }) {
+interface OrderStatusHistoryProps {
+  orderId: string;
+  deliveryType?: number | string;
+}
+
+export function OrderStatusHistory({ orderId, deliveryType }: OrderStatusHistoryProps) {
   const { data: history, isLoading, error } = useOrderStatusHistory(orderId);
 
   if (isLoading) {
@@ -39,7 +44,7 @@ export function OrderStatusHistory({ orderId }: { orderId: string }) {
         <div className="space-y-6">
           {history.map((event, index) => {
             const statusKey = typeof event.status === 'string' ? (OrderStatus as any)[event.status] ?? event.status : event.status;
-            const statusInfo = getOrderStatusInfo(statusKey);
+            const statusInfo = getOrderStatusInfo(statusKey, deliveryType);
             const isLast = index === history.length - 1;
             
             return (

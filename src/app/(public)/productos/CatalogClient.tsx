@@ -25,9 +25,8 @@ export function CatalogClient() {
     return true;
   });
 
-  // The personalized order pill always sits at the top
   const topBar = (
-    <div className="flex justify-center mb-8">
+    <div className="flex justify-center mb-4">
       <CustomOrderBanner />
     </div>
   );

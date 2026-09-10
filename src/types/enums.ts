@@ -14,7 +14,8 @@ export enum OrderStatus {
   Ready = 6,
   Shipped = 7,
   Delivered = 8,
-  Cancelled = 9,
+  DeliveredToAgency = 9,
+  Cancelled = 10,
 }
 
 export enum QuoteStatus {

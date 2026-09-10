@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import { AdminQuotesList } from '@/components/admin/quotes/AdminQuotesList';
 
 export const metadata: Metadata = {
-  title: 'Cotizaciones | Aura Nova',
-  description: 'Administración de cotizaciones de envíos nacionales',
+  title: 'Pedidos Personalizados | Aura Nova',
+  description: 'Administración de pedidos personalizados y propuestas',
   robots: { index: false, follow: false }
 };
 
@@ -12,9 +12,9 @@ export default function AdminQuotesPage() {
   return (
     <div className="py-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown">Cotizaciones</h1>
+        <h1 className="text-3xl font-serif font-bold text-brown">Pedidos Personalizados</h1>
         <p className="text-sage mt-1">
-          Define el costo de envío para los pedidos nacionales en espera.
+          Gestiona las solicitudes de arreglos personalizados y responde con propuestas de costo.
         </p>
       </div>
 

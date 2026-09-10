@@ -6,11 +6,12 @@ export const ORDER_STATUS_MAP: Record<number, { label: string, color: 'gold' | '
   2: { label: 'Esperando Pago', color: 'rose' },
   3: { label: 'Pago Reportado', color: 'gold' },
   4: { label: 'Pago Confirmado', color: 'sage' },
-  5: { label: 'Preparando', color: 'sage' },
+  5: { label: 'En elaboración', color: 'sage' },
   6: { label: 'Listo', color: 'sage' },
   7: { label: 'En Camino', color: 'brown' },
   8: { label: 'Entregado', color: 'sage' },
-  9: { label: 'Cancelado', color: 'rose' },
+  9: { label: 'Entregado a Agencia', color: 'sage' },
+  10: { label: 'Cancelado', color: 'rose' },
 };
 
 export const DELIVERY_TYPE_MAP: Record<number, string> = {
@@ -19,9 +20,29 @@ export const DELIVERY_TYPE_MAP: Record<number, string> = {
   2: 'Envío Nacional',
 };
 
-export function getOrderStatusInfo(status: number | string) {
+export function getOrderStatusInfo(status: number | string, deliveryType?: DeliveryType | number | string) {
   const key = typeof status === 'string' ? (OrderStatus as any)[status] ?? status : status;
-  return ORDER_STATUS_MAP[key as number] || { label: 'Desconocido', color: 'sage' };
+  const baseInfo = ORDER_STATUS_MAP[key as number] || { label: 'Desconocido', color: 'sage' };
+  
+  if (key === OrderStatus.Ready) {
+    if (deliveryType === DeliveryType.NationalShipping || deliveryType === 'NationalShipping') {
+      return { ...baseInfo, label: 'Listo para envío' };
+    }
+    if (deliveryType === DeliveryType.MeetingPoint || deliveryType === 'MeetingPoint') {
+      return { ...baseInfo, label: 'Listo para entrega' };
+    }
+  }
+
+  if (key === OrderStatus.Delivered) {
+    if (deliveryType === DeliveryType.NationalShipping || deliveryType === 'NationalShipping') {
+      return { ...baseInfo, label: 'Recibido' };
+    }
+    if (deliveryType === DeliveryType.MeetingPoint || deliveryType === 'MeetingPoint') {
+      return { ...baseInfo, label: 'Recibido' };
+    }
+  }
+
+  return baseInfo;
 }
 
 export function getDeliveryTypeLabel(type: number | string) {
@@ -50,11 +71,12 @@ export const NOTIFICATION_TYPE_MAP: Record<number, string> = {
   2: 'Pago reportado',
   3: 'Pago confirmado',
   4: 'Pago rechazado',
-  5: 'Pedido en preparación',
+  5: 'Pedido en elaboración',
   6: 'Pedido listo',
   7: 'Pedido enviado',
   8: 'Pedido entregado',
-  9: 'Pedido cancelado',
+  9: 'Pedido entregado a agencia',
+  10: 'Pedido cancelado',
 };
 
 export function getNotificationTypeLabel(type: number | string) {

@@ -127,11 +127,11 @@ export function AdminOrdersList() {
             <option value="2">Esperando Pago</option>
             <option value="3">Pago Reportado</option>
             <option value="4">Pago Confirmado</option>
-            <option value="5">Preparando</option>
+            <option value="5">En Elaboración</option>
             <option value="6">Listo</option>
-            <option value="7">En Camino</option>
             <option value="8">Entregado</option>
-            <option value="9">Cancelado</option>
+            <option value="9">Entregado a Agencia</option>
+            <option value="10">Cancelado</option>
           </select>
         </div>
         
