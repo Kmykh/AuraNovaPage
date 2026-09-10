@@ -21,7 +21,7 @@ export function OrderActions({ order }: OrderActionsProps) {
 
   // States for modals
   const [estimatedDate, setEstimatedDate] = useState('');
-  const [agencyData, setAgencyData] = useState({ provider: '', trackingCode: '', proofUrl: '' });
+  const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({ provider: '', trackingCode: '', proofFile: null });
   
   // Mutations
   const { mutate: startPreparation, isPending: isStartingPrep } = useStartPreparation(order.id);
@@ -189,14 +189,17 @@ export function OrderActions({ order }: OrderActionsProps) {
         <form onSubmit={handleDeliverAgency} className="space-y-4">
           <div>
             <label className="block text-sm text-sage mb-1">Proveedor (Courier)</label>
-            <input 
-              type="text" 
+            <select 
               required
-              placeholder="Ej. Olva Courier, Shalom"
               value={agencyData.provider}
               onChange={(e) => setAgencyData({...agencyData, provider: e.target.value})}
-              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold"
-            />
+              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold bg-white"
+            >
+              <option value="">Selecciona una agencia</option>
+              <option value="Olva">Olva</option>
+              <option value="Shalom">Shalom</option>
+              <option value="Otro">Otro</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm text-sage mb-1">Código de Seguimiento</label>
@@ -210,18 +213,22 @@ export function OrderActions({ order }: OrderActionsProps) {
             />
           </div>
           <div>
-            <label className="block text-sm text-sage mb-1">URL de Evidencia (Opcional)</label>
+            <label className="block text-sm text-sage mb-1">Constancia de entrega a agencia</label>
             <input 
-              type="url" 
-              placeholder="https://..."
-              value={agencyData.proofUrl}
-              onChange={(e) => setAgencyData({...agencyData, proofUrl: e.target.value})}
+              type="file" 
+              accept="image/*,.pdf"
+              onChange={(e) => {
+                const file = e.target.files ? e.target.files[0] : null;
+                setAgencyData({...agencyData, proofFile: file});
+              }}
               className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsDeliverAgencyModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isDeliveringAgency}>Registrar Entrega</Button>
+            <Button type="submit" disabled={isDeliveringAgency}>
+              {isDeliveringAgency ? 'Subiendo constancia...' : 'Registrar Entrega'}
+            </Button>
           </div>
         </form>
       </Modal>

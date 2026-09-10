@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useAdminPayments } from '@/hooks/use-admin-payments';
-import { getPaymentStatusInfo, getPaymentMethodLabel } from '@/lib/payment-helpers';
+import { getPaymentStatusInfo } from '@/lib/payment-helpers';
 import { formatDate } from '@/lib/order-helpers';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -14,11 +14,18 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export function AdminPaymentsList() {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { data: pagedResponse, isLoading, error, refetch } = useAdminPayments({ page, pageSize });
+  const { data: pagedResponse, isLoading, error, refetch } = useAdminPayments({ page: 1, pageSize: 20 });
+
+  const items = useMemo(() => {
+    const allItems = Array.isArray(pagedResponse) ? pagedResponse : [];
+    if (statusFilter === 'all') return allItems;
+    return allItems.filter(item => {
+      // payment.status can be number or string enum
+      return item.status === statusFilter || item.status === parseInt(statusFilter) || (item.status?.toString().toLowerCase() === statusFilter.toLowerCase());
+    });
+  }, [pagedResponse, statusFilter]);
 
   if (error) {
     const isForbidden = error instanceof ApiProblemDetails && error.status === 403;
@@ -35,17 +42,6 @@ export function AdminPaymentsList() {
       </div>
     );
   }
-
-  const allItems = Array.isArray(pagedResponse) ? pagedResponse : [];
-  
-  // Filter items
-  const items = useMemo(() => {
-    if (statusFilter === 'all') return allItems;
-    return allItems.filter(item => {
-      // payment.status can be number or string enum
-      return item.status === statusFilter || item.status === parseInt(statusFilter) || (item.status?.toString().toLowerCase() === statusFilter.toLowerCase());
-    });
-  }, [allItems, statusFilter]);
 
   const hasItems = items.length > 0;
   const totalItems = items.length;

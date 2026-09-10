@@ -42,19 +42,10 @@ export function OrderNotifications({ orderId }: { orderId: string }) {
     );
   }
 
-  const getStatusIcon = (status: number | string) => {
-    const key = typeof status === 'string' ? (NotificationStatus as any)[status] ?? status : status;
-    switch(key) {
-      case NotificationStatus.Generated: return <Bell size={16} className="text-gold" />; // Generated
-      case NotificationStatus.Opened: return <MessageCircle size={16} className="text-gold" />; // Opened
-      case NotificationStatus.Sent: return <CheckCircle2 size={16} className="text-sage" />; // Sent
-      case NotificationStatus.Failed: return <AlertTriangle size={16} className="text-rose" />; // Failed
-      default: return <Bell size={16} className="text-sage" />;
-    }
-  };
+
 
   const getStatusLabel = (status: number | string) => {
-    const key = typeof status === 'string' ? (NotificationStatus as any)[status] ?? status : status;
+    const key = typeof status === 'string' ? (NotificationStatus as Record<string, string | number>)[status] ?? status : status;
     switch(key) {
       case NotificationStatus.Generated: return 'Generada';
       case NotificationStatus.Opened: return 'WhatsApp preparado';
@@ -97,8 +88,8 @@ export function OrderNotifications({ orderId }: { orderId: string }) {
       
       <div className="space-y-3">
         {notifications.map((n) => {
-          const statusKey = typeof n.status === 'string' ? (NotificationStatus as any)[n.status] ?? n.status : n.status;
-          const channelKey = typeof n.channel === 'string' ? (NotificationChannel as any)[n.channel] ?? n.channel : n.channel;
+          const statusKey = typeof n.status === 'string' ? (NotificationStatus as Record<string, string | number>)[n.status] ?? n.status : n.status;
+          const channelKey = typeof n.channel === 'string' ? (NotificationChannel as Record<string, string | number>)[n.channel] ?? n.channel : n.channel;
           const isWhatsApp = channelKey === NotificationChannel.WhatsApp;
 
           return (

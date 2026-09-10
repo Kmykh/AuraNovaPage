@@ -107,8 +107,7 @@ export function BusinessSettingsForm() {
       {
         businessName: businessName.trim(),
         whatsappNumber: whatsappNumber.trim(),
-        yapeHolderName: yapeHolderName.trim(),
-        trackingBaseUrl: settings.trackingBaseUrl || '' // Preserve existing or dummy if required by backend
+        yapeHolderName: yapeHolderName.trim()
       },
       {
         onSuccess: () => {

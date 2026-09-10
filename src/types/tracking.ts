@@ -14,6 +14,9 @@ export interface TrackingDeliveryInfo {
   department?: string;
   meetingPointName?: string;
   deliveryZoneName?: string;
+  shippingProvider?: string;
+  shippingTrackingCode?: string;
+  shippingProofUrl?: string;
 }
 
 export interface TrackingItem {
@@ -34,4 +37,7 @@ export interface PublicTrackingResponse {
   timeline: TrackingTimelineEvent[];
   delivery?: TrackingDeliveryInfo;
   items?: TrackingItem[];
+  shippingProvider?: string;
+  shippingTrackingCode?: string;
+  shippingProofUrl?: string;
 }

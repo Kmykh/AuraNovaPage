@@ -26,6 +26,7 @@ export function CategoryModal({ isOpen, onClose, category }: CategoryModalProps)
   const isPending = isCreating || isUpdating;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Necesario para inicializar el form al abrir el modal
     if (isOpen) {
       if (category) {
         setName(category.name);

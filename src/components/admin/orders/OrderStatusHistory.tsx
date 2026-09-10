@@ -43,9 +43,8 @@ export function OrderStatusHistory({ orderId, deliveryType }: OrderStatusHistory
       <div className="relative pl-3 before:absolute before:top-4 before:bottom-4 before:left-[21px] before:w-0.5 before:bg-sage/20">
         <div className="space-y-6">
           {history.map((event, index) => {
-            const statusKey = typeof event.status === 'string' ? (OrderStatus as any)[event.status] ?? event.status : event.status;
+            const statusKey = typeof event.status === 'string' ? (OrderStatus as Record<string, string | number>)[event.status] ?? event.status : event.status;
             const statusInfo = getOrderStatusInfo(statusKey, deliveryType);
-            const isLast = index === history.length - 1;
             
             return (
               <div key={event.id || index} className="relative flex items-start gap-5">
@@ -59,6 +58,14 @@ export function OrderStatusHistory({ orderId, deliveryType }: OrderStatusHistory
                       {statusInfo.label}
                     </span>
                     <span className="text-xs text-sage font-medium">{formatDate(event.createdAt)}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 mb-3 text-xs">
+                    <span className="font-medium text-sage">Aprobado por:</span>
+                    <span className="font-semibold text-brown bg-sage/5 px-2 py-0.5 rounded-md">
+                      {/* @ts-ignore */}
+                      {event.adminName || 'Sistema / Cliente'}
+                    </span>
                   </div>
                   
                   {event.comment && (

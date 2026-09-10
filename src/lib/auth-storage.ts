@@ -36,7 +36,17 @@ export const AuthSession = {
       
       const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
       const parsed = JSON.parse(decoded);
-      return parsed['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || parsed['role'] || null;
+      const roleClaim = parsed['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || parsed['role'] || null;
+      
+      // The backend may send role as a single string or an array of strings
+      // e.g. "SuperAdmin" or ["SuperAdmin", "Admin"]
+      if (Array.isArray(roleClaim)) {
+        // Prioritize SuperAdmin if present in the array
+        if (roleClaim.includes('SuperAdmin')) return 'SuperAdmin';
+        return roleClaim[0] || null;
+      }
+      
+      return roleClaim;
     } catch (error) {
       console.error('[AuthSession] Error parsing token', error);
       return null;

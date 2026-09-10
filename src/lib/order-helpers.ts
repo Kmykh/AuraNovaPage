@@ -21,7 +21,7 @@ export const DELIVERY_TYPE_MAP: Record<number, string> = {
 };
 
 export function getOrderStatusInfo(status: number | string, deliveryType?: DeliveryType | number | string) {
-  const key = typeof status === 'string' ? (OrderStatus as any)[status] ?? status : status;
+  const key = typeof status === 'string' ? (OrderStatus as Record<string, string | number>)[status] ?? status : status;
   const baseInfo = ORDER_STATUS_MAP[key as number] || { label: 'Desconocido', color: 'sage' };
   
   if (key === OrderStatus.Ready) {
@@ -46,7 +46,7 @@ export function getOrderStatusInfo(status: number | string, deliveryType?: Deliv
 }
 
 export function getDeliveryTypeLabel(type: number | string) {
-  const key = typeof type === 'string' ? (DeliveryType as any)[type] ?? type : type;
+  const key = typeof type === 'string' ? (DeliveryType as Record<string, string | number>)[type] ?? type : type;
   return DELIVERY_TYPE_MAP[key as number] || 'Desconocido';
 }
 
@@ -80,6 +80,6 @@ export const NOTIFICATION_TYPE_MAP: Record<number, string> = {
 };
 
 export function getNotificationTypeLabel(type: number | string) {
-  const key = typeof type === 'string' ? (NotificationType as any)[type] ?? type : type;
+  const key = typeof type === 'string' ? (NotificationType as Record<string, string | number>)[type] ?? type : type;
   return NOTIFICATION_TYPE_MAP[key as number] || 'Desconocido';
 }

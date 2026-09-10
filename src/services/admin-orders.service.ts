@@ -55,8 +55,14 @@ export const AdminOrdersService = {
     return data;
   },
 
-  deliverToAgency: async (id: string, request: { provider: string; trackingCode: string; proofUrl?: string | null }): Promise<{ message: string }> => {
-    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${id}/deliver-to-agency`, request);
+  deliverToAgency: async (id: string, request: { provider: string; trackingCode: string; proofFile?: File | null }): Promise<{ message: string }> => {
+    const formData = new FormData();
+    formData.append('provider', request.provider);
+    formData.append('trackingCode', request.trackingCode);
+    if (request.proofFile) {
+      formData.append('proofFile', request.proofFile);
+    }
+    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${id}/deliver-to-agency`, formData);
     return data;
   }
 };

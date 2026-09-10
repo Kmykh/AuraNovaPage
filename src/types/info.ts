@@ -14,5 +14,4 @@ export interface PublicBusinessSettingsResponse {
     holderName: string;
     qrImageUrl: string | null;
   };
-  trackingBaseUrl: string;
 }

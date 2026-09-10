@@ -114,7 +114,7 @@ export function useMarkAsReady(id: string) {
 export function useDeliverToAgency(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (request: { provider: string; trackingCode: string; proofUrl?: string | null }) => AdminOrdersService.deliverToAgency(id, request),
+    mutationFn: (request: { provider: string; trackingCode: string; proofFile?: File | null }) => AdminOrdersService.deliverToAgency(id, request),
     onSuccess: () => {
       toast.success('Pedido entregado a agencia.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });

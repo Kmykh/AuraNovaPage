@@ -8,27 +8,32 @@ import { Skeleton } from '@/components/ui/Skeleton';
 export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'unauthorized'>('loading');
 
   useEffect(() => {
-    // Se ejecuta solo en el cliente tras la hidratación para coincidir con SSR
-    const authStatus = AuthSession.isAuthenticated();
-    setIsAuthenticated(authStatus);
+    const isAuth = AuthSession.isAuthenticated();
 
-    if (authStatus === false) {
-      // Proteger Open Redirects
+    if (!isAuth) {
       const returnUrl = encodeURIComponent(pathname);
       router.push(`/admin/login?returnUrl=${returnUrl}`);
-    } else if (authStatus === true && pathname.startsWith('/admin/auditoria')) {
+      setAuthState('unauthorized');
+      return;
+    }
+
+    // Check audit route restriction
+    if (pathname.startsWith('/admin/auditoria')) {
       const role = AuthSession.getRole();
       if (role !== 'SuperAdmin') {
         router.push('/admin');
+        setAuthState('unauthorized');
+        return;
       }
     }
+
+    setAuthState('authenticated');
   }, [pathname, router]);
 
-  // Si no hemos determinado el estado, no renderizamos children para evitar flash de contenido protegido
-  if (isAuthenticated === null) {
+  if (authState !== 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream/10">
         <Skeleton variant="rect" className="w-64 h-64 rounded-full opacity-20" />
@@ -38,3 +43,4 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+

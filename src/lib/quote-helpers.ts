@@ -7,6 +7,6 @@ export const QUOTE_STATUS_MAP: Record<number, { label: string, color: 'gold' | '
 };
 
 export function getQuoteStatusInfo(status: number | string) {
-  const key = typeof status === 'string' ? (QuoteStatus as any)[status] ?? status : status;
+  const key = typeof status === 'string' ? (QuoteStatus as Record<string, string | number>)[status] ?? status : status;
   return QUOTE_STATUS_MAP[key as number] || { label: 'Desconocido', color: 'sage' };
 }

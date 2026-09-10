@@ -1,18 +1,19 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTracking } from '@/hooks/use-tracking';
 import { TrackingSearchForm } from '@/components/tracking/TrackingSearchForm';
 import { TrackingStatusCard } from '@/components/tracking/TrackingStatusCard';
-import { TrackingActions } from '@/components/tracking/TrackingActions';
-import { TrackingOrderDetails } from '@/components/tracking/TrackingOrderDetails';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { TrackingOrderDetailsModal } from '@/components/tracking/TrackingOrderDetailsModal';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ApiProblemDetails, isTransientApiError } from '@/lib/api-errors';
 import { TransientApiErrorState } from '@/components/shared/TransientApiErrorState';
 import { OrderStatus } from '@/types/enums';
 import { FlowerWaterfallLoader } from '@/components/ui/FlowerWaterfallLoader';
+import { getDeliveryTypeLabel } from '@/lib/tracking-helpers';
+import { ChevronLeft, Search, Share2, Calendar, Package, Check, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TrackingClientProps {
   initialCode: string;
@@ -20,7 +21,6 @@ interface TrackingClientProps {
 }
 
 export function TrackingClient({ initialCode, initialToken }: TrackingClientProps) {
-  // Si no tenemos parámetros, simplemente mostramos el buscador
   if (!initialCode || !initialToken) {
     return <TrackingSearchForm />;
   }
@@ -30,17 +30,20 @@ export function TrackingClient({ initialCode, initialToken }: TrackingClientProp
   );
 }
 
-// Extraído para mantener limpio el hook condicional
 function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string, trackingToken: string }) {
   const router = useRouter();
-  const { data: tracking, isLoading, error, refetch, isFetching } = useTracking({ orderCode, trackingToken });
+  const { data: tracking, isLoading, error, refetch } = useTracking({ orderCode, trackingToken });
+
+  const [searchInput, setSearchInput] = useState('');
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto mt-8">
+      <div className="max-w-md mx-auto pt-24 pb-8 px-4 flex justify-center items-center min-h-[60vh]">
         <FlowerWaterfallLoader 
           message="Buscando tu pedido..." 
-          subMessage="Estamos recolectando la información de tus detalles."
+          subMessage="Estamos obteniendo los detalles más recientes."
         />
       </div>
     );
@@ -49,217 +52,214 @@ function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string,
   if (error) {
     if (isTransientApiError(error)) {
       return (
-        <TransientApiErrorState 
-          title="No pudimos consultar tu pedido en este momento"
-          message="Nuestros servidores están experimentando una dificultad técnica temporal. Si lo deseas, puedes consultar el estado de tu pedido directamente por WhatsApp."
-          onRetry={() => refetch()}
-          whatsappMessage={`Hola Aura Nova. He intentado hacer seguimiento a mi pedido ${orderCode}, pero el sistema está temporalmente inactivo. Quisiera saber el estado de mi envío.`}
-        />
+        <div className="max-w-md mx-auto pt-24 pb-8 px-4">
+          <TransientApiErrorState 
+            title="No pudimos consultar tu pedido"
+            message="Ocurrió una dificultad técnica temporal. Intenta nuevamente o contáctanos."
+            onRetry={() => refetch()}
+            whatsappMessage={`Hola Aura Nova. He intentado hacer seguimiento a mi pedido ${orderCode}, pero el sistema está temporalmente inactivo.`}
+          />
+        </div>
       );
     }
 
     if (error instanceof ApiProblemDetails) {
       if (error.status === 404) {
         return (
-          <ErrorState 
-            title="No encontramos un pedido con esos datos" 
-            message="Por favor, revisa que el código de pedido y el token sean correctos y vuelve a intentarlo."
-            onRetry={() => router.push('/seguimiento')}
-          />
+          <div className="max-w-md mx-auto pt-24 pb-8 px-4">
+            <ErrorState 
+              title="Pedido no encontrado" 
+              message="Verifica que el código y el enlace sean correctos."
+              onRetry={() => router.push('/seguimiento')}
+            />
+          </div>
         );
       }
       if (error.status === 429) {
         return (
-          <ErrorState 
-            title="Has realizado demasiadas consultas" 
-            message="Espera un momento antes de intentarlo nuevamente para evitar saturar el sistema."
-            onRetry={() => refetch()}
-          />
+          <div className="max-w-md mx-auto pt-24 pb-8 px-4">
+            <ErrorState 
+              title="Demasiadas consultas" 
+              message="Espera unos segundos antes de intentar nuevamente."
+              onRetry={() => refetch()}
+            />
+          </div>
         );
       }
     }
     
     return (
-      <ErrorState 
-        title="No pudimos consultar tu pedido" 
-        message="Verifica tu conexión a internet o intenta nuevamente en unos minutos."
-        onRetry={() => refetch()}
-      />
+      <div className="max-w-md mx-auto pt-24 pb-8 px-4">
+        <ErrorState 
+          title="Error de conexión" 
+          message="Revisa tu conexión a internet e inténtalo de nuevo."
+          onRetry={() => refetch()}
+        />
+      </div>
     );
   }
 
   if (!tracking) return null;
 
-  const statusKey = typeof tracking.status === 'string' ? (OrderStatus as any)[tracking.status] ?? tracking.status : tracking.status;
+  const statusKey = typeof tracking.status === 'string' 
+    ? ((OrderStatus as Record<string, string | number>)[tracking.status] ?? tracking.status) 
+    : tracking.status;
+
+  const deliveryTypeLabel = getDeliveryTypeLabel(tracking.deliveryType);
+  const totalQuantity = tracking.items?.reduce((sum, item) => sum + item.quantity, 0) || 1;
+  const quantityString = totalQuantity < 10 ? `0${totalQuantity}` : `${totalQuantity}`;
+  const firstItemName = tracking.items?.[0]?.productName || `Pedido #${tracking.orderCode}`;
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/seguimiento?code=${tracking.orderCode}&token=${trackingToken}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Seguimiento de mi pedido en Aura Nova',
+          text: `Revisa el estado de mi pedido ${tracking.orderCode}`,
+          url
+        });
+        return;
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Enlace copiado al portapapeles');
+    } catch {
+      toast.error('No se pudo copiar el enlace');
+    }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(tracking.orderCode);
+    setCopied(true);
+    toast.success('Código copiado');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchInput.trim()) return;
+    router.push(`/seguimiento?code=${encodeURIComponent(searchInput.trim())}`);
+  };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full bg-[#faf7f2] pt-24 pb-12 overflow-x-hidden">
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div className="mb-8 text-center md:text-left">
+    <div className="w-full min-h-[calc(100vh-4.5rem)] bg-[#faf7f2] pt-20 sm:pt-24 pb-6 px-4 flex flex-col items-center">
+      
+      {/* Contenedor Principal Ajustado al tamaño de pantalla */}
+      <div className="w-full max-w-4xl flex flex-col gap-5 sm:gap-6">
+
+        {/* 1. Header Superior (Flecha Volver + Título + Compartir) */}
+        <div className="flex items-center justify-between px-1">
           <button 
             onClick={() => router.push('/seguimiento')}
-            className="text-sm font-medium text-sage hover:text-brown transition-colors flex items-center gap-2 mx-auto md:mx-0"
+            className="p-1.5 -ml-1.5 rounded-full hover:bg-stone-200/50 text-[#1f2937] transition-colors"
+            title="Volver"
           >
-            <span>←</span> Volver al buscador
+            <ChevronLeft size={22} />
+          </button>
+          
+          <h1 className="font-bold text-lg sm:text-2xl font-serif text-[#4a3933] flex items-center gap-1.5">
+            Pedido <span className="text-[#c8a96b]">#{tracking.orderCode}</span>
+          </h1>
+
+          <button 
+            onClick={handleShare}
+            className="p-1.5 -mr-1.5 rounded-full hover:bg-stone-200/50 text-stone-500 hover:text-[#c8a96b] transition-colors"
+            title="Compartir enlace"
+          >
+            <Share2 size={18} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 xl:gap-10 mt-6">
+
+
+        {/* 3. Tarjeta Resumen del Producto / Pedido */}
+        <div className="w-full bg-white rounded-2xl p-3 border border-stone-200/80 shadow-xs flex items-center gap-3">
           
-          {/* Main Column (Timeline & Details) */}
-          <div className="xl:col-span-2 flex flex-col gap-8">
-            <TrackingStatusCard tracking={tracking} />
-            <TrackingOrderDetails delivery={tracking.delivery} items={tracking.items} />
+          {/* Miniatura Izquierda */}
+          <div className="w-12 h-12 rounded-xl bg-[#faf7f2] border border-[#e8dcdc] flex items-center justify-center text-[#c8a96b] shrink-0">
+            <Package size={22} strokeWidth={2.2} />
           </div>
 
-          {/* Side Column (Payment & Actions) */}
-          <div className="xl:col-span-1 flex flex-col gap-6 w-full">
-            
-            {statusKey === OrderStatus.WaitingQuote && (
-              <div className="bg-[#fdf5f5] p-6 rounded-[2rem] text-[#4a3933] shadow-inner text-center border border-transparent">
-                <span className="text-4xl mb-4 block">⏳</span>
-                <strong className="block mb-2 font-serif text-xl italic text-[#d38b8b]">Cotización Recibida</strong>
-                <p className="text-sm leading-relaxed text-[#887870]">Hemos recibido tu solicitud. Nuestro equipo te contactará por WhatsApp para brindarte el monto total con envío.</p>
-              </div>
-            )}
-            
-            {(statusKey === OrderStatus.WaitingPayment || statusKey === OrderStatus.QuoteReady) && (
-              <>
-                <style dangerouslySetInnerHTML={{__html: `
-                  .ticket-edge-bottom {
-                    background-image: radial-gradient(circle at 6px 6px, transparent 6px, #fdfdfd 6.5px);
-                    background-size: 12px 12px;
-                    background-position: center bottom;
-                    background-repeat: repeat-x;
-                    height: 12px;
-                    width: 100%;
-                    transform: rotate(180deg);
-                  }
-                  .printing-mask {
-                    mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
-                    -webkit-mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
-                  }
-                `}} />
-
-                <div className="w-full flex flex-col items-center">
-                  <div className="w-full max-w-[320px] relative mt-2 mx-auto printing-mask overflow-hidden pt-2">
-                    {/* The slot */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-2 bg-[#2a2a2a] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] z-20"></div>
-                    
-                    {/* The Ticket */}
-                    <div className="w-full bg-[#fdfdfd] relative z-10 pt-8 pb-4 px-6 text-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.08)] mx-auto animate-print" style={{ fontFamily: '"Courier New", Courier, monospace' }}>
-                      
-                      <div className="text-center border-b-2 border-dashed border-[#ccc] pb-4 mb-4">
-                        <p className="font-bold text-xl uppercase mb-1">AURA NOVA</p>
-                        <p className="text-[10px] tracking-widest text-[#666] uppercase">Comprobante de Pago</p>
-                      </div>
-
-                      <div className="space-y-3 text-xs mb-4">
-                        <div className="flex justify-between">
-                          <span className="font-bold text-[#666]">PEDIDO:</span>
-                          <span className="font-bold">{tracking.orderCode}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-bold text-[#666]">ESTADO:</span>
-                          <span className="font-bold bg-[#c8a96b]/20 px-1 text-[#4a3933]">ESPERANDO PAGO</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-bold text-[#666]">FECHA:</span>
-                          <span>{new Date().toLocaleDateString('es-PE')}</span>
-                        </div>
-                      </div>
-
-                      <div className="border-t-2 border-dashed border-[#ccc] pt-4 mb-4 space-y-3 text-xs">
-                        <div>
-                          <span className="font-bold text-[#666] block mb-1">DESTINO:</span>
-                          <span className="block break-words">
-                            {tracking.delivery?.meetingPointName || tracking.delivery?.deliveryZoneName || tracking.delivery?.deliveryAddress || 'No especificado'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="font-bold text-[#666]">DISTRITO:</span>
-                          <span className="text-right">{tracking.delivery?.district || '-'}</span>
-                        </div>
-                      </div>
-
-                      <div className="border-t-2 border-dashed border-[#ccc] pt-4 mb-6 space-y-2 text-xs">
-                        {tracking.subtotal != null && (
-                          <div className="flex justify-between">
-                            <span>Subtotal:</span>
-                            <span>S/ {tracking.subtotal.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {tracking.customizationCost != null && tracking.customizationCost > 0 && (
-                          <div className="flex justify-between">
-                            <span>Personalización:</span>
-                            <span>S/ {tracking.customizationCost.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {tracking.deliveryCost != null && (
-                          <div className="flex justify-between">
-                            <span>Envío:</span>
-                            <span>S/ {tracking.deliveryCost.toFixed(2)}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-between pt-2 mt-2 border-t border-[#eee] text-sm font-bold">
-                          <span>TOTAL A PAGAR:</span>
-                          <span>
-                            S/ {(tracking.total || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-center mt-6">
-                        <p className="text-[10px] text-[#666] leading-relaxed">
-                          Por favor, realiza el pago para iniciar la preparación de tu pedido.
-                        </p>
-                      </div>
-
-                      {/* Bottom zig-zag edge */}
-                      <div className="absolute -bottom-3 left-0 w-full z-10">
-                        <div className="ticket-edge-bottom"></div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      sessionStorage.setItem('tempPaymentContext', JSON.stringify({
-                        orderCode: tracking.orderCode,
-                        total: tracking.total,
-                        shippingCost: tracking.deliveryCost || 0,
-                        status: 2
-                      }));
-                      router.push(`/pago/${tracking.orderCode}`);
-                    }}
-                    className="relative z-10 w-full max-w-[320px] h-14 mt-6 text-base tracking-widest uppercase flex items-center justify-center gap-3 rounded-xl bg-[#c8a96b] hover:bg-[#b89759] text-white font-sans font-bold shadow-xl shadow-[#c8a96b]/30 transition-all hover:-translate-y-1"
-                  >
-                    Pagar Ahora <span className="text-xl">💳</span>
-                  </button>
-                </div>
-              </>
-            )}
-            
-
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_20px_50px_-15px_rgba(211,139,139,0.15)] relative">
-              <h3 className="font-serif text-xl font-bold text-[#d38b8b] italic mb-6 text-center lg:text-left">Acciones Adicionales</h3>
-              <TrackingActions trackingToken={trackingToken} tracking={tracking} />
-              
-              <button 
-                onClick={() => refetch()}
-                disabled={isFetching}
-                className="w-full mt-8 flex items-center justify-center gap-2 text-sm font-bold text-[#887870] hover:text-[#c8a96b] transition-colors disabled:opacity-50"
-              >
-                <span className={isFetching ? 'animate-spin' : ''}>↻</span>
-                Actualizar estado
-              </button>
+          {/* Información Central */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-xs sm:text-sm text-[#1f2937] truncate">
+                {firstItemName}
+              </h2>
+              <span className="text-xs font-bold text-stone-600 shrink-0 ml-2">
+                {quantityString}
+              </span>
             </div>
 
+            <div className="flex items-center gap-1.5 text-[11px] text-stone-500 mt-0.5">
+              <Calendar size={12} className="shrink-0 text-stone-400" />
+              <span className="truncate">{deliveryTypeLabel}</span>
+            </div>
+
+            <div className="flex items-center justify-between mt-1">
+              <span className="font-bold text-xs sm:text-sm text-[#1f2937]">
+                S/ {(tracking.total || 0).toFixed(2)}
+              </span>
+              <button 
+                onClick={() => setShowDetailsModal(true)}
+                className="text-[11px] sm:text-xs font-semibold text-[#3b82f6] hover:text-[#2563eb] transition-colors"
+              >
+                View Details
+              </button>
+            </div>
           </div>
+
         </div>
+
+        {/* Notificación Compacta si está Pendiente de Pago (Sin ocupar media pantalla) */}
+        {(statusKey === OrderStatus.WaitingPayment || Number(statusKey) === 2) && (
+          <div className="w-full bg-[#fdf8ee] border border-[#c8a96b]/40 rounded-xl px-3 py-2 flex items-center justify-between gap-2 shadow-xs">
+            <div className="flex items-center gap-1.5 text-xs text-[#8c6d36] font-medium">
+              <span>⏳</span>
+              <span className="font-semibold">Pendiente de pago</span>
+            </div>
+            <button
+              onClick={() => {
+                sessionStorage.setItem('tempPaymentContext', JSON.stringify({
+                  orderCode: tracking.orderCode,
+                  total: tracking.total,
+                  shippingCost: tracking.deliveryCost || 0,
+                  status: 2
+                }));
+                router.push(`/pago/${tracking.orderCode}`);
+              }}
+              className="px-3 py-1 rounded-lg bg-[#c8a96b] hover:bg-[#b89759] text-white text-xs font-bold transition-all shadow-xs"
+            >
+              Pagar S/ {(tracking.total || 0).toFixed(2)}
+            </button>
+          </div>
+        )}
+
+        {/* Notificación Compacta si está en Cotización */}
+        {(statusKey === OrderStatus.WaitingQuote || Number(statusKey) === 0) && (
+          <div className="w-full bg-[#fdf5f5] border border-[#d38b8b]/30 rounded-xl px-3 py-2 flex items-center justify-between text-xs text-[#887870]">
+            <span className="font-medium">⏳ Cotización en proceso</span>
+            <span className="text-[11px] text-[#d38b8b] font-bold">Te escribiremos a WhatsApp</span>
+          </div>
+        )}
+
+        {/* 4. Componente de Seguimiento (Tracker Horizontal con Iconos + Timeline Vertical Detallado) */}
+        <div className="w-full">
+          <TrackingStatusCard tracking={tracking} />
+        </div>
+
       </div>
+
+      {/* Modal Desplegable de Detalles Completos (No añade scroll a la pantalla principal) */}
+      <TrackingOrderDetailsModal 
+        isOpen={showDetailsModal} 
+        onClose={() => setShowDetailsModal(false)}
+        tracking={tracking}
+        trackingToken={trackingToken}
+      />
+
     </div>
   );
 }

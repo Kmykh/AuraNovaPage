@@ -15,6 +15,7 @@ export function FlowerWaterfallLoader({ message = "Cargando...", subMessage }: W
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Necesario para animaciones seguras post-hidratación
     setMounted(true);
   }, []);
 

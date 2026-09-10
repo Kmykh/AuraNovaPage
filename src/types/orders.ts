@@ -105,11 +105,13 @@ export interface AdminOrderQuote {
 }
 
 export interface AdminOrderPayment {
+  id?: string;
   paymentStatus: string;
   paymentMethod: string;
   amount: number;
   createdAt: string;
   verifiedAt?: string | null;
+  evidenceUrl?: string | null;
 }
 
 export interface AdminOrderNotification {
@@ -163,7 +165,7 @@ export interface SetEstimatedReadyDateRequest {
 export interface DeliverToAgencyRequest {
   provider: string;
   trackingCode: string;
-  proofUrl?: string | null;
+  proofFile?: File | null;
 }
 
 export interface ChangeOrderStatusRequest {

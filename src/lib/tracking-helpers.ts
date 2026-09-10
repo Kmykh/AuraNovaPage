@@ -1,7 +1,7 @@
 import { OrderStatus, DeliveryType } from '@/types/enums';
 
 export function getOrderStatusLabel(status: OrderStatus | string): string {
-  const key = typeof status === 'string' ? (OrderStatus as any)[status] ?? status : status;
+  const key = typeof status === 'string' ? (OrderStatus as Record<string, string | number>)[status] ?? status : status;
   switch (key) {
     case OrderStatus.WaitingQuote: return "Esperando cotización";
     case OrderStatus.QuoteReady: return "Cotización lista";
@@ -18,7 +18,7 @@ export function getOrderStatusLabel(status: OrderStatus | string): string {
 }
 
 export function getOrderStatusDescription(status: OrderStatus | string): string {
-  const key = typeof status === 'string' ? (OrderStatus as any)[status] ?? status : status;
+  const key = typeof status === 'string' ? (OrderStatus as Record<string, string | number>)[status] ?? status : status;
   switch (key) {
     case OrderStatus.WaitingQuote: return "Estamos calculando el costo de envío.";
     case OrderStatus.QuoteReady: return "Tu envío ya fue cotizado.";
@@ -28,6 +28,7 @@ export function getOrderStatusDescription(status: OrderStatus | string): string 
     case OrderStatus.Preparing: return "Estamos preparando tu detalle.";
     case OrderStatus.Ready: return "Tu pedido está listo.";
     case OrderStatus.Shipped: return "Tu pedido está en camino.";
+    case OrderStatus.DeliveredToAgency: return "Entregado a la agencia de envíos y en ruta.";
     case OrderStatus.Delivered: return "Tu pedido fue entregado.";
     case OrderStatus.Cancelled: return "Este pedido fue cancelado.";
     default: return "El estado de tu pedido no pudo ser determinado.";
@@ -35,7 +36,7 @@ export function getOrderStatusDescription(status: OrderStatus | string): string 
 }
 
 export function getDeliveryTypeLabel(deliveryType: number | string): string {
-  const key = typeof deliveryType === 'string' ? (DeliveryType as any)[deliveryType] ?? deliveryType : deliveryType;
+  const key = typeof deliveryType === 'string' ? (DeliveryType as Record<string, string | number>)[deliveryType] ?? deliveryType : deliveryType;
   switch (key) {
     case 0: return "Delivery";
     case 1: return "Punto de encuentro";

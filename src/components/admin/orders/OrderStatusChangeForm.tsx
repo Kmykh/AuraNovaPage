@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useChangeOrderStatus, useOrderNotifications } from '@/hooks/use-admin-orders';
+import { useChangeOrderStatus, useOrderNotifications, useDeliverToAgency } from '@/hooks/use-admin-orders';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { WhatsAppFallbackButton } from '@/components/shared/WhatsAppFallbackButton';
@@ -26,7 +26,13 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<{status: string, comment: string} | null>(null);
 
+  // Estados específicos para Entregado a Agencia (NationalShipping)
+  const [provider, setProvider] = useState('');
+  const [trackingCode, setTrackingCode] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
   const { mutate: changeStatus, isPending } = useChangeOrderStatus(orderId);
+  const { mutate: deliverToAgency, isPending: isDelivering } = useDeliverToAgency(orderId);
   const { data: notifications } = useOrderNotifications(orderId);
 
   const getBeautifulPhrase = (status: number) => {
@@ -96,19 +102,21 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
     
     // Si viene como string ("PaymentConfirmed"), lo convertimos a número (4)
     const statusKey = typeof status === 'string' 
-      ? (OrderStatus as any)[status] ?? parseInt(status as string, 10)
+      ? (OrderStatus as Record<string, string | number>)[status] ?? parseInt(status as string, 10)
       : status;
 
-    const canCancel = statusKey < 8; // No se cancela si está entregado o ya cancelado
+    const canCancel = (statusKey as number) < 8; // No se cancela si está entregado o ya cancelado
     
     const deliveryTypeKey = typeof deliveryType === 'string' 
-      ? (DeliveryType as any)[deliveryType] ?? deliveryType 
+      ? (DeliveryType as Record<string, string | number>)[deliveryType] ?? deliveryType 
       : deliveryType;
     
     // Si no es Delivery ni Envio Nacional, entonces es Punto de Encuentro (no tiene envío)
     const requiresShipping = deliveryTypeKey === DeliveryType.Delivery || deliveryTypeKey === DeliveryType.NationalShipping;
 
-    switch (statusKey) {
+    const statusKeyNum = statusKey as number;
+
+    switch (statusKeyNum) {
       case OrderStatus.WaitingQuote: options.push({ value: OrderStatus.QuoteReady, label: 'Cotización Lista' }); break;
       case OrderStatus.QuoteReady: options.push({ value: OrderStatus.WaitingPayment, label: 'Esperando Pago' }); break;
       case OrderStatus.WaitingPayment:
@@ -119,10 +127,17 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
       case OrderStatus.PaymentConfirmed: options.push({ value: OrderStatus.Preparing, label: 'Preparando' }); break;
       case OrderStatus.Preparing: options.push({ value: OrderStatus.Ready, label: 'Listo' }); break;
       case OrderStatus.Ready: 
-        if (requiresShipping) {
+        if (deliveryTypeKey === DeliveryType.Delivery) {
           options.push({ value: OrderStatus.Shipped, label: 'En Camino' });
-        } else {
+        } else if (deliveryTypeKey === DeliveryType.MeetingPoint) {
           options.push({ value: OrderStatus.Delivered, label: 'Entregado' }); // Directo a entregado
+        } else if (deliveryTypeKey === DeliveryType.NationalShipping) {
+          // No se agrega opción estándar, usa el botón modal Entregar a Agencia
+        }
+        break;
+      case OrderStatus.DeliveredToAgency:
+        if (deliveryTypeKey === DeliveryType.NationalShipping) {
+          options.push({ value: OrderStatus.Delivered, label: 'Recibido' });
         }
         break;
       case OrderStatus.Shipped: options.push({ value: OrderStatus.Delivered, label: 'Entregado' }); break;
@@ -142,6 +157,104 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
     return (
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10 text-center">
         <p className="text-sage text-sm font-medium">Este pedido ha finalizado y ya no admite cambios de estado.</p>
+      </div>
+    );
+  }
+
+  const statusKeyStr = typeof currentStatus === 'string' 
+    ? (OrderStatus as Record<string, string | number>)[currentStatus] ?? parseInt(currentStatus as string, 10)
+    : currentStatus;
+    
+  const deliveryTypeKeyStr = typeof deliveryType === 'string' 
+    ? (DeliveryType as Record<string, string | number>)[deliveryType] ?? deliveryType 
+    : deliveryType;
+
+  // Render specific form for NationalShipping when Ready
+  if (statusKeyStr === OrderStatus.Ready && deliveryTypeKeyStr === DeliveryType.NationalShipping) {
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
+        <h3 className="font-serif text-lg text-brown font-semibold mb-4">Entregar a Agencia</h3>
+        
+        {errorMsg && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm flex gap-3 border border-red-200 mb-4">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p>{errorMsg}</p>
+          </div>
+        )}
+
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (!provider || !trackingCode || !proofFile) {
+            setErrorMsg("Todos los campos son obligatorios");
+            return;
+          }
+          setErrorMsg(null);
+          deliverToAgency(
+            { provider, trackingCode, proofFile },
+            {
+              onSuccess: () => {
+                setLastUpdate({ status: 'Entregado a Agencia', comment: '' });
+                setShowSuccessModal(true);
+              },
+              onError: (err) => {
+                setErrorMsg("Error al registrar en agencia");
+              }
+            }
+          );
+        }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-brown mb-2">Agencia (Ej. Shalom, Olva):</label>
+            <input type="text" value={provider} onChange={e => setProvider(e.target.value)} required className="w-full px-4 py-2 bg-[#FAFAFA] border border-sage/30 rounded-xl focus:ring-1 focus:ring-gold outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brown mb-2">Código de Rastreo (Clave / Número):</label>
+            <input type="text" value={trackingCode} onChange={e => setTrackingCode(e.target.value)} required className="w-full px-4 py-2 bg-[#FAFAFA] border border-sage/30 rounded-xl focus:ring-1 focus:ring-gold outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brown mb-2">Foto de la boleta / voucher de envío:</label>
+            <input type="file" onChange={e => setProofFile(e.target.files?.[0] || null)} accept="image/*,.pdf" required className="w-full text-sm text-sage file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gold/10 file:text-gold hover:file:bg-gold/20" />
+          </div>
+          <Button type="submit" disabled={isDelivering || !provider || !trackingCode || !proofFile} className="w-full bg-gold hover:bg-gold/90 text-white">
+            {isDelivering ? 'Registrando...' : 'Registrar Envío en Agencia'}
+          </Button>
+        </form>
+
+        {/* Modal Genérico de Éxito compartida */}
+        <Modal 
+          isOpen={showSuccessModal} 
+          onClose={() => setShowSuccessModal(false)}
+          title="¡Estado actualizado!"
+        >
+          <div className="flex flex-col items-center text-center py-4">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+              <CheckCircle size={32} />
+            </div>
+            <p className="text-brown font-serif text-lg font-medium mb-3">Recuerda notificar al cliente</p>
+            <p className="text-sage text-sm mb-8 leading-relaxed px-4">
+              El pedido pasó a estado <strong>&quot;{lastUpdate?.status}&quot;</strong> exitosamente. Envíale un mensaje por WhatsApp al cliente para que esté al tanto.
+            </p>
+            
+            <div className="w-full space-y-3">
+              <WhatsAppFallbackButton 
+                phone={customerPhone || ''}
+                message={
+                  notifications?.filter(n => n.channel === 0 && n.status === 0)
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.message 
+                  || `Hola ${customerName || ''}. Tu pedido ${orderCode || ''} ha sido actualizado a: ${lastUpdate?.status}.\n\n${lastUpdate?.comment ? `Nota: ${lastUpdate.comment}` : ''}`
+                }
+                label="Notificar por WhatsApp"
+                className="w-full h-12 shadow-md shadow-green-500/20"
+              />
+              <Button 
+                variant="outline" 
+                className="w-full h-12" 
+                onClick={() => setShowSuccessModal(false)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     );
   }
@@ -205,6 +318,7 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
         </Button>
       </form>
 
+      {/* Modal Genérico de Éxito */}
       <Modal 
         isOpen={showSuccessModal} 
         onClose={() => setShowSuccessModal(false)}
@@ -216,7 +330,7 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
           </div>
           <p className="text-brown font-serif text-lg font-medium mb-3">Recuerda notificar al cliente</p>
           <p className="text-sage text-sm mb-8 leading-relaxed px-4">
-            El pedido pasó a estado <strong>"{lastUpdate?.status}"</strong> exitosamente. Envíale un mensaje por WhatsApp al cliente para que esté al tanto.
+            El pedido pasó a estado <strong>&quot;{lastUpdate?.status}&quot;</strong> exitosamente. Envíale un mensaje por WhatsApp al cliente para que esté al tanto.
           </p>
           
           <div className="w-full space-y-3">

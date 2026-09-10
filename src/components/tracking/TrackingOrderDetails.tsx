@@ -1,17 +1,18 @@
 import React from 'react';
-import { TrackingDeliveryInfo, TrackingItem } from '@/types/tracking';
-import { MapPin, Package, ShoppingBag } from 'lucide-react';
+import { PublicTrackingResponse } from '@/types/tracking';
+import { MapPin, Package, ShoppingBag, Truck } from 'lucide-react';
 
 interface TrackingOrderDetailsProps {
-  delivery?: TrackingDeliveryInfo;
-  items?: TrackingItem[];
+  tracking: PublicTrackingResponse;
 }
 
-export function TrackingOrderDetails({ delivery, items }: TrackingOrderDetailsProps) {
-  if (!delivery && (!items || items.length === 0)) return null;
+export function TrackingOrderDetails({ tracking }: TrackingOrderDetailsProps) {
+  const { delivery, items } = tracking;
+  
+  if (!delivery && (!items || items.length === 0) && !tracking.shippingProvider) return null;
 
   return (
-    <div className="w-full bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-[0_20px_50px_-15px_rgba(211,139,139,0.15)] border border-[#d38b8b]/10 relative">
+    <div className="w-full relative">
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
         
         {/* Productos (Items) */}
@@ -90,6 +91,41 @@ export function TrackingOrderDetails({ delivery, items }: TrackingOrderDetailsPr
               )}
               
             </div>
+            
+            {/* Información de Agencia de Envíos */}
+            {(tracking.shippingProvider || tracking.shippingTrackingCode) && (
+              <div className="mt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-[#fdf5f5] p-2.5 rounded-full text-[#d38b8b]">
+                    <Truck size={18} />
+                  </div>
+                  <h4 className="font-serif text-xl font-bold text-[#4a3933] italic">Envío por Agencia</h4>
+                </div>
+                
+                <div className="bg-[#faf7f2] p-5 rounded-2xl border border-[#c8a96b]/20 space-y-3 shadow-inner">
+                  {tracking.shippingProvider && (
+                    <div className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm">
+                      <span className="text-sm font-medium text-[#887870]">Agencia</span>
+                      <span className="font-bold text-[#4a3933]">{tracking.shippingProvider}</span>
+                    </div>
+                  )}
+                  {tracking.shippingTrackingCode && (
+                    <div className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-[#c8a96b]/20">
+                      <span className="text-sm font-medium text-[#887870]">Tracking/Clave</span>
+                      <span className="font-bold text-[#c8a96b] tracking-wider font-mono">{tracking.shippingTrackingCode}</span>
+                    </div>
+                  )}
+                  {tracking.shippingProofUrl && (
+                    <div className="pt-2 text-center">
+                      <a href={tracking.shippingProofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-[#d38b8b] hover:text-[#c8a96b] transition-colors underline decoration-[#d38b8b]/30 underline-offset-4">
+                        Ver boleta/comprobante de envío adjunto
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
         

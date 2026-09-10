@@ -14,11 +14,16 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
   const getStages = () => {
     const stages = [];
     
+    // Normalizar el status a número para comparaciones seguras
+    const currentStatus = typeof order.status === 'string' 
+      ? (OrderStatus as unknown as Record<string, number>)[order.status] ?? parseInt(order.status, 10)
+      : order.status;
+    
     // Si es personalizado, siempre empieza por cotización
     if (order.isCustomOrder || order.quote) {
       stages.push({
         label: 'Cotización',
-        status: order.quote?.quoteStatus === 'Ready' || order.status >= OrderStatus.WaitingPayment ? 'completed' : 'current',
+        status: order.quote?.quoteStatus === 'Ready' || currentStatus >= OrderStatus.WaitingPayment ? 'completed' : 'current',
         date: order.quote?.quotedAt ? formatDate(order.quote.quotedAt) : null,
       });
     }
@@ -26,20 +31,24 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
     // 1. Pedido / Pago
     stages.push({
       label: 'Pedido recibido',
-      status: order.status >= OrderStatus.WaitingPayment ? 'completed' : 'current',
+      status: currentStatus >= OrderStatus.WaitingPayment ? 'completed' : 'current',
       date: order.createdAt ? formatDate(order.createdAt) : null,
     });
 
+    let paymentLabel = 'Esperando pago';
+    if (currentStatus >= OrderStatus.PaymentConfirmed) paymentLabel = 'Pago confirmado';
+    else if (currentStatus === OrderStatus.PaymentReported || (typeof order.status === 'string' && order.status === 'PaymentReported')) paymentLabel = 'Comprobante subido, pendiente de revisión';
+
     stages.push({
-      label: order.status >= OrderStatus.PaymentConfirmed ? 'Pago confirmado' : 'Esperando pago',
-      status: order.status >= OrderStatus.PaymentConfirmed ? 'completed' : (order.status >= OrderStatus.WaitingPayment ? 'current' : 'pending'),
+      label: paymentLabel,
+      status: currentStatus >= OrderStatus.PaymentConfirmed ? 'completed' : (currentStatus >= OrderStatus.WaitingPayment ? 'current' : 'pending'),
       date: order.payment?.verifiedAt ? formatDate(order.payment.verifiedAt) : null,
     });
 
     // 3. Elaboración
     stages.push({
       label: 'En elaboración',
-      status: order.status >= OrderStatus.Ready ? 'completed' : (order.status === OrderStatus.Preparing ? 'current' : 'pending'),
+      status: currentStatus >= OrderStatus.Ready ? 'completed' : (currentStatus === OrderStatus.Preparing ? 'current' : 'pending'),
       date: order.startedAt ? formatDate(order.startedAt) : null,
       estimated: order.estimatedReadyAt ? formatDate(order.estimatedReadyAt) : null,
     });
@@ -48,44 +57,44 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
     if (order.deliveryType === DeliveryType.NationalShipping) {
       stages.push({
         label: 'Listo para envío',
-        status: order.status >= OrderStatus.DeliveredToAgency ? 'completed' : (order.status === OrderStatus.Ready ? 'current' : 'pending'),
+        status: currentStatus >= OrderStatus.DeliveredToAgency ? 'completed' : (currentStatus === OrderStatus.Ready ? 'current' : 'pending'),
         date: order.readyAt ? formatDate(order.readyAt) : null,
       });
       stages.push({
         label: 'Entregado a agencia',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : (order.status === OrderStatus.DeliveredToAgency ? 'current' : 'pending'),
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : (currentStatus === OrderStatus.DeliveredToAgency ? 'current' : 'pending'),
         date: order.deliveredToAgencyAt ? formatDate(order.deliveredToAgencyAt) : null,
       });
       stages.push({
         label: 'Recibido',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : 'pending',
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : 'pending',
         date: null, // Asumimos que no lo trackeamos, pero es el fin del flujo
       });
     } else if (order.deliveryType === DeliveryType.MeetingPoint) {
       stages.push({
         label: 'Listo para entrega',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : (order.status === OrderStatus.Ready ? 'current' : 'pending'),
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : (currentStatus === OrderStatus.Ready ? 'current' : 'pending'),
         date: order.readyAt ? formatDate(order.readyAt) : null,
       });
       stages.push({
         label: 'Recibido',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : 'pending',
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : 'pending',
         date: null,
       });
     } else {
       stages.push({
         label: 'Listo',
-        status: order.status >= OrderStatus.Shipped ? 'completed' : (order.status === OrderStatus.Ready ? 'current' : 'pending'),
+        status: currentStatus >= OrderStatus.Shipped ? 'completed' : (currentStatus === OrderStatus.Ready ? 'current' : 'pending'),
         date: order.readyAt ? formatDate(order.readyAt) : null,
       });
       stages.push({
         label: 'En reparto',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : (order.status === OrderStatus.Shipped ? 'current' : 'pending'),
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : (currentStatus === OrderStatus.Shipped ? 'current' : 'pending'),
         date: null,
       });
       stages.push({
         label: 'Recibido',
-        status: order.status >= OrderStatus.Delivered ? 'completed' : 'pending',
+        status: currentStatus >= OrderStatus.Delivered ? 'completed' : 'pending',
         date: null,
       });
     }

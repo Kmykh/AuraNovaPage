@@ -24,12 +24,12 @@ export function ImageCropperModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const onCropChange = (crop: any) => {
+  const onCropChange = (crop: { x: number; y: number }) => {
     setCrop(crop);
   };
 
-  const onCropCompleteHandler = useCallback((croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+  const onCropCompleteHandler = useCallback((croppedArea: { width: number; height: number; x: number; y: number }, croppedAreaPixels: { width: number; height: number; x: number; y: number }) => {
+    setCroppedAreaPixels(croppedAreaPixels as any);
   }, []);
 
   const handleConfirm = async () => {

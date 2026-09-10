@@ -12,11 +12,11 @@ export const PAYMENT_METHOD_MAP: Record<number, string> = {
 };
 
 export function getPaymentStatusInfo(status: number | string) {
-  const key = typeof status === 'string' ? (PaymentStatus as any)[status] ?? status : status;
+  const key = typeof status === 'string' ? (PaymentStatus as Record<string, string | number>)[status] ?? status : status;
   return PAYMENT_STATUS_MAP[key as number] || { label: 'Desconocido', color: 'sage' };
 }
 
 export function getPaymentMethodLabel(method: number | string) {
-  const key = typeof method === 'string' ? (PaymentMethod as any)[method] ?? method : method;
+  const key = typeof method === 'string' ? (PaymentMethod as Record<string, string | number>)[method] ?? method : method;
   return PAYMENT_METHOD_MAP[key as number] || 'Desconocido';
 }
