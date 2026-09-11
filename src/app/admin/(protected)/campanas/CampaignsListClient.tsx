@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from 'sonner';
+import { NewFeatureExplanation } from '@/components/admin/shared/NewFeatureExplanation';
 
 export function CampaignsListClient() {
   const router = useRouter();
@@ -86,6 +87,20 @@ export function CampaignsListClient() {
           Nueva Campaña
         </Button>
       </div>
+
+      {/* ── Explicación de Novedad para el Equipo ── */}
+      <NewFeatureExplanation
+        id="campaigns_module_overview"
+        title="Nuevo Módulo de Campañas Comerciales y Preventas"
+        badgeLabel="NUEVO"
+        whatChanged="Se habilitó esta nueva sección en el panel para gestionar fechas de alta demanda (San Valentín, Día de la Madre, Navidad, etc.). Permite programar promociones por fases con descuentos automáticos por tiempo."
+        howToUse={[
+          "Haz clic en 'Nueva Campaña' para definir el nombre, fechas de vigencia y descripción.",
+          "Configura 'Etapas' con descuentos progresivos (ejemplo: Preventa con 15% de descuento antes de la fecha límite).",
+          "Vincula los ramos o flores del catálogo que participarán para que los clientes vean la insignia y precio especial en la tienda online."
+        ]}
+        tips="Tip de operación: Las campañas activas destacan automáticamente los ramos en la web sin tener que modificar los precios manualmente."
+      />
 
       {/* ── Metrics Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

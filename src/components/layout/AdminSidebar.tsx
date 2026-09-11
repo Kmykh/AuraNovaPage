@@ -19,6 +19,7 @@ import {
   Megaphone
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
+import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -87,6 +88,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           className={`transition-colors duration-200 ${isActive ? 'text-gold' : 'text-sage/70 group-hover:text-gold'}`} 
         />
         <span className="truncate">{item.name}</span>
+        {item.name === 'Campañas' && (
+          <span className="ml-auto">
+            <NewFeatureBadge size="sm" label="NEW" />
+          </span>
+        )}
       </Link>
     );
   };

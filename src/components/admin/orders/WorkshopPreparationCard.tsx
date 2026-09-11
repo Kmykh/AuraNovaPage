@@ -17,6 +17,8 @@ import {
   Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
+import { NewFeatureExplanation } from '@/components/admin/shared/NewFeatureExplanation';
 
 interface WorkshopPreparationCardProps {
   items: AdminOrderDetailItem[];
@@ -306,6 +308,7 @@ export function WorkshopPreparationCard({
             <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#c8a96b]">
               Hoja de Taller Artesanal
             </span>
+            <NewFeatureBadge label="NUEVO" size="sm" />
             <span className="text-[11px] font-bold bg-[#71a37c]/15 text-[#527d5c] border border-[#71a37c]/30 px-2 py-0.5 rounded-full">
               Para Armado de Ramo
             </span>
@@ -326,6 +329,21 @@ export function WorkshopPreparationCard({
 
       {/* Lista de Ramos y Artículos */}
       <div className="p-6 sm:p-7 space-y-6">
+        {/* Guía Explicativa de Novedad para Trabajadores */}
+        <NewFeatureExplanation
+          id="workshop_sheet_guide"
+          title="Ficha de Taller: Personalización de Ramos y Dedicatorias"
+          badgeLabel="NUEVO"
+          whatChanged="Se integró esta ficha dedicada exclusivamente al trabajo manual en el taller. Ahora se muestran con exactitud las flores y su color, los colores de envoltura (principal y secundario) y si lleva luces LED o mariposa 3D. Además, incluye la descarga directa de la dedicatoria en alta resolución (PNG) lista para imprimir."
+          howToUse={[
+            "Revisa los bloques '🌸 Tipo de Flores' y 'Paleta del Ramo' antes de iniciar la confección.",
+            "Verifica en 'Accesorios & Extras' si lleva Luces LED o Mariposa 3D para incorporarlas al arreglo.",
+            "Haz clic en 'Descargar Tarjeta (PNG)' para obtener la tarjeta dedicatoria en 1600x1000 px lista para imprimir o pulsa 'Imprimir' para enviarla directamente.",
+            "Si el pedido es personalizado, revisa las notas del cliente y descarga su foto de referencia como guía visual."
+          ]}
+          tips="Tip para floristas: Al descargar la tarjeta PNG obtienes las medidas exactas listas para recortar y colocar en el soporte del ramo."
+        />
+
         {items.map((item, idx) => {
           const hasCustomization = Boolean(
             item.selectedPrimaryColor ||
@@ -484,16 +502,19 @@ export function WorkshopPreparationCard({
                       )}
 
                       {/* Botón Descargar Tarjeta PNG */}
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleDownloadDedicationCard(item, idx)}
-                        disabled={downloadingIndex === idx}
-                        className="bg-[#4a3933] hover:bg-[#382b26] text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-xs flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5 text-[#c8a96b]" />
-                        {downloadingIndex === idx ? 'Generando...' : 'Descargar Tarjeta (PNG)'}
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleDownloadDedicationCard(item, idx)}
+                          disabled={downloadingIndex === idx}
+                          className="bg-[#4a3933] hover:bg-[#382b26] text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-xs flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5 text-[#c8a96b]" />
+                          {downloadingIndex === idx ? 'Generando...' : 'Descargar Tarjeta (PNG)'}
+                        </Button>
+                        <NewFeatureBadge label="NUEVO" size="sm" />
+                      </div>
 
                       {/* Botón Imprimir Tarjeta */}
                       <Button

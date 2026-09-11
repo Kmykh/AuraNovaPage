@@ -21,6 +21,8 @@ import { ConfirmPaymentModal, RejectPaymentModal } from './PaymentReviewModals';
 import { WorkshopPreparationCard } from './WorkshopPreparationCard';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
+import { NewFeatureExplanation } from '@/components/admin/shared/NewFeatureExplanation';
 
 export function AdminOrderDetail({ id }: { id: string }) {
   const { data: order, isLoading, error, refetch } = useAdminOrder(id);
@@ -257,6 +259,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
                     <div className="flex items-center gap-2 text-[#4a3933] font-serif font-bold text-lg">
                       <CreditCard size={20} className="text-[#c8a96b]" />
                       <span>Comprobante de Pago Reportado</span>
+                      <NewFeatureBadge label="NUEVO" size="sm" />
                     </div>
                     <Button
                       type="button"
@@ -269,6 +272,21 @@ export function AdminOrderDetail({ id }: { id: string }) {
                       Descargar Comprobante
                     </Button>
                   </div>
+
+                  {/* Guía Explicativa de Novedad para Trabajadores */}
+                  <NewFeatureExplanation
+                    id="admin_payment_modal_guide"
+                    title="Nueva Verificación de Pagos y Descarga de Comprobante"
+                    badgeLabel="NUEVO"
+                    whatChanged="Se eliminaron las preguntas emergentes del navegador. Ahora al pulsar 'Verificar y Confirmar Pago' o hacer clic sobre el voucher se abre una ventana modal con zoom y comparación del total vs lo pagado. Además, el botón 'Descargar Comprobante' guarda la captura directamente en tu equipo."
+                    howToUse={[
+                      "Pulsa 'Verificar y Confirmar Pago' para abrir la ventana con la captura ampliada.",
+                      "Compara que el monto transferido cubra el total o el adelanto del 50%.",
+                      "Si todo es correcto, haz clic en 'Sí, Aprobar y Confirmar Pago'. Si tiene errores, pulsa 'Rechazar Comprobante' para detallar el motivo."
+                    ]}
+                    tips="Tip: Si el cliente envió una captura borrosa, puedes rechazarlo con la opción 'Comprobante borroso' para que el sistema solicite uno nuevo automáticamente."
+                  />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     <div className="space-y-3">
                       <div className="bg-[#faf7f2] p-4 rounded-xl border border-[#c8a96b]/20 space-y-2 text-xs">
