@@ -7,6 +7,7 @@ import { HeroSection } from './home/HeroSection';
 import nube2 from './images/nube2.png';
 import { AboutSection } from './home/AboutSection';
 import { FeaturedProductsSection } from './home/FeaturedProductsSection';
+import { CampaignProductsSection } from './home/CampaignProductsSection';
 import { HowItWorksSection } from './home/HowItWorksSection';
 import { DeliveryMethodsSection } from './home/DeliveryMethodsSection';
 import { PaymentInfoSection } from './home/PaymentInfoSection';
@@ -143,6 +144,9 @@ export function HomeClient() {
 
       {/* ── Cloud transition ── */}
       <CloudDivider />
+
+      {/* ══════════════ CAMPAIGN PRODUCTS ══════════════ */}
+      <CampaignProductsSection />
 
       {/* ══════════════ PRODUCTS ══════════════ */}
       {/* Internal: flo1 top-right (40%) */}

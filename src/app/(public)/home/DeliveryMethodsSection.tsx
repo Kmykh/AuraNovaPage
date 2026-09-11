@@ -23,7 +23,7 @@ const shippingOptions = [
   {
     icon: <Plane size={28} strokeWidth={1.5} />,
     title: "Envíos Nacionales",
-    description: "Llegamos a todo el Perú. Cotizamos tu envío de manera rápida para que tu detalle viaje seguro.",
+    description: "Llegamos a todo el Perú mediante Olva Courier o Shalom con entrega segura y código de seguimiento hasta tu ciudad.",
     badge: "Todo el país"
   }
 ];

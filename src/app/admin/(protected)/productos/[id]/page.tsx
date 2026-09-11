@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <div className="py-6">
+    <div className="py-2">
       <AdminProductDetail id={id} />
     </div>
   );

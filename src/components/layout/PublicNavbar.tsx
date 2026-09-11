@@ -8,14 +8,36 @@ import { Menu, X, ShoppingBag } from 'lucide-react';
 import { Logo } from '../shared/Logo';
 import { useCartStore } from '../../store/cart.store';
 import { useMounted } from '../../hooks/use-mounted';
+import { CatalogFilters } from '../shared/CatalogFilters';
 
 import flo from '../../app/(public)/images/flo.png';
 
 export function PublicNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const isMounted = useMounted();
   const itemCount = useCartStore((state) => state.getItemCount());
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < 80) {
+        setShowFilters(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 120) {
+        // Scrolling down -> hide filter to let user view products
+        setShowFilters(false);
+      } else if (currentScrollY < lastScrollY - 10) {
+        // Scrolling up -> reveal filter
+        setShowFilters(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const navLinks = [
     { name: 'Inicio', href: '/' },
@@ -25,8 +47,8 @@ export function PublicNavbar() {
   ];
 
   return (
-    <header className="fixed top-4 inset-x-0 z-50 w-full flex justify-center px-4 pointer-events-none">
-      <div className="mx-auto w-full max-w-5xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-full px-4 sm:px-6 pointer-events-auto transition-all duration-300">
+    <header className="fixed top-4 inset-x-0 z-50 w-full flex flex-col items-center px-4 pointer-events-none">
+      <div className="relative z-20 mx-auto w-full max-w-5xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-full px-4 sm:px-6 pointer-events-auto transition-all duration-300">
         <div className="flex h-16 items-center justify-between">
           
           {/* Logo */}
@@ -101,6 +123,21 @@ export function PublicNavbar() {
             </button>
           </div>
         </div>
+
+        {/* Dynamic Filter Integrated Directly Inside Navbar Capsule (Solo en /productos, NO en detalle) */}
+        {pathname === '/productos' && (
+          <div 
+            className={`border-t border-stone-200/40 transition-[max-height,opacity,padding,transform] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
+              showFilters && !isMobileMenuOpen
+                ? 'max-h-20 opacity-100 py-2 px-4 sm:px-6 translate-y-0 animate-in fade-in slide-in-from-top-3 duration-500'
+                : 'max-h-0 opacity-0 py-0 px-4 sm:px-6 -translate-y-2 pointer-events-none border-t-transparent'
+            }`}
+          >
+            <React.Suspense fallback={null}>
+              <CatalogFilters />
+            </React.Suspense>
+          </div>
+        )}
       </div>
 
       {/* Mobile Menu */}

@@ -15,7 +15,8 @@ import {
   Truck,
   Tags,
   X,
-  Flower2
+  Flower2,
+  Megaphone
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
 
@@ -32,6 +33,7 @@ const mainNavItems = [
 ];
 
 const businessNavItems = [
+  { name: 'Campañas', href: '/admin/campanas', icon: Megaphone },
   { name: 'Categorías', href: '/admin/categorias', icon: Tags },
   { name: 'Pagos', href: '/admin/pagos', icon: CreditCard },
   { name: 'Envíos', href: '/admin/envios', icon: Truck },

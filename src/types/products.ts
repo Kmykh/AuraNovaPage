@@ -5,6 +5,10 @@ export interface ProductResponse {
   name: string;
   description: string | null;
   price: number;
+  effectivePrice: number;
+  isCampaignActive: boolean;
+  campaignName?: string;
+  campaignStageName?: string;
   stock: number;
   imageUrl: string | null;
   isAvailable: boolean;

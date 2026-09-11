@@ -8,8 +8,8 @@ import flo4 from '../images/flo4.png';
 import flo from '../images/flo.png';
 
 export const metadata: Metadata = {
-  title: 'Aura Nova | Nuestros detalles',
-  description: 'Descubre los detalles y regalos de Aura Nova. Cuidado premium para resaltar tu belleza natural.',
+  title: 'Catálogo de Detalles | Aura Nova',
+  description: 'Descubre nuestros ramos, flores artesanales y detalles exclusivos en Aura Nova.',
 };
 
 export default function ProductsPage() {
@@ -35,17 +35,20 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col gap-6 pt-24 pb-12 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-2">
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-semibold text-brown mb-3">
-            Nuestros detalles
+      <div className="relative z-10 flex flex-col gap-6 pt-36 sm:pt-40 md:pt-44 pb-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-1">
+          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#c8a96b] block mb-2">
+            Catálogo Exclusivo
+          </span>
+          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold text-brown mb-3">
+            Nuestros Detalles
           </h1>
-          <p className="text-sage text-base md:text-lg">
-            Una colección delicada pensada en el cuidado de tu piel y tu bienestar.
+          <p className="text-sage text-sm sm:text-base leading-relaxed">
+            Una colección delicada de ramos, flores eternas y arreglos diseñados para emocionar.
           </p>
         </div>
         
-        <React.Suspense fallback={<div className="text-center py-12">Cargando catálogo...</div>}>
+        <React.Suspense fallback={<div className="text-center py-16 text-sage font-medium">Cargando catálogo...</div>}>
           <CatalogClient />
         </React.Suspense>
       </div>

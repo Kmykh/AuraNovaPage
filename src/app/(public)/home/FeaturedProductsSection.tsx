@@ -7,17 +7,22 @@ import { useProducts } from '@/hooks/use-products';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { ProductCardSkeleton } from '@/components/shared/ProductSkeleton';
 import { Button } from '@/components/ui/Button';
-import { Alert } from '@/components/ui/Alert';
 
 import flo1 from '../images/flo1.png';
 
 export function FeaturedProductsSection() {
   const { data: products, isLoading, isError } = useProducts();
 
-  // Limit to 4 products for the featured section
-  const featured = products?.slice(0, 4) || [];
+  // Filtrar para NO mostrar los productos que ya están seleccionados en la campaña activa
+  const nonCampaignProducts = products?.filter(p => !p.isCampaignActive) || [];
+  const featured = nonCampaignProducts.slice(0, 4);
   
   const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
+
+  // Si no hay productos fuera de la campaña activa y no estamos cargando, no duplicamos
+  if (!isLoading && !isError && nonCampaignProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-12 md:py-16 lg:py-20 relative">

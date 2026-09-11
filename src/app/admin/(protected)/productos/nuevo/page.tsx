@@ -10,14 +10,7 @@ export const metadata: Metadata = {
 
 export default function NewProductPage() {
   return (
-    <div className="py-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-brown">Nuevo producto</h1>
-        <p className="text-sage mt-1">
-          Ingresa los detalles para registrar un producto en el catálogo.
-        </p>
-      </div>
-
+    <div className="py-2">
       <ProductForm mode="create" />
     </div>
   );
