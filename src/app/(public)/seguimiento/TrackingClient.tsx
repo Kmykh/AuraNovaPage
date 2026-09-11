@@ -150,22 +150,33 @@ function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string,
       <div className="w-full max-w-4xl flex flex-col gap-5 sm:gap-6">
 
         {/* 1. Header Superior (Flecha Volver + Título + Compartir) */}
-        <div className="flex items-center justify-between px-1">
-          <button 
-            onClick={() => router.push('/seguimiento')}
-            className="p-1.5 -ml-1.5 rounded-full hover:bg-stone-200/50 text-[#1f2937] transition-colors"
-            title="Volver"
-          >
-            <ChevronLeft size={22} />
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-4">
+          <div className="flex items-start gap-3">
+             <button 
+               onClick={() => router.push('/seguimiento')}
+               className="p-1.5 -ml-1.5 rounded-full hover:bg-stone-200/50 text-[#1f2937] transition-colors mt-0.5"
+               title="Volver"
+             >
+               <ChevronLeft size={22} />
+             </button>
+             <div>
+                <h1 className="font-bold text-xl sm:text-2xl font-serif text-[#4a3933]">
+                  ¡Hola {tracking.customerFirstName || 'AuraLover'}!
+                </h1>
+                <p className="text-sm text-stone-500 font-medium mt-0.5">
+                  Aquí tienes el detalle de tu pedido <span className="text-[#c8a96b] font-mono font-bold">#{tracking.orderCode}</span>
+                </p>
+                {tracking.isCustomOrder && (
+                  <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-[#c8a96b]/10 text-[#c8a96b] rounded text-[11px] font-bold uppercase tracking-wider">
+                    ✨ Pedido Personalizado
+                  </span>
+                )}
+             </div>
+          </div>
           
-          <h1 className="font-bold text-lg sm:text-2xl font-serif text-[#4a3933] flex items-center gap-1.5">
-            Pedido <span className="text-[#c8a96b]">#{tracking.orderCode}</span>
-          </h1>
-
           <button 
             onClick={handleShare}
-            className="p-1.5 -mr-1.5 rounded-full hover:bg-stone-200/50 text-stone-500 hover:text-[#c8a96b] transition-colors"
+            className="p-1.5 -mr-1.5 rounded-full hover:bg-stone-200/50 text-stone-500 hover:text-[#c8a96b] transition-colors self-end sm:self-auto"
             title="Compartir enlace"
           >
             <Share2 size={18} />
@@ -175,42 +186,41 @@ function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string,
 
 
         {/* 3. Tarjeta Resumen del Producto / Pedido */}
-        <div className="w-full bg-white rounded-2xl p-3 border border-stone-200/80 shadow-xs flex items-center gap-3">
+        <div className="w-full bg-[#4a3933] rounded-2xl p-3 sm:p-4 border border-[#5e4a42] shadow-md flex items-center gap-4">
           
           {/* Miniatura Izquierda */}
-          <div className="w-12 h-12 rounded-xl bg-[#faf7f2] border border-[#e8dcdc] flex items-center justify-center text-[#c8a96b] shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-[#5e4a42] border border-[#7a6258] flex items-center justify-center text-[#c8a96b] shrink-0 shadow-inner">
             <Package size={22} strokeWidth={2.2} />
           </div>
 
           {/* Información Central */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-xs sm:text-sm text-[#1f2937] truncate">
+              <h2 className="font-bold text-sm sm:text-base text-[#faf7f2] truncate pr-2">
                 {firstItemName}
               </h2>
-              <span className="text-xs font-bold text-stone-600 shrink-0 ml-2">
-                {quantityString}
+              <span className="text-xs font-bold text-[#c8a96b] shrink-0 bg-[#5e4a42] px-2 py-0.5 rounded-md">
+                x{quantityString}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[11px] text-stone-500 mt-0.5">
-              <Calendar size={12} className="shrink-0 text-stone-400" />
+            <div className="flex items-center gap-1.5 text-xs text-[#c0b3b0] mt-1">
+              <Calendar size={12} className="shrink-0 text-[#c8a96b]" />
               <span className="truncate">{deliveryTypeLabel}</span>
             </div>
 
-            <div className="flex items-center justify-between mt-1">
-              <span className="font-bold text-xs sm:text-sm text-[#1f2937]">
-                S/ {(tracking.total || 0).toFixed(2)}
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-bold text-sm sm:text-base text-white">
+                S/ {(tracking.costs?.total ?? tracking.total ?? 0).toFixed(2)}
               </span>
               <button 
                 onClick={() => setShowDetailsModal(true)}
-                className="text-[11px] sm:text-xs font-semibold text-[#3b82f6] hover:text-[#2563eb] transition-colors"
+                className="text-xs font-bold text-[#4a3933] bg-[#c8a96b] hover:bg-[#b89759] px-3 py-1.5 rounded-lg transition-colors shadow-sm"
               >
-                View Details
+                Ver Ticket
               </button>
             </div>
           </div>
-
         </div>
 
         {/* Notificación Compacta si está Pendiente de Pago (Sin ocupar media pantalla) */}
@@ -224,15 +234,15 @@ function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string,
               onClick={() => {
                 sessionStorage.setItem('tempPaymentContext', JSON.stringify({
                   orderCode: tracking.orderCode,
-                  total: tracking.total,
-                  shippingCost: tracking.deliveryCost || 0,
+                  total: tracking.costs?.total ?? tracking.total,
+                  shippingCost: tracking.costs?.deliveryCost ?? tracking.deliveryCost ?? 0,
                   status: 2
                 }));
                 router.push(`/pago/${tracking.orderCode}`);
               }}
               className="px-3 py-1 rounded-lg bg-[#c8a96b] hover:bg-[#b89759] text-white text-xs font-bold transition-all shadow-xs"
             >
-              Pagar S/ {(tracking.total || 0).toFixed(2)}
+              Pagar S/ {(tracking.costs?.total ?? tracking.total ?? 0).toFixed(2)}
             </button>
           </div>
         )}
@@ -245,9 +255,40 @@ function TrackingResultViewer({ orderCode, trackingToken }: { orderCode: string,
           </div>
         )}
 
+        {/* Tarjeta Informativa de Agencia (Condicional) */}
+        {(tracking.statusLabel === 'DeliveredToAgency' || Number(statusKey) === 9 || statusKey === OrderStatus.DeliveredToAgency) && tracking.nationalShippingDetails && tracking.nationalShippingDetails.provider && (
+          <div className="w-full bg-blue-50/50 border border-blue-200/60 p-4 rounded-xl shadow-xs">
+            <h3 className="font-bold text-blue-900 flex items-center gap-2 text-sm">
+              🚚 Paquete en Agencia: {tracking.nationalShippingDetails.provider}
+            </h3>
+            <p className="text-blue-800 text-xs mt-2">
+              Código de Rastreo: <span className="font-mono font-bold bg-white border border-blue-200 text-blue-600 px-2 py-1 rounded ml-1">{tracking.nationalShippingDetails.trackingCode}</span>
+            </p>
+            
+            {tracking.nationalShippingDetails.proofUrl && (
+              <a 
+                href={tracking.nationalShippingDetails.proofUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 underline decoration-blue-300 underline-offset-2"
+              >
+                Ver Foto del Comprobante
+              </a>
+            )}
+          </div>
+        )}
+
         {/* 4. Componente de Seguimiento (Tracker Horizontal con Iconos + Timeline Vertical Detallado) */}
         <div className="w-full">
           <TrackingStatusCard tracking={tracking} />
+          
+          {tracking.estimates?.estimatedReadyAt && (
+            <div className="mt-4 text-center">
+              <p className="text-[13px] text-[#887870] bg-white border border-[#e8dcdc] px-4 py-3 rounded-xl shadow-xs inline-flex items-center gap-2">
+                📅 Estimamos que tu pedido estará listo el <span className="font-bold text-[#4a3933]">{new Date(tracking.estimates.estimatedReadyAt).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              </p>
+            </div>
+          )}
         </div>
 
       </div>

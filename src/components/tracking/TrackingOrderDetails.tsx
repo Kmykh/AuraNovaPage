@@ -7,9 +7,9 @@ interface TrackingOrderDetailsProps {
 }
 
 export function TrackingOrderDetails({ tracking }: TrackingOrderDetailsProps) {
-  const { delivery, items } = tracking;
+  const { delivery, items, nationalShippingDetails } = tracking;
   
-  if (!delivery && (!items || items.length === 0) && !tracking.shippingProvider) return null;
+  if (!delivery && (!items || items.length === 0) && !nationalShippingDetails && !tracking.shippingProvider) return null;
 
   return (
     <div className="w-full relative">
@@ -93,7 +93,7 @@ export function TrackingOrderDetails({ tracking }: TrackingOrderDetailsProps) {
             </div>
             
             {/* Información de Agencia de Envíos */}
-            {(tracking.shippingProvider || tracking.shippingTrackingCode) && (
+            {((nationalShippingDetails?.provider || tracking.shippingProvider) || (nationalShippingDetails?.trackingCode || tracking.shippingTrackingCode)) && (
               <div className="mt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-[#fdf5f5] p-2.5 rounded-full text-[#d38b8b]">
@@ -103,21 +103,21 @@ export function TrackingOrderDetails({ tracking }: TrackingOrderDetailsProps) {
                 </div>
                 
                 <div className="bg-[#faf7f2] p-5 rounded-2xl border border-[#c8a96b]/20 space-y-3 shadow-inner">
-                  {tracking.shippingProvider && (
+                  {(nationalShippingDetails?.provider || tracking.shippingProvider) && (
                     <div className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm">
                       <span className="text-sm font-medium text-[#887870]">Agencia</span>
-                      <span className="font-bold text-[#4a3933]">{tracking.shippingProvider}</span>
+                      <span className="font-bold text-[#4a3933]">{nationalShippingDetails?.provider || tracking.shippingProvider}</span>
                     </div>
                   )}
-                  {tracking.shippingTrackingCode && (
+                  {(nationalShippingDetails?.trackingCode || tracking.shippingTrackingCode) && (
                     <div className="flex justify-between items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-[#c8a96b]/20">
                       <span className="text-sm font-medium text-[#887870]">Tracking/Clave</span>
-                      <span className="font-bold text-[#c8a96b] tracking-wider font-mono">{tracking.shippingTrackingCode}</span>
+                      <span className="font-bold text-[#c8a96b] tracking-wider font-mono">{nationalShippingDetails?.trackingCode || tracking.shippingTrackingCode}</span>
                     </div>
                   )}
-                  {tracking.shippingProofUrl && (
+                  {(nationalShippingDetails?.proofUrl || tracking.shippingProofUrl) && (
                     <div className="pt-2 text-center">
-                      <a href={tracking.shippingProofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-[#d38b8b] hover:text-[#c8a96b] transition-colors underline decoration-[#d38b8b]/30 underline-offset-4">
+                      <a href={nationalShippingDetails?.proofUrl || tracking.shippingProofUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-[#d38b8b] hover:text-[#c8a96b] transition-colors underline decoration-[#d38b8b]/30 underline-offset-4">
                         Ver boleta/comprobante de envío adjunto
                       </a>
                     </div>

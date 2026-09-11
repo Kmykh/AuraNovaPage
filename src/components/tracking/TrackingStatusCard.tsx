@@ -186,7 +186,7 @@ export function TrackingStatusCard({ tracking }: TrackingStatusCardProps) {
         <div className="flex flex-col">
           {[...timelineEvents].reverse().map((event, idx) => {
             const isCompleted = event.completed;
-            const description = getOrderStatusDescription(event.status);
+            const description = event.description || getOrderStatusDescription(event.status);
             const dateObj = event.createdAt ? new Date(event.createdAt) : null;
             
             // El primer elemento completado en la lista invertida es el estado activo actual
