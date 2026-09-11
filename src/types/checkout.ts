@@ -47,6 +47,15 @@ export interface CreateOrderCustomerRequest {
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
+  selectedPrimaryColor?: string | null;
+  selectedSecondaryColor?: string | null;
+  selectedFlowerType?: string | null;
+  selectedFlowerColor?: string | null;
+  hasLights?: boolean;
+  hasButterfly?: boolean;
+  hasPhraseCard?: boolean;
+  phraseText?: string | null;
+  phraseFont?: string | null;
 }
 
 export interface CreateOrderDeliveryRequest {

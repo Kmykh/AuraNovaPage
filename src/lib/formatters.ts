@@ -35,3 +35,13 @@ export function getImageUrl(path: string | null | undefined): string {
   return `${SUPABASE_BASE_URL}/${cleanPath}`;
 }
 
+/**
+ * Normaliza el nombre de la etapa de campaña.
+ * Si es "Día Central", se muestra como "Flores Amarillas".
+ */
+export function formatStageName(stage?: string | null): string {
+  if (!stage) return 'Preventa';
+  if (stage.toLowerCase().includes('central')) return 'Flores Amarillas';
+  return stage;
+}
+

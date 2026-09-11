@@ -10,15 +10,63 @@ import flo4 from '@/app/(public)/images/flo4.png';
 import { Button } from '@/components/ui/Button';
 import { ArrowRight, Home, CheckCircle2, Info } from 'lucide-react';
 
-interface OrderSuccessProps {
-  order: CreateOrderResponse;
+export interface OrderDetailsSnapshot {
+  customer?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  };
+  items?: {
+    productId?: string;
+    name: string;
+    quantity: number;
+    price: number;
+    selectedPrimaryColor?: string;
+    selectedSecondaryColor?: string;
+    selectedFlowerType?: string;
+    selectedFlowerColor?: string;
+    hasLights?: boolean;
+    hasButterfly?: boolean;
+    hasPhraseCard?: boolean;
+    phraseText?: string;
+    phraseFont?: string;
+  }[];
+  delivery?: {
+    type?: string | number;
+    zoneName?: string;
+    meetingPointName?: string;
+    meetingPointAddress?: string;
+    address?: string;
+    department?: string;
+    province?: string;
+    district?: string;
+  };
 }
 
-export function OrderSuccess({ order }: OrderSuccessProps) {
+interface OrderSuccessProps {
+  order: CreateOrderResponse;
+  orderDetails?: OrderDetailsSnapshot | null;
+}
+
+export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [snapshot, setSnapshot] = useState<OrderDetailsSnapshot | null>(orderDetails || null);
+
+  useEffect(() => {
+    if (!snapshot && typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('latestOrderSnapshot');
+        if (stored) {
+          setSnapshot(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.error("Error recuperando snapshot de orden", e);
+      }
+    }
+  }, [snapshot]);
 
   useEffect(() => {
     setMounted(true);
@@ -136,56 +184,203 @@ export function OrderSuccess({ order }: OrderSuccessProps) {
             </div>
 
             {/* Receipt Wrapper (Handles printing animation) */}
-            <div className="w-[85%] relative z-10 -mt-10 flex flex-col items-center">
+            <div className="w-[88%] relative z-10 -mt-10 flex flex-col items-center">
               <div 
-                className={`w-full overflow-hidden transition-all ease-[cubic-bezier(0.25,1,0.5,1)] ${showContent ? 'max-h-[800px] duration-[3000ms]' : 'max-h-0 duration-0'}`}
+                className={`w-full overflow-hidden transition-all ease-[cubic-bezier(0.25,1,0.5,1)] ${showContent ? 'max-h-[3200px] duration-[3500ms]' : 'max-h-0 duration-0'}`}
               >
-                <div className={`w-full transition-transform ease-out ${showContent ? 'translate-y-0 duration-[3000ms]' : '-translate-y-[120%] duration-0'}`}>
+                <div className={`w-full transition-transform ease-out ${showContent ? 'translate-y-0 duration-[3500ms]' : '-translate-y-[120%] duration-0'}`}>
                   {/* The actual ticket */}
-                  <div className="bg-[#fdfdfd] pt-14 pb-8 px-5 shadow-xl border-x border-[#e5e5e5] relative">
-                    <div className="space-y-4 text-xs font-mono text-[#333]">
-                      <div className="flex justify-between uppercase tracking-wider border-b border-dashed border-[#ccc] pb-4 mb-4">
-                        <span className="text-[#888]">PEDIDO</span>
-                        <span className="font-bold">{orderCode}</span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span>{formatCurrency(order.subtotal || (order as any).Subtotal || 0)}</span>
-                      </div>
-
-                      {((order.deliveryCost !== null && order.deliveryCost !== undefined) || ((order as any).DeliveryCost !== null && (order as any).DeliveryCost !== undefined)) && (
-                        <div className="flex justify-between">
-                          <span>Envío</span>
-                          <span>{formatCurrency(order.deliveryCost ?? (order as any).DeliveryCost ?? 0)}</span>
-                        </div>
-                      )}
+                  <div className="bg-[#fdfdfd] pt-14 pb-8 px-4 sm:px-5 shadow-xl border-x border-[#e5e5e5] relative text-[#2a2a2a]">
+                    <div className="space-y-3.5 text-xs font-mono">
                       
-                      <div className="flex justify-between font-bold text-sm border-t border-dashed border-[#ccc] pt-4 mt-4 text-[#d38b8b]">
-                        <span>TOTAL</span>
-                        <span>{formatCurrency(order.total || (order as any).Total || 0)}</span>
+                      {/* Header Atelier */}
+                      <div className="text-center pb-3 border-b border-dashed border-[#ccc]">
+                        <div className="font-bold tracking-widest text-sm text-[#1a1a1a]">AURA NOVA</div>
+                        <div className="text-[10px] text-[#777] uppercase tracking-wider">Atelier de Detalles Florales</div>
+                        <div className="text-[9px] text-[#888] mt-0.5">Huancayo, Junín • Perú</div>
                       </div>
 
-                      <div className="border-t border-dashed border-[#ccc] pt-4 mt-4 text-[10px] text-[#888]">
-                        <div className="flex justify-between mb-2">
-                          <span className="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Fecha</span>
+                      {/* Meta: Pedido & Fecha */}
+                      <div className="text-[11px] space-y-1 pb-3 border-b border-dashed border-[#ccc]">
+                        <div className="flex justify-between">
+                          <span className="text-[#777]">PEDIDO:</span>
+                          <span className="font-bold text-[#1a1a1a]">{orderCode}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#777]">FECHA:</span>
                           <span>{formatDate(order.createdAt || new Date().toISOString())}</span>
                         </div>
-                        <div className="flex justify-between items-center mt-3">
-                          <span className="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Clave de pedido</span>
-                          <span className="font-bold bg-[#f3ece2] text-[#4a3933] px-2 py-1 rounded">{trackingToken}</span>
+                        <div className="flex justify-between">
+                          <span className="text-[#777]">ESTADO:</span>
+                          <span className="font-bold text-[#b58129]">{isPaymentRequired ? 'POR ABONAR (50% O 100%)' : 'CONFIRMADO'}</span>
+                        </div>
+                      </div>
+
+                      {/* DATOS DEL CLIENTE */}
+                      {snapshot?.customer && (
+                        <div className="text-[11px] space-y-1 pb-3 border-b border-dashed border-[#ccc]">
+                          <div className="text-[10px] uppercase font-bold text-[#777] tracking-wider mb-1">
+                            DATOS DEL CLIENTE
+                          </div>
+                          {snapshot.customer.name && (
+                            <div className="flex justify-between">
+                              <span className="text-[#777]">Cliente:</span>
+                              <span className="font-bold text-right max-w-[170px] truncate">{snapshot.customer.name}</span>
+                            </div>
+                          )}
+                          {snapshot.customer.phone && (
+                            <div className="flex justify-between">
+                              <span className="text-[#777]">Tel/WSP:</span>
+                              <span>{snapshot.customer.phone}</span>
+                            </div>
+                          )}
+                          {snapshot.customer.email && (
+                            <div className="flex justify-between">
+                              <span className="text-[#777]">Email:</span>
+                              <span className="text-right max-w-[170px] truncate">{snapshot.customer.email}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ENTREGA Y DESTINO */}
+                      {snapshot?.delivery && (
+                        <div className="text-[11px] space-y-1 pb-3 border-b border-dashed border-[#ccc]">
+                          <div className="text-[10px] uppercase font-bold text-[#777] tracking-wider mb-1">
+                            ENTREGA Y DESTINO
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[#777]">Modalidad:</span>
+                            <span className="font-bold text-right">
+                              {String(snapshot.delivery.type) === '0' || snapshot.delivery.type === 'Delivery' ? 'Delivery Huancayo' :
+                               String(snapshot.delivery.type) === '1' || snapshot.delivery.type === 'MeetingPoint' ? 'Punto de Encuentro' :
+                               'Envío Nacional (Olva/Shalom)'}
+                            </span>
+                          </div>
+                          {snapshot.delivery.zoneName && (
+                            <div className="flex justify-between">
+                              <span className="text-[#777]">Zona:</span>
+                              <span className="text-right">{snapshot.delivery.zoneName}</span>
+                            </div>
+                          )}
+                          {snapshot.delivery.meetingPointName && (
+                            <div className="flex justify-between">
+                              <span className="text-[#777]">Punto:</span>
+                              <span className="text-right">{snapshot.delivery.meetingPointName}</span>
+                            </div>
+                          )}
+                          {snapshot.delivery.address && (
+                            <div className="flex justify-between items-start">
+                              <span className="text-[#777] shrink-0">Dirección:</span>
+                              <span className="text-right pl-2 leading-tight">{snapshot.delivery.address}</span>
+                            </div>
+                          )}
+                          {(snapshot.delivery.district || snapshot.delivery.province || snapshot.delivery.department) && (
+                            <div className="flex justify-between items-start">
+                              <span className="text-[#777] shrink-0">Destino:</span>
+                              <span className="text-right pl-2 leading-tight">
+                                {[snapshot.delivery.district, snapshot.delivery.province, snapshot.delivery.department].filter(Boolean).join(', ')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* DETALLE DE PRODUCTOS */}
+                      <div className="pb-3 border-b border-dashed border-[#ccc]">
+                        <div className="flex justify-between text-[10px] uppercase font-bold text-[#777] tracking-wider mb-2">
+                          <span>DETALLE ARTESANAL</span>
+                          <span>IMPORTE</span>
+                        </div>
+
+                        {snapshot?.items && snapshot.items.length > 0 ? (
+                          <div className="space-y-3">
+                            {snapshot.items.map((item, idx) => (
+                              <div key={idx} className="text-[11px] leading-tight space-y-1">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-bold text-[#1a1a1a] pr-2">
+                                    {item.quantity}x {item.name}
+                                  </span>
+                                  <span className="font-bold shrink-0 text-right">
+                                    {formatCurrency(item.price * item.quantity)}
+                                  </span>
+                                </div>
+                                
+                                {/* Especificaciones de personalización */}
+                                <div className="text-[10px] text-[#555] space-y-0.5 pl-2 border-l border-stone-300">
+                                  {item.selectedPrimaryColor && <div>• Base: {item.selectedPrimaryColor}</div>}
+                                  {item.selectedSecondaryColor && <div>• Secundario: {item.selectedSecondaryColor}</div>}
+                                  {item.selectedFlowerType && <div>• Flor: {item.selectedFlowerType}</div>}
+                                  {item.selectedFlowerColor && <div>• Color flor: {item.selectedFlowerColor}</div>}
+                                  {item.hasLights && <div>• Luces LED incluidas ✨</div>}
+                                  {item.hasButterfly && <div>• Mariposa decorativa 🦋</div>}
+                                  {(item.hasPhraseCard || item.phraseText) && (
+                                    <div className="italic text-[#4a3933] bg-[#f8f5ee] p-1.5 rounded mt-1">
+                                      💌 “{item.phraseText}” {item.phraseFont ? `(${item.phraseFont})` : ''}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex justify-between text-[11px]">
+                            <span>1x Detalle seleccionado</span>
+                            <span>{formatCurrency(order.subtotal || (order as any).Subtotal || 0)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* TOTALES */}
+                      <div className="space-y-1.5 text-[11px] pb-3 border-b border-dashed border-[#ccc]">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span>{formatCurrency(order.subtotal || (order as any).Subtotal || 0)}</span>
+                        </div>
+
+                        {((order.deliveryCost !== null && order.deliveryCost !== undefined) || ((order as any).DeliveryCost !== null && (order as any).DeliveryCost !== undefined)) && (
+                          <div className="flex justify-between">
+                            <span>Costo de Envío</span>
+                            <span>{formatCurrency(order.deliveryCost ?? (order as any).DeliveryCost ?? 0)}</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between font-bold text-sm text-[#b85b6b] pt-1">
+                          <span>TOTAL A PAGAR</span>
+                          <span>{formatCurrency(order.total || (order as any).Total || 0)}</span>
+                        </div>
+                      </div>
+
+                      {/* CLAVE Y CÓDIGO */}
+                      <div className="text-[10px] text-[#777] space-y-1 pt-1">
+                        <div className="flex justify-between items-center">
+                          <span>CLAVE DE RASTREO:</span>
+                          <span className="font-bold bg-[#f3ece2] text-[#4a3933] px-1.5 py-0.5 rounded tracking-wider">{trackingToken}</span>
                         </div>
                       </div>
 
                       {/* Simulated Barcode */}
-                      <div className="mt-6 mb-2 flex justify-center opacity-70">
-                        <div className="flex gap-[2px] h-10 items-end">
-                          {Array.from({ length: 30 }).map((_, i) => (
-                            <div key={i} className="bg-black" style={{ width: Math.random() > 0.5 ? '2px' : '3px', height: Math.random() > 0.3 ? '100%' : '70%' }}></div>
+                      <div className="pt-3 flex flex-col items-center opacity-85">
+                        <div className="flex gap-[2px] h-8 items-end">
+                          {Array.from({ length: 32 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              className="bg-black" 
+                              style={{ 
+                                width: i % 4 === 0 ? '3px' : i % 3 === 0 ? '1.5px' : '2px', 
+                                height: i % 2 === 0 ? '100%' : '70%' 
+                              }} 
+                            />
                           ))}
                         </div>
+                        <div className="text-center text-[9px] tracking-[0.3em] text-[#555] font-bold uppercase mt-1">
+                          {orderCode}
+                        </div>
+                        <div className="text-[8px] text-[#999] uppercase tracking-wider text-center mt-2">
+                          *** GRACIAS POR TU PREFERENCIA ***
+                        </div>
                       </div>
-                      <div className="text-center text-[8px] tracking-[0.3em] text-[#888] font-bold uppercase">{orderCode}</div>
+
                     </div>
                   </div>
                   {/* Ticket jagged edge */}

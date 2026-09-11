@@ -19,6 +19,7 @@ export interface CartItem {
   hasPhraseCard?: boolean;
   phraseText?: string;
   phraseFont?: string;
+  phraseBackground?: string;
 }
 
 interface CartState {
@@ -42,7 +43,8 @@ const generateCartItemId = (item: CartItem): string => {
     item.hasButterfly ? 'butterfly' : '',
     item.hasPhraseCard ? 'card' : '',
     item.phraseText || '',
-    item.phraseFont || ''
+    item.phraseFont || '',
+    item.phraseBackground || ''
   ];
   return parts.join('|');
 };
