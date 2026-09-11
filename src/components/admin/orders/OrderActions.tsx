@@ -78,17 +78,10 @@ export function OrderActions({ order }: OrderActionsProps) {
       <h3 className="font-serif text-lg text-brown font-semibold mb-4">Acciones Operativas</h3>
       
       <div className="flex flex-wrap gap-3">
-        {order.status === OrderStatus.PaymentReported && (
-          <Button onClick={() => setIsConfirmPaymentModalOpen(true)} className="bg-gold text-white hover:bg-gold/90">
-            <DollarSign className="w-4 h-4 mr-2" />
-            Verificar Pago
-          </Button>
-        )}
-
         {order.status === OrderStatus.PaymentConfirmed && (
-          <Button onClick={handleStartPrep} disabled={isStartingPrep} className="bg-sage text-white hover:bg-sage/90">
+          <Button onClick={() => startPreparation()} disabled={isStartingPrep} className="bg-sage text-white hover:bg-sage/90">
             <Play className="w-4 h-4 mr-2" />
-            Iniciar Elaboración
+            {isStartingPrep ? 'Iniciando...' : 'Iniciar Elaboración'}
           </Button>
         )}
 
@@ -98,9 +91,9 @@ export function OrderActions({ order }: OrderActionsProps) {
               <Calendar className="w-4 h-4 mr-2" />
               Fijar Fecha Estimada
             </Button>
-            <Button onClick={() => confirm('¿Marcar pedido como listo?') && markReady()} disabled={isMarkingReady} className="bg-sage text-white hover:bg-sage/90">
+            <Button onClick={() => markReady()} disabled={isMarkingReady} className="bg-sage text-white hover:bg-sage/90">
               <CheckCircle2 className="w-4 h-4 mr-2" />
-              Marcar como Listo
+              {isMarkingReady ? 'Actualizando...' : 'Marcar como Listo'}
             </Button>
           </>
         )}
@@ -113,55 +106,32 @@ export function OrderActions({ order }: OrderActionsProps) {
         )}
 
         {order.status === OrderStatus.Ready && order.deliveryType !== DeliveryType.NationalShipping && (
-          <Button onClick={() => confirm('¿Marcar como Entregado?') && changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
+          <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Marcar Entregado
+            {isChangingStatus ? 'Actualizando...' : 'Marcar Entregado'}
           </Button>
         )}
 
         {order.status === OrderStatus.DeliveredToAgency && (
-          <Button onClick={() => confirm('¿Confirmar que el cliente recibió el pedido?') && changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
+          <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Marcar Recibido
+            {isChangingStatus ? 'Actualizando...' : 'Marcar Recibido por Cliente'}
           </Button>
         )}
-      </div>
 
-      {/* Modal Verificar Pago */}
-      <Modal isOpen={isConfirmPaymentModalOpen} onClose={() => setIsConfirmPaymentModalOpen(false)} title="Verificar Evidencia de Pago">
-        <div className="space-y-4">
-          <div className="bg-cream/30 p-4 rounded-lg">
-            <p className="text-sm text-brown font-medium mb-2">Información del pago reportado:</p>
-            {order.payment ? (
-                <ul className="text-sm text-sage space-y-1">
-                    <li>Método: {order.payment.paymentMethod}</li>
-                    <li>Monto reportado: {order.payment.amount}</li>
-                    <li>Fecha: {formatDate(order.payment.createdAt)}</li>
-                </ul>
-            ) : (
-                <p className="text-sm text-sage italic">Información de pago adjunta al pedido.</p>
-            )}
-            {order.referenceImageUrl && (
-                <div className="mt-4">
-                    <p className="text-sm text-brown mb-2">Evidencia (Opcional si subida):</p>
-                    <a href={order.referenceImageUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-gold text-sm hover:underline">
-                        Ver imagen de evidencia <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
-                </div>
-            )}
-          </div>
-          <div className="flex gap-3 justify-end pt-4">
-            <Button variant="outline" onClick={() => handleConfirmPayment(PaymentStatus.Rejected)} className="border-red-200 text-red-600 hover:bg-red-50">
-              <XCircle className="w-4 h-4 mr-2" />
-              Rechazar
-            </Button>
-            <Button onClick={() => handleConfirmPayment(PaymentStatus.Confirmed)} className="bg-sage text-white hover:bg-sage/90">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Confirmar Pago
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        {order.status === OrderStatus.WaitingPayment && (
+          <span className="text-xs text-[#887870] italic">
+            Esperando que el cliente adjunte el comprobante de pago.
+          </span>
+        )}
+
+        {order.status === OrderStatus.PaymentReported && (
+          <span className="text-xs font-semibold text-[#b58129] bg-[#fdf6e7] px-3 py-1.5 rounded-full border border-[#c8a96b]/30 flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Comprobante recibido: revísalo en la sección de Comprobante
+          </span>
+        )}
+      </div>
 
       {/* Modal Fecha Estimada */}
       <Modal isOpen={isEstimatedDateModalOpen} onClose={() => setIsEstimatedDateModalOpen(false)} title="Fecha Estimada de Disponibilidad">

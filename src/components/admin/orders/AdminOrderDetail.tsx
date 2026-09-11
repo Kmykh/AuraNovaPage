@@ -17,6 +17,10 @@ import { OrderNotifications } from './OrderNotifications';
 import { OrderTimeline } from './OrderTimeline';
 import { OrderActions } from './OrderActions';
 import { useConfirmPayment, useRejectPayment } from '@/hooks/use-admin-payments';
+import { ConfirmPaymentModal, RejectPaymentModal } from './PaymentReviewModals';
+import { WorkshopPreparationCard } from './WorkshopPreparationCard';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function AdminOrderDetail({ id }: { id: string }) {
   const { data: order, isLoading, error, refetch } = useAdminOrder(id);
@@ -25,24 +29,55 @@ export function AdminOrderDetail({ id }: { id: string }) {
   const rejectPaymentMutation = useRejectPayment(order?.payment?.id || '', id);
   const { mutate: changeStatus } = useChangeOrderStatus(id);
 
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = React.useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = React.useState(false);
+
   const handleConfirmPayment = () => {
-    if (confirm('¿Confirmar este pago?')) {
-      confirmPaymentMutation.mutate(undefined, {
-        onSuccess: () => {
-          changeStatus({ status: OrderStatus.PaymentConfirmed }, {
-            onSettled: () => refetch()
-          });
-        }
-      });
-    }
+    confirmPaymentMutation.mutate(undefined, {
+      onSuccess: () => {
+        changeStatus({ status: OrderStatus.PaymentConfirmed }, {
+          onSettled: () => {
+            setIsConfirmModalOpen(false);
+            toast.success('Pago confirmado exitosamente');
+            refetch();
+          }
+        });
+      },
+      onError: () => {
+        toast.error('Error al confirmar el pago');
+      }
+    });
   };
 
-  const handleRejectPayment = () => {
-    const reason = prompt('Motivo del rechazo:');
-    if (reason !== null) {
-      rejectPaymentMutation.mutate({ notes: reason || 'Comprobante inválido' }, {
-        onSuccess: () => refetch()
-      });
+  const handleRejectPayment = (reason: string) => {
+    rejectPaymentMutation.mutate({ notes: reason || 'Comprobante inválido' }, {
+      onSuccess: () => {
+        setIsRejectModalOpen(false);
+        toast.success('Comprobante rechazado');
+        refetch();
+      },
+      onError: () => {
+        toast.error('Error al rechazar el comprobante');
+      }
+    });
+  };
+
+  const handleDownloadEvidence = async (url: string) => {
+    try {
+      const fullUrl = getImageUrl(url);
+      const res = await fetch(fullUrl, { mode: 'cors' });
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Comprobante_${order?.orderCode || 'pago'}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      toast.success('Comprobante descargado');
+    } catch {
+      window.open(getImageUrl(url), '_blank');
     }
   };
 
@@ -217,76 +252,105 @@ export function AdminOrderDetail({ id }: { id: string }) {
 
               {/* Pago Evidencia */}
               {order.payment && order.payment.evidenceUrl && (
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#c8a96b]/30">
-                  <div className="flex items-center gap-2 mb-4 text-[#c8a96b] font-medium">
-                    <CreditCard size={18} /> Comprobante de Pago
+                <div className="bg-white p-6 rounded-[24px] shadow-sm border border-[#c8a96b]/35 relative overflow-hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-[#e8dcdc]">
+                    <div className="flex items-center gap-2 text-[#4a3933] font-serif font-bold text-lg">
+                      <CreditCard size={20} className="text-[#c8a96b]" />
+                      <span>Comprobante de Pago Reportado</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadEvidence(order.payment!.evidenceUrl!)}
+                      className="text-xs border-[#c8a96b]/40 text-[#4a3933] hover:bg-[#faf7f2] rounded-full flex items-center gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5 text-[#c8a96b]" />
+                      Descargar Comprobante
+                    </Button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     <div className="space-y-3">
-                      <div className="text-sm text-sage">
-                        <p><span className="font-medium text-brown">Método:</span> {order.payment.paymentMethod}</p>
-                        <p><span className="font-medium text-brown">Monto:</span> {formatCurrency(order.payment.amount)}</p>
-                        <p><span className="font-medium text-brown">Fecha reporte:</span> {formatDate(order.payment.createdAt)}</p>
-                        <p><span className="font-medium text-brown">Estado de Pago:</span> {order.payment.paymentStatus}</p>
+                      <div className="bg-[#faf7f2] p-4 rounded-xl border border-[#c8a96b]/20 space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-[#887870]">Método de Pago:</span>
+                          <strong className="text-[#4a3933]">{order.payment.paymentMethod}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#887870]">Monto Reportado:</span>
+                          <strong className="text-[#2d5736] font-serif text-sm">{formatCurrency(order.payment.amount)}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#887870]">Fecha y Hora:</span>
+                          <span>{formatDate(order.payment.createdAt)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#887870]">Estado Actual:</span>
+                          <span className="font-bold text-[#b58129]">{order.payment.paymentStatus}</span>
+                        </div>
                       </div>
                       
                       {(order.status === OrderStatus.PaymentReported || String(order.status) === 'PaymentReported') && order.payment.id && (
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <Button onClick={handleConfirmPayment} disabled={confirmPaymentMutation.isPending} className="bg-sage text-white hover:bg-sage/90 py-1.5 px-3 h-auto text-sm">
-                            <Check size={16} className="mr-1.5" />
-                            Confirmar Pago
+                        <div className="flex flex-wrap gap-2.5 pt-2">
+                          <Button 
+                            onClick={() => setIsConfirmModalOpen(true)} 
+                            disabled={confirmPaymentMutation.isPending} 
+                            className="bg-[#71a37c] text-white hover:bg-[#588562] py-2 px-4 h-auto text-xs font-bold uppercase tracking-wider rounded-full shadow-sm flex items-center gap-1.5"
+                          >
+                            <Check size={16} />
+                            Verificar y Confirmar Pago
                           </Button>
-                          <Button onClick={handleRejectPayment} disabled={rejectPaymentMutation.isPending} variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 py-1.5 px-3 h-auto text-sm">
-                            <X size={16} className="mr-1.5" />
-                            Rechazar
+                          <Button 
+                            onClick={() => setIsRejectModalOpen(true)} 
+                            disabled={rejectPaymentMutation.isPending} 
+                            variant="outline" 
+                            className="text-red-500 border-red-200 hover:bg-red-50 py-2 px-4 h-auto text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5"
+                          >
+                            <X size={16} />
+                            Rechazar Comprobante
                           </Button>
                         </div>
                       )}
                     </div>
                     <div>
-                      <a href={getImageUrl(order.payment.evidenceUrl)} target="_blank" rel="noopener noreferrer" className="block w-full max-w-[250px] rounded-lg overflow-hidden border border-sage/20 hover:opacity-90 transition-opacity ml-auto">
+                      <div 
+                        className="relative w-full max-w-[280px] h-56 rounded-2xl overflow-hidden border border-[#c8a96b]/30 bg-stone-50 shadow-xs ml-auto group cursor-pointer"
+                        onClick={() => setIsConfirmModalOpen(true)}
+                        title="Clic para ampliar y verificar"
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={getImageUrl(order.payment.evidenceUrl)} alt="Comprobante de pago" className="w-full h-auto object-cover" />
-                      </a>
+                        <img 
+                          src={getImageUrl(order.payment.evidenceUrl)} 
+                          alt="Comprobante de pago" 
+                          className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold backdrop-blur-xs">
+                          Clic para verificar comprobante
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Pedido Personalizado Info */}
-              {order.isCustomOrder && (
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-[#c8a96b]/30">
-                  <div className="flex items-center gap-2 mb-4 text-[#c8a96b] font-medium">
-                    <AlertCircle size={18} /> Detalles del Pedido Personalizado
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 text-sm text-sage">
-                      <p className="font-medium text-brown mb-1">Notas del cliente:</p>
-                      <div className="bg-[#faf7f2] p-3 rounded-lg whitespace-pre-wrap text-[#887870]">
-                        {order.customizationNotes || 'Sin notas.'}
-                      </div>
-                    </div>
-                    {order.referenceImageUrl && (
-                      <div className="space-y-2 text-sm text-sage">
-                        <p className="font-medium text-brown mb-1">Imagen de Referencia:</p>
-                        <a href={order.referenceImageUrl} target="_blank" rel="noopener noreferrer" className="block w-full max-w-[200px] rounded-lg overflow-hidden border border-[#d38b8b]/30 hover:opacity-90 transition-opacity">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={order.referenceImageUrl} alt="Referencia" className="w-full h-auto object-cover" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Ficha de Taller de Floristería y Personalización Completa */}
+              <WorkshopPreparationCard
+                items={order.items}
+                orderCode={order.orderCode}
+                customerName={order.customer?.name}
+                isCustomOrder={order.isCustomOrder}
+                customizationNotes={order.customizationNotes}
+                referenceImageUrl={order.referenceImageUrl}
+              />
 
-              {/* Items */}
+              {/* Items Table (Contabilidad y Desglose Financiero) */}
               <div className="bg-white rounded-[24px] shadow-sm border border-sage/10 overflow-hidden relative group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gold/5 to-transparent rounded-bl-full pointer-events-none" />
                 <div className="p-6 sm:p-8 pb-4 flex items-center gap-3 text-brown font-bold font-serif text-xl border-b border-sage/10">
                   <span className="w-8 h-8 rounded-full bg-cream/80 flex items-center justify-center">
                     <Package size={16} className="text-gold" />
                   </span>
-                  Productos del Pedido
+                  Resumen Financiero del Pedido
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm text-brown">
@@ -301,40 +365,12 @@ export function AdminOrderDetail({ id }: { id: string }) {
                     <tbody className="divide-y divide-sage/10">
                       {order.items.map((item, idx) => (
                         <tr key={idx} className="hover:bg-[#FAFAFA]">
-                          <td className="px-5 py-3 align-top">
-                            <div className="font-medium mb-1">{item.productName}</div>
-                            {(item.selectedPrimaryColor || item.selectedSecondaryColor || item.selectedFlowerType || item.selectedFlowerColor || item.hasLights || item.hasButterfly || item.hasPhraseCard) && (
-                              <div className="mt-3 flex flex-col gap-1.5 pl-3 border-l-[3px] border-[#c8a96b]/40">
-                                <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#c8a96b] mb-0.5 flex items-center gap-1.5">
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                  El cliente personalizó:
-                                </div>
-                                {item.selectedPrimaryColor && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Color Principal:</span> {item.selectedPrimaryColor}</div>}
-                                {item.selectedSecondaryColor && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Color Secundario:</span> {item.selectedSecondaryColor}</div>}
-                                {item.selectedFlowerType && <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Flor:</span> {item.selectedFlowerType} {item.selectedFlowerColor ? <span className="italic opacity-80">({item.selectedFlowerColor})</span> : ''}</div>}
-                                {(item.hasLights || item.hasButterfly) && (
-                                   <div className="text-[11px] text-sage"><span className="font-semibold text-brown mr-1">Extras:</span> {[item.hasLights && 'Luces', item.hasButterfly && 'Mariposa'].filter(Boolean).join(', ')}</div>
-                                )}
-                                {item.hasPhraseCard && (
-                                  <div className="mt-1.5 flex flex-col gap-1.5">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[11px] font-semibold text-brown flex items-center gap-1">
-                                        <svg className="w-3 h-3 text-[#c8a96b]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                        Tarjeta Dedicatoria
-                                      </span>
-                                      <span className="text-[9px] uppercase tracking-wider text-[#c8a96b] bg-[#c8a96b]/10 px-2 py-0.5 rounded-full font-medium">{item.phraseFont}</span>
-                                    </div>
-                                    <div className="text-sm italic font-serif text-brown/90 leading-relaxed bg-[#faf7f2]/50 px-3 py-2 rounded-lg border border-sage/5">
-                                      &quot;{item.phraseText}&quot;
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                          <td className="px-6 sm:px-8 py-4 align-middle">
+                            <div className="font-bold text-[#4a3933]">{item.productName}</div>
                           </td>
-                          <td className="px-5 py-3 font-medium align-top pt-4">{item.quantity}</td>
-                          <td className="px-5 py-3 text-right align-top pt-4">{formatCurrency(item.unitPrice)}</td>
-                          <td className="px-5 py-3 text-right font-medium align-top pt-4">{formatCurrency(item.subtotal)}</td>
+                          <td className="px-6 py-4 font-medium align-middle">{item.quantity}</td>
+                          <td className="px-6 py-4 text-right align-middle">{formatCurrency(item.unitPrice)}</td>
+                          <td className="px-6 sm:px-8 py-4 text-right font-bold text-[#4a3933] align-middle">{formatCurrency(item.subtotal)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -386,17 +422,30 @@ export function AdminOrderDetail({ id }: { id: string }) {
           />
           
           <OrderNotifications orderId={id} />
-
-          {/* Tarjeta Informativa de Tracking Opcional */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10">
-             <h3 className="font-serif text-lg text-brown font-semibold mb-2">Token de rastreo</h3>
-             <p className="text-xs text-sage mb-4">Uso exclusivo para el portal público. No compartir públicamente fuera de la comunicación con el cliente.</p>
-             <div className="p-3 bg-cream/30 rounded-lg text-xs font-mono text-brown break-all">
-               {order.trackingToken}
-             </div>
-          </div>
         </div>
       </div>
+
+      {/* Modales de Confirmación y Rechazo de Pago */}
+      <ConfirmPaymentModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirmPayment}
+        isPending={confirmPaymentMutation.isPending}
+        orderCode={order.orderCode}
+        orderTotal={order.total}
+        paymentAmount={order.payment?.amount}
+        paymentMethod={order.payment?.paymentMethod}
+        evidenceUrl={order.payment?.evidenceUrl}
+        customerName={order.customer?.name}
+      />
+
+      <RejectPaymentModal
+        isOpen={isRejectModalOpen}
+        onClose={() => setIsRejectModalOpen(false)}
+        onReject={handleRejectPayment}
+        isPending={rejectPaymentMutation.isPending}
+        orderCode={order.orderCode}
+      />
     </div>
   );
 }
