@@ -39,9 +39,12 @@ export function TikTokLiveWidget({
                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.24 8.24 0 0 0 4.76 1.52V6.78a4.83 4.83 0 0 1-1-.09z"/>
               </svg>
               <div>
-                <span className="text-white text-sm font-bold">TikTok LIVE</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white text-sm font-bold">TikTok LIVE</span>
+                  <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">¡EN VIVO!</span>
+                </div>
                 {tikTokUsername && (
-                  <span className="text-white/50 text-xs ml-1.5">@{tikTokUsername}</span>
+                  <span className="text-white/50 text-xs">@{tikTokUsername}</span>
                 )}
               </div>
             </div>
@@ -55,16 +58,28 @@ export function TikTokLiveWidget({
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center gap-4 px-4 py-2 bg-white/5 text-white/70 text-xs">
-            <div className="flex items-center gap-1.5">
-              <Eye size={13} />
-              <span className="font-bold text-white">{viewerCount.toLocaleString()}</span>
-              <span>viendo</span>
+          <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/5 text-white/70 text-xs">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <Eye size={13} />
+                <span className="font-bold text-white">{viewerCount.toLocaleString()}</span>
+                <span>viendo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Heart size={13} className="text-[#ff0050]" />
+                <span className="font-bold text-white">{totalLikes.toLocaleString()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Heart size={13} className="text-[#ff0050]" />
-              <span className="font-bold text-white">{totalLikes.toLocaleString()}</span>
-            </div>
+            
+            {/* Botón Visitar Directo */}
+            <a 
+              href={tikTokUsername ? `https://www.tiktok.com/@${tikTokUsername}/live` : 'https://www.tiktok.com'}
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-gradient-to-r from-[#ff0050] to-[#00f2ea] text-white font-bold text-[10px] px-3 py-1 rounded-full hover:scale-105 active:scale-95 transition-transform"
+            >
+              Ir a la App
+            </a>
           </div>
 
           {/* Lista de Comentarios */}
