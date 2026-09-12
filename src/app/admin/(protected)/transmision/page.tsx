@@ -138,14 +138,14 @@ export default function TransmisionPage() {
               <button
                 onClick={handleTikTokToggle}
                 disabled={!isConnected}
-                className={`relative w-16 h-9 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                className={`relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   isTikTokActive 
                     ? 'bg-gradient-to-r from-[#ff0050] to-[#00f2ea] focus:ring-[#ff0050]' 
-                    : 'bg-sage/20 focus:ring-sage'
+                    : 'bg-sage/30 focus:ring-sage'
                 } disabled:opacity-50`}
               >
-                <span className={`absolute top-1 w-7 h-7 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                  isTikTokActive ? 'translate-x-8' : 'translate-x-1'
+                <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                  isTikTokActive ? 'translate-x-6' : 'translate-x-0'
                 }`} />
               </button>
 
