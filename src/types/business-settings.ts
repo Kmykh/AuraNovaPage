@@ -14,10 +14,12 @@ export interface AdminBusinessSettingsResponse {
   whatsappNumber: string;
   yapeHolderName: string;
   yapeQrImageUrl: string | null;
+  tikTokUsername: string | null;
 }
 
 export interface UpdateBusinessSettingsRequest {
   businessName: string;
   whatsappNumber: string;
   yapeHolderName: string;
+  tikTokUsername: string | null;
 }

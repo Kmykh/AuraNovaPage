@@ -29,6 +29,7 @@ export function BusinessSettingsForm() {
   const [businessName, setBusinessName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [yapeHolderName, setYapeHolderName] = useState('');
+  const [tikTokUsername, setTikTokUsername] = useState('');
   const [textErrorMsg, setTextErrorMsg] = useState<string | null>(null);
   
   // File state
@@ -49,6 +50,7 @@ export function BusinessSettingsForm() {
     setBusinessName(settings.businessName || '');
     setWhatsappNumber(settings.whatsappNumber || '');
     setYapeHolderName(settings.yapeHolderName || '');
+    setTikTokUsername(settings.tikTokUsername || '');
     setInitialized(true);
   }
 
@@ -92,7 +94,7 @@ export function BusinessSettingsForm() {
     setTextErrorMsg(null);
 
     if (!businessName.trim() || !whatsappNumber.trim() || !yapeHolderName.trim()) {
-      setTextErrorMsg('Todos los campos de texto son obligatorios.');
+      setTextErrorMsg('Los campos principales son obligatorios.');
       return;
     }
 
@@ -107,7 +109,8 @@ export function BusinessSettingsForm() {
       {
         businessName: businessName.trim(),
         whatsappNumber: whatsappNumber.trim(),
-        yapeHolderName: yapeHolderName.trim()
+        yapeHolderName: yapeHolderName.trim(),
+        tikTokUsername: tikTokUsername.trim() || null
       },
       {
         onSuccess: () => {
@@ -228,7 +231,8 @@ export function BusinessSettingsForm() {
   const hasUnsavedTextChanges = 
     businessName !== settings.businessName || 
     whatsappNumber !== settings.whatsappNumber || 
-    yapeHolderName !== settings.yapeHolderName;
+    yapeHolderName !== settings.yapeHolderName ||
+    tikTokUsername !== (settings.tikTokUsername || '');
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -314,6 +318,25 @@ export function BusinessSettingsForm() {
                   <Search className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${yapeHolderName !== settings.yapeHolderName ? 'text-gold' : 'text-sage/60'}`} />
                 </div>
                 <p className="text-xs text-sage mt-2">El nombre del titular asociado a la cuenta receptora de pagos.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-brown mb-2 uppercase tracking-wide" htmlFor="tikTokUsername">
+                  Usuario de TikTok <span className="text-sage/60 font-normal normal-case">(Opcional)</span>
+                </label>
+                <div className="relative">
+                  <input 
+                    id="tikTokUsername"
+                    type="text"
+                    value={tikTokUsername}
+                    onChange={(e) => setTikTokUsername(e.target.value.replace(/^@/, ''))}
+                    disabled={isUpdating}
+                    className={`w-full px-4 py-3 pl-11 bg-white border rounded-xl outline-none transition-all ${tikTokUsername !== (settings.tikTokUsername || '') ? 'border-gold bg-gold/5 focus:ring-2 focus:ring-gold/50' : 'border-sage/30 focus:ring-2 focus:ring-sage/20'}`}
+                    placeholder="aura.nova40"
+                  />
+                  <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold transition-colors ${tikTokUsername !== (settings.tikTokUsername || '') ? 'text-gold' : 'text-sage/60'}`}>@</span>
+                </div>
+                <p className="text-xs text-sage mt-2">Este usuario se tomará automáticamente para las alertas de TikTok Live en tu web.</p>
               </div>
 
               <div className="pt-6 border-t border-sage/20">
@@ -478,6 +501,15 @@ export function BusinessSettingsForm() {
             <div>
               <p className="text-[10px] uppercase tracking-widest text-sage/70 font-bold mb-1">Titular Yape</p>
               <p className={`text-base ${yapeHolderName !== settings.yapeHolderName ? 'text-gold font-bold' : 'text-brown'}`}>{yapeHolderName}</p>
+            </div>
+
+            <div className="h-px bg-sage/10 w-full" />
+            
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-sage/70 font-bold mb-1">TikTok Live</p>
+              <p className={`text-base ${tikTokUsername !== (settings.tikTokUsername || '') ? 'text-gold font-bold' : 'text-brown'}`}>
+                {tikTokUsername ? `@${tikTokUsername}` : 'No configurado'}
+              </p>
             </div>
           </div>
 

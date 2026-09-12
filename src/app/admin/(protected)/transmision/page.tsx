@@ -40,7 +40,7 @@ export default function TransmisionPage() {
 
   // Toggle TikTok
   const handleTikTokToggle = useCallback(() => {
-    toggleTikTokLive(!isTikTokActive, '@AuraNova_Oficial');
+    toggleTikTokLive(!isTikTokActive, null);
   }, [isTikTokActive, toggleTikTokLive]);
 
   return (
@@ -177,8 +177,8 @@ export default function TransmisionPage() {
             <div className="mt-6 p-4 rounded-xl bg-[#FAFAFA] border border-sage/15">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-brown">Usuario Fijo</p>
-                  <p className="text-sm font-mono text-sage mt-1">@AuraNova_Oficial</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-brown">Usuario En Uso</p>
+                  <p className="text-sm font-mono text-sage mt-1">Configurado en Ajustes</p>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff0050]/10 to-[#00f2ea]/10 flex items-center justify-center">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-brown">
