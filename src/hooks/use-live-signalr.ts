@@ -98,6 +98,7 @@ export function useLiveAdmin() {
 
   const [isConnected, setIsConnected] = useState(false);
   const [liveText, setLiveText] = useState('');
+  const [isLiveTextActive, setIsLiveTextActive] = useState(false);
   const [isTikTokActive, setIsTikTokActive] = useState(false);
   const [tikTokUsername, setTikTokUsername] = useState('');
   const [viewerCount, setViewerCount] = useState(0);
@@ -119,6 +120,7 @@ export function useLiveAdmin() {
     // Escuchar el estado inicial (el admin también lo recibe)
     connection.on('ReceiveLiveState', (state: LiveState) => {
       setLiveText(state.currentLiveText || '');
+      setIsLiveTextActive(state.isLiveTextActive || false);
       setIsTikTokActive(state.isTikTokLiveActive);
       setTikTokUsername(state.tikTokUsername || '');
       setViewerCount(state.viewerCount);
@@ -162,6 +164,14 @@ export function useLiveAdmin() {
   }, []);
 
   // ── Acciones del Admin ──
+  const toggleLiveText = useCallback((active: boolean) => {
+    const conn = connectionRef.current;
+    if (conn && conn.state === HubConnectionState.Connected) {
+      setIsLiveTextActive(active);
+      conn.invoke('ToggleLiveText', active).catch(console.error);
+    }
+  }, []);
+
   const streamLiveText = useCallback((text: string) => {
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
@@ -181,6 +191,8 @@ export function useLiveAdmin() {
     error,
     liveText,
     setLiveText,
+    isLiveTextActive,
+    toggleLiveText,
     isTikTokActive,
     tikTokUsername,
     setTikTokUsername,

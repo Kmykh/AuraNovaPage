@@ -1,6 +1,7 @@
 /** Estado completo del directo, enviado al conectarse (hidratación inicial) */
 export interface LiveState {
   currentLiveText: string;
+  isLiveTextActive?: boolean;
   isTikTokLiveActive: boolean;
   tikTokUsername: string | null;
   viewerCount: number;

@@ -14,6 +14,8 @@ export default function TransmisionPage() {
     error,
     liveText,
     setLiveText,
+    isLiveTextActive,
+    toggleLiveText,
     isTikTokActive,
     tikTokUsername,
     setTikTokUsername,
@@ -31,14 +33,15 @@ export default function TransmisionPage() {
     streamLiveText(text);
   }, [setLiveText, streamLiveText]);
 
+  // Toggle Live Text
+  const handleLiveTextToggle = useCallback(() => {
+    toggleLiveText(!isLiveTextActive);
+  }, [isLiveTextActive, toggleLiveText]);
+
   // Toggle TikTok
   const handleTikTokToggle = useCallback(() => {
-    if (isTikTokActive) {
-      toggleTikTokLive(false, null);
-    } else {
-      toggleTikTokLive(true, tikTokUsername || '@AuraNova_Oficial');
-    }
-  }, [isTikTokActive, tikTokUsername, toggleTikTokLive]);
+    toggleTikTokLive(!isTikTokActive, '@AuraNova_Oficial');
+  }, [isTikTokActive, toggleTikTokLive]);
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -83,17 +86,30 @@ export default function TransmisionPage() {
           <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/5 to-transparent rounded-bl-full pointer-events-none" />
             
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
                 <Send size={16} className="text-red-500" />
               </div>
-              <h2 className="font-serif font-bold text-lg text-brown">Texto en Vivo</h2>
-              {liveText.trim() && (
-                <span className="ml-auto flex items-center gap-1.5 text-xs text-red-500 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  Emitiendo
+              <h2 className="font-serif font-bold text-lg text-brown mr-auto">Anuncio en Vivo</h2>
+              
+              <div className="flex items-center gap-4 bg-[#FAFAFA] border border-sage/15 px-3 py-1.5 rounded-full">
+                <span className={`text-xs font-bold ${isLiveTextActive ? 'text-red-500' : 'text-sage'}`}>
+                  {isLiveTextActive ? 'COMPUERTA ABIERTA' : 'CERRADO'}
                 </span>
-              )}
+                <button
+                  onClick={handleLiveTextToggle}
+                  disabled={!isConnected}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                    isLiveTextActive 
+                      ? 'bg-red-500 focus:ring-red-400' 
+                      : 'bg-sage/30 focus:ring-sage'
+                  } disabled:opacity-50`}
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                    isLiveTextActive ? 'translate-x-6' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
             </div>
 
             <textarea
@@ -101,13 +117,17 @@ export default function TransmisionPage() {
               onChange={handleTextChange}
               placeholder="Escribe aquí y los clientes lo verán en tiempo real..."
               rows={4}
-              className="w-full bg-[#FAFAFA] border border-sage/15 rounded-2xl px-5 py-4 text-brown font-serif text-base placeholder:text-sage/50 placeholder:italic focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold/30 transition-all resize-none"
-              disabled={!isConnected}
+              className={`w-full bg-[#FAFAFA] border rounded-2xl px-5 py-4 text-brown font-serif text-base placeholder:text-sage/50 placeholder:italic focus:outline-none focus:ring-2 transition-all resize-none ${
+                isLiveTextActive ? 'border-red-300 focus:ring-red-200 focus:border-red-300' : 'border-sage/15 focus:ring-gold/30 focus:border-gold/30 opacity-60'
+              }`}
+              disabled={!isConnected || !isLiveTextActive}
             />
 
             <p className="mt-3 text-xs text-sage/60">
               <Sparkles size={12} className="inline mr-1 text-gold" />
-              Cada letra que escribas se transmite instantáneamente a todos los visitantes de la web.
+              {isLiveTextActive 
+                ? "La compuerta está ABIERTA. Lo que escribas se transmitirá instantáneamente." 
+                : "Abre la compuerta para transmitir. Si está cerrada, el frontend no mandará nada."}
             </p>
 
             {/* Preview de cómo se ve */}
@@ -154,27 +174,18 @@ export default function TransmisionPage() {
               </span>
             </div>
 
-            {/* Campo para el username de TikTok */}
-            <div className="mt-5">
-              <label className="block text-xs font-bold uppercase tracking-widest text-brown mb-2">
-                Usuario de TikTok
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-sage font-mono">@</span>
-                <input
-                  type="text"
-                  value={tikTokUsername.replace(/^@/, '')}
-                  onChange={(e) => setTikTokUsername(e.target.value.replace(/^@/, ''))}
-                  placeholder="AuraNova_Oficial"
-                  className="flex-1 bg-[#FAFAFA] border border-sage/15 rounded-xl px-4 py-2.5 text-sm text-brown placeholder:text-sage/40 focus:outline-none focus:ring-2 focus:ring-gold/30 transition-all"
-                  disabled={isTikTokActive || !isConnected}
-                />
+            <div className="mt-6 p-4 rounded-xl bg-[#FAFAFA] border border-sage/15">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-brown">Usuario Fijo</p>
+                  <p className="text-sm font-mono text-sage mt-1">@AuraNova_Oficial</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff0050]/10 to-[#00f2ea]/10 flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-brown">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.24 8.24 0 0 0 4.76 1.52V6.78a4.83 4.83 0 0 1-1-.09z"/>
+                  </svg>
+                </div>
               </div>
-              {isTikTokActive && (
-                <p className="mt-2 text-xs text-sage/60">
-                  Desactiva el directo para cambiar el nombre de usuario.
-                </p>
-              )}
             </div>
           </div>
         </div>
