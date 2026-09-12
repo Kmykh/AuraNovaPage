@@ -150,13 +150,13 @@ export function TrackingSearchForm() {
       {/* Background Flowers */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[45%] -left-20 w-[300px] md:w-[450px] opacity-80 animate-float-gentle mix-blend-multiply">
-          <Image src={flo1} alt="" width={450} height={450} className="object-contain" />
+          <Image src={flo1} alt="" width={450} height={450} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute top-[30%] -right-16 w-[200px] md:w-[350px] opacity-90 animate-float-delayed mix-blend-multiply">
-          <Image src={flo5} alt="" width={350} height={350} className="object-contain rotate-12" />
+          <Image src={flo5} alt="" width={350} height={350} className="object-contain rotate-12"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-[10%] left-[15%] w-[120px] md:w-[180px] opacity-50 animate-spin-slow mix-blend-multiply">
-          <Image src={flo2} alt="" width={180} height={180} className="object-contain" />
+          <Image src={flo2} alt="" width={180} height={180} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
       </div>
 
@@ -189,7 +189,7 @@ export function TrackingSearchForm() {
 
               {/* Floral decoration on the card corner */}
               <div className="absolute -top-14 -right-14 w-[160px] h-[160px] pointer-events-none z-20 mix-blend-multiply opacity-90">
-                <Image src={flo1} alt="" width={160} height={160} className="object-contain rotate-[15deg]" />
+                <Image src={flo1} alt="" width={160} height={160} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-8 relative z-10">

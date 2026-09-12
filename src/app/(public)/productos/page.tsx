@@ -23,15 +23,15 @@ export default function ProductsPage() {
         
         {/* Floating Flowers */}
         <div className="absolute top-10 -left-10 w-[150px] md:w-[200px] opacity-20 animate-float-gentle">
-          <Image src={flo1} alt="" width={200} height={200} className="drop-shadow-sm" />
+          <Image src={flo1} alt="" width={200} height={200} className="drop-shadow-sm"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         
         <div className="absolute top-1/4 -right-12 w-[180px] md:w-[240px] opacity-15 animate-float-gentle-reverse" style={{ animationDelay: '1.5s' }}>
-          <Image src={flo4} alt="" width={240} height={240} className="drop-shadow-sm" />
+          <Image src={flo4} alt="" width={240} height={240} className="drop-shadow-sm"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         
         <div className="absolute bottom-1/4 left-10 w-[80px] md:w-[100px] opacity-30 animate-butterfly">
-          <Image src={flo} alt="" width={100} height={100} className="drop-shadow-sm" />
+          <Image src={flo} alt="" width={100} height={100} className="drop-shadow-sm"  style={{ width: 'auto', height: 'auto' }} />
         </div>
       </div>
 

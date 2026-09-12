@@ -83,10 +83,10 @@ export function TrackingStatusCard({ tracking }: TrackingStatusCardProps) {
       
       {/* Elementos Decorativos (Flores) */}
       <div className="absolute -top-10 -right-4 md:-right-10 w-16 h-16 opacity-80 pointer-events-none animate-pulse-slow">
-        <Image src={flo1} alt="flor decorativa" layout="fill" objectFit="contain" />
+        <Image src={flo1} alt="flor decorativa" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain" />
       </div>
       <div className="absolute top-1/2 -left-6 md:-left-12 w-12 h-12 opacity-60 pointer-events-none animate-float">
-        <Image src={flo2} alt="flor decorativa" layout="fill" objectFit="contain" />
+        <Image src={flo2} alt="flor decorativa" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain" />
       </div>
 
       {/* SECCIÓN HORIZONTAL ÚNICA BASADA EN EL TIMELINE DEL BACKEND */}

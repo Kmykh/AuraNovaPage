@@ -21,13 +21,13 @@ export default function CheckoutPage() {
       {/* Background Flowers */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[5%] -left-16 w-[200px] md:w-[300px] opacity-80 animate-float-gentle mix-blend-multiply">
-          <Image src={flo6} alt="" width={300} height={300} className="object-contain" />
+          <Image src={flo6} alt="" width={300} height={300} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-[20%] -right-10 w-[150px] md:w-[250px] opacity-90 animate-float-delayed mix-blend-multiply">
-          <Image src={flo1} alt="" width={250} height={250} className="object-contain rotate-[30deg]" />
+          <Image src={flo1} alt="" width={250} height={250} className="object-contain rotate-[30deg]"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-[2%] left-[10%] w-[100px] md:w-[150px] opacity-40 animate-spin-slow mix-blend-multiply">
-          <Image src={flo2} alt="" width={150} height={150} className="object-contain" />
+          <Image src={flo2} alt="" width={150} height={150} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
       </div>
 

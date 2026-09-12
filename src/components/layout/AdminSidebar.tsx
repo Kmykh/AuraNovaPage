@@ -16,7 +16,8 @@ import {
   Tags,
   X,
   Flower2,
-  Megaphone
+  Megaphone,
+  Radio
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
 import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
@@ -31,6 +32,7 @@ const mainNavItems = [
   { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
   { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
   { name: 'Pedidos Personalizados', href: '/admin/cotizaciones', icon: FileText },
+  { name: 'Transmisión', href: '/admin/transmision', icon: Radio },
 ];
 
 const businessNavItems = [
@@ -51,7 +53,14 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     setRole(AuthSession.getRole());
   }, []);
 
-  const visibleMainNavItems = React.useMemo(() => mainNavItems, []);
+  const visibleMainNavItems = React.useMemo(() => {
+    return mainNavItems.filter(item => {
+      if (item.name === 'Transmisión' && !role?.includes('SuperAdmin')) {
+        return false;
+      }
+      return true;
+    });
+  }, [role]);
 
   const visibleBusinessNavItems = React.useMemo(() => {
     return businessNavItems.filter(item => {
@@ -91,6 +100,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         {item.name === 'Campañas' && (
           <span className="ml-auto">
             <NewFeatureBadge size="sm" label="NEW" />
+          </span>
+        )}
+        {item.name === 'Transmisión' && (
+          <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            LIVE
           </span>
         )}
       </Link>

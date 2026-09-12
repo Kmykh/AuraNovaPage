@@ -38,7 +38,7 @@ export function CampaignProductsSection() {
 
       {/* Decorative Flower Ambient */}
       <div className="absolute top-0 right-0 w-[260px] opacity-20 pointer-events-none translate-x-1/4 -translate-y-1/4 animate-spin-slow mix-blend-multiply">
-        <Image src={flo1} alt="" width={260} height={260} />
+        <Image src={flo1} alt="" width={260} height={260}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">

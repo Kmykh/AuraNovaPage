@@ -35,10 +35,10 @@ export function CartClient() {
     return (
       <div className="relative w-full flex flex-col items-center justify-center py-32 overflow-hidden rounded-3xl bg-cream/30 border border-sage/10">
         <div className="absolute top-0 right-10 w-[200px] opacity-20 pointer-events-none animate-float-gentle mix-blend-multiply">
-          <Image src={flo1} alt="" width={200} height={200} />
+          <Image src={flo1} alt="" width={200} height={200}  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-0 left-10 w-[150px] opacity-30 pointer-events-none animate-float-delayed mix-blend-multiply">
-          <Image src={flo2} alt="" width={150} height={150} />
+          <Image src={flo2} alt="" width={150} height={150}  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="relative z-10 bg-white/70 backdrop-blur-xl p-12 rounded-[4rem] text-center max-w-lg shadow-[0_20px_50px_-15px_rgba(89,72,61,0.1)] border border-white flex flex-col items-center">
           <PackageOpen className="h-16 w-16 text-gold/60 mb-6" strokeWidth={1} />
@@ -284,7 +284,7 @@ export function CartClient() {
             
             {/* Floral decoration top right */}
             <div className="absolute -top-10 -right-10 w-[120px] h-[120px] pointer-events-none z-10 mix-blend-multiply opacity-75">
-              <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]" />
+              <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
             </div>
 
             <div className="mb-6 relative z-10">

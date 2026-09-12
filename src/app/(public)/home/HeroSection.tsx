@@ -28,20 +28,20 @@ export function HeroSection() {
         
         {/* Huge Pink Flowers (Left) */}
         <div className="absolute top-[10%] -left-10 md:-left-20 w-[300px] md:w-[500px] lg:w-[600px] opacity-0 animate-[fade-in-up_1s_ease-out_0.2s_forwards] mix-blend-multiply z-10">
-          <Image src={flo1} alt="" width={600} height={600} className="object-contain drop-shadow-sm" />
+          <Image priority src={flo1} alt="" width={600} height={600} className="object-contain drop-shadow-sm"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         
         {/* Huge Yellow Flower (Right) */}
         <div className="absolute top-[20%] -right-10 md:-right-20 w-[250px] md:w-[450px] lg:w-[550px] opacity-0 animate-[fade-in-up_1s_ease-out_0.4s_forwards] mix-blend-multiply z-10">
-          <Image src={flowera} alt="" width={550} height={550} className="object-contain drop-shadow-sm" />
+          <Image priority src={flowera} alt="" width={550} height={550} className="object-contain drop-shadow-sm"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         
         {/* Scattered small petals */}
         <div className="absolute top-32 left-[30%] w-12 opacity-0 animate-[fade-in-up_1s_ease-out_0.6s_forwards] mix-blend-multiply">
-          <Image src={flo} alt="" width={50} height={50} className="object-contain rotate-45" />
+          <Image src={flo} alt="" width={50} height={50} className="object-contain rotate-45"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-40 right-[25%] w-16 opacity-0 animate-[fade-in-up_1s_ease-out_0.8s_forwards] mix-blend-multiply">
-          <Image src={flo2} alt="" width={60} height={60} className="object-contain -rotate-12" />
+          <Image src={flo2} alt="" width={60} height={60} className="object-contain -rotate-12"  style={{ width: 'auto', height: 'auto' }} />
         </div>
       </div>
 
@@ -55,7 +55,7 @@ export function HeroSection() {
         <h1 className="font-serif text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] font-bold text-[#4a3933] mb-4 leading-none tracking-tighter opacity-0 animate-[fade-in-up_1s_ease-out_1.2s_forwards] relative">
           Aura Nova
           <span className="absolute -top-4 -right-8 w-12 h-12 hidden md:block">
-            <Image src={flo} alt="" width={50} height={50} className="object-contain" />
+            <Image src={flo} alt="" width={50} height={50} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
           </span>
         </h1>
         

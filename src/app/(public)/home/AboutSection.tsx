@@ -12,7 +12,7 @@ export function AboutSection() {
 
       {/* Decorative semi-transparent flower */}
       <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/4 w-[250px] md:w-[400px] opacity-40 pointer-events-none animate-spin-slow mix-blend-multiply">
-        <Image src={flo2} alt="" width={400} height={400} />
+        <Image src={flo2} alt="" width={400} height={400}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
@@ -55,7 +55,7 @@ export function AboutSection() {
 
               {/* Main flower image */}
               <div className="relative w-full aspect-square flex items-center justify-center">
-                <Image src={flo2} alt="Flor de cerezo acuarela" width={400} height={400} className="drop-shadow-xl animate-float-gentle" />
+                <Image src={flo2} alt="Flor de cerezo acuarela" width={400} height={400} className="drop-shadow-xl animate-float-gentle"  style={{ width: 'auto', height: 'auto' }} />
               </div>
             </div>
           </div>

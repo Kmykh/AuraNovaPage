@@ -47,10 +47,10 @@ export function HowItWorksSection() {
       
       {/* Decorative flowers */}
       <div className="absolute top-20 -right-10 w-[200px] opacity-40 pointer-events-none animate-float-gentle mix-blend-multiply">
-        <Image src={flo1} alt="" width={200} height={200} />
+        <Image src={flo1} alt="" width={200} height={200}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className="absolute bottom-10 left-0 w-[150px] opacity-40 pointer-events-none animate-float-gentle-reverse mix-blend-multiply -translate-x-1/4">
-        <Image src={flo4} alt="" width={150} height={150} />
+        <Image src={flo4} alt="" width={150} height={150}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-7xl px-6 sm:px-8 relative z-10">

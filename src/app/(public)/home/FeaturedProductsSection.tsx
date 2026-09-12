@@ -29,7 +29,7 @@ export function FeaturedProductsSection() {
       
       {/* Decorative Flower */}
       <div className="absolute top-0 right-0 w-[250px] opacity-40 pointer-events-none translate-x-1/4 -translate-y-1/4 animate-spin-slow mix-blend-multiply">
-        <Image src={flo1} alt="" width={250} height={250} />
+        <Image src={flo1} alt="" width={250} height={250}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">

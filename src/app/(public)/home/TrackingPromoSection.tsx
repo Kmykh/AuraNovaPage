@@ -26,11 +26,11 @@ export function TrackingPromoSection() {
 
             {/* Subtle supporting flowers */}
             <div className="absolute top-10 right-0 w-[120px] md:w-[160px] opacity-30 animate-float drop-shadow-xl z-10 mix-blend-multiply rotate-45">
-              <Image src={flo1} alt="" width={160} height={160} className="object-contain" />
+              <Image src={flo1} alt="" width={160} height={160} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
             </div>
 
             <div className="absolute bottom-10 left-0 w-[140px] md:w-[180px] animate-float-delayed drop-shadow-lg z-30 opacity-40 mix-blend-multiply">
-              <Image src={flo4} alt="" width={180} height={180} className="object-contain -rotate-12" />
+              <Image src={flo4} alt="" width={180} height={180} className="object-contain -rotate-12"  style={{ width: 'auto', height: 'auto' }} />
             </div>
           </div>
 

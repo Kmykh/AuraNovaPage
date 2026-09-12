@@ -21,13 +21,13 @@ export default function CartPage() {
       {/* Background Flowers */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[10%] -left-16 w-[250px] md:w-[350px] opacity-80 animate-float-gentle mix-blend-multiply">
-          <Image src={flo1} alt="" width={350} height={350} className="object-contain" />
+          <Image src={flo1} alt="" width={350} height={350} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute top-[40%] -right-16 w-[200px] md:w-[300px] opacity-90 animate-float-delayed mix-blend-multiply">
-          <Image src={flo5} alt="" width={300} height={300} className="object-contain rotate-12" />
+          <Image src={flo5} alt="" width={300} height={300} className="object-contain rotate-12"  style={{ width: 'auto', height: 'auto' }} />
         </div>
         <div className="absolute bottom-[5%] left-[20%] w-[120px] md:w-[150px] opacity-50 animate-spin-slow mix-blend-multiply">
-          <Image src={flo2} alt="" width={150} height={150} className="object-contain" />
+          <Image src={flo2} alt="" width={150} height={150} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>
       </div>
 

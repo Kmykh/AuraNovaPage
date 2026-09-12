@@ -80,7 +80,7 @@ export function PublicNavbar() {
                   {/* Active Floral Indicator */}
                   {isActive && (
                     <div className="absolute -top-4 -right-3 w-6 h-6 opacity-80 animate-fade-in-up z-0 pointer-events-none">
-                      <Image src={flo} alt="" layout="fill" objectFit="contain" className="animate-spin-slow" />
+                      <Image src={flo} alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain" className="animate-spin-slow" />
                     </div>
                   )}
                   
@@ -159,7 +159,7 @@ export function PublicNavbar() {
                   {link.name}
                   {isActive && (
                     <div className="ml-auto w-6 h-6 relative opacity-80">
-                      <Image src={flo} alt="" layout="fill" objectFit="contain" className="animate-spin-slow" />
+                      <Image src={flo} alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain" className="animate-spin-slow" />
                     </div>
                   )}
                 </Link>

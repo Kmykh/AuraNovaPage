@@ -10,11 +10,11 @@ export function FloralDetailsSection() {
     <section className="py-16 md:py-20 lg:py-24 relative">
       {/* Decorative floral elements */}
       <div className="absolute top-0 right-0 opacity-40 pointer-events-none translate-x-1/4 -translate-y-1/4 animate-spin-slow mix-blend-multiply">
-        <Image src={flo4} alt="" width={400} height={400} />
+        <Image src={flo4} alt="" width={400} height={400}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       
       <div className="absolute bottom-0 left-0 opacity-30 pointer-events-none -translate-x-1/4 translate-y-1/4 animate-float-gentle-reverse mix-blend-multiply">
-        <Image src={flo2} alt="" width={300} height={300} />
+        <Image src={flo2} alt="" width={300} height={300}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center relative z-10">

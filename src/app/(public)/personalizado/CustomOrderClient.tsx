@@ -281,7 +281,7 @@ export function CustomOrderClient() {
             
             {/* Adorno Floral en la Esquina */}
             <div className="absolute -top-10 -right-10 w-[130px] h-[130px] pointer-events-none z-10 mix-blend-multiply opacity-70">
-              <Image src={flo1} alt="" width={130} height={130} className="object-contain rotate-[15deg]" />
+              <Image src={flo1} alt="" width={130} height={130} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
             </div>
 
             <div className="flex items-center gap-4 mb-8 border-b border-[#e8dcdc] pb-5 relative z-10">
@@ -678,7 +678,7 @@ export function CustomOrderClient() {
                 
                 {/* Floral decoration top right */}
                 <div className="absolute -top-10 -right-10 w-[120px] h-[120px] pointer-events-none z-20 mix-blend-multiply opacity-80">
-                  <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]" />
+                  <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
                 </div>
 
                 <h2 className="font-serif text-3xl font-bold text-[#4a3933] mb-8 border-b border-[#e8dcdc] pb-6 flex items-center justify-between">

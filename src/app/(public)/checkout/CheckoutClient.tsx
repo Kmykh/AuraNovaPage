@@ -702,7 +702,7 @@ export function CheckoutClient() {
           
           {/* Floral decoration top right */}
           <div className="absolute -top-10 -right-10 w-[120px] h-[120px] pointer-events-none z-10 mix-blend-multiply opacity-75">
-            <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]" />
+            <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
           </div>
 
           {/* Ticket Header */}

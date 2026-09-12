@@ -11,10 +11,10 @@ export function ImportantInfoSection() {
 
       {/* Decorative flowers */}
       <div className="absolute -top-10 -left-10 w-[250px] md:w-[350px] opacity-30 pointer-events-none animate-float-gentle mix-blend-multiply">
-        <Image src={flo5} alt="" width={350} height={350} />
+        <Image src={flo5} alt="" width={350} height={350}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className="absolute -bottom-10 -right-10 w-[200px] md:w-[300px] opacity-40 pointer-events-none animate-float-delayed mix-blend-multiply">
-        <Image src={flo6} alt="" width={300} height={300} />
+        <Image src={flo6} alt="" width={300} height={300}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center">

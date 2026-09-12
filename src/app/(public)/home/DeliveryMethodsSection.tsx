@@ -54,11 +54,11 @@ export function DeliveryMethodsSection() {
       
       {/* Decorative Flowers */}
       <div className="absolute top-10 -left-16 w-[200px] opacity-40 pointer-events-none animate-float-gentle mix-blend-multiply">
-        <Image src={flo4} alt="" width={200} height={200} />
+        <Image src={flo4} alt="" width={200} height={200}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       
       <div className="absolute bottom-10 right-10 w-[80px] opacity-60 pointer-events-none animate-butterfly mix-blend-multiply">
-        <Image src={flo} alt="" width={80} height={80} />
+        <Image src={flo} alt="" width={80} height={80}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">

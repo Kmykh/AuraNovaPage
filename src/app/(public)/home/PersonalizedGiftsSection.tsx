@@ -14,13 +14,13 @@ export function PersonalizedGiftsSection() {
 
       {/* Decorative floating elements */}
       <div className="absolute top-0 right-0 w-32 md:w-48 opacity-[0.07] -rotate-6 pointer-events-none mix-blend-multiply">
-        <Image src={angeles} alt="" width={200} height={200} />
+        <Image src={angeles} alt="" width={200} height={200}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className="absolute bottom-0 left-0 w-28 md:w-40 opacity-[0.10] rotate-12 pointer-events-none mix-blend-multiply animate-float-gentle">
-        <Image src={flo5} alt="" width={160} height={160} />
+        <Image src={flo5} alt="" width={160} height={160}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className="absolute top-1/2 right-[8%] w-16 md:w-24 opacity-[0.06] pointer-events-none mix-blend-multiply -translate-y-1/2">
-        <Image src={flortallo} alt="" width={100} height={100} />
+        <Image src={flortallo} alt="" width={100} height={100}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="max-w-5xl mx-auto relative z-10">

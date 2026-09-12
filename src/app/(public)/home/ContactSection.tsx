@@ -28,11 +28,11 @@ export function ContactSection() {
       
       {/* Immersive Background Images */}
       <div className="absolute top-0 right-0 w-[400px] opacity-30 pointer-events-none translate-x-1/3 -translate-y-1/4 animate-spin-slow mix-blend-multiply">
-        <Image src={flo4} alt="" width={400} height={400} />
+        <Image src={flo4} alt="" width={400} height={400}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       
       <div className="absolute bottom-20 left-10 w-[200px] opacity-40 pointer-events-none animate-float-delayed mix-blend-multiply">
-        <Image src={flo} alt="" width={200} height={200} />
+        <Image src={flo} alt="" width={200} height={200}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10 text-center">

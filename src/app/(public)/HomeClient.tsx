@@ -31,7 +31,7 @@ function CloudDivider({ flip = false, slower = false }: { flip?: boolean; slower
   return (
     <div className={`w-full relative z-30 pointer-events-none h-28 md:h-44 overflow-hidden cloud-mask -my-14 md:-my-20 ${flip ? 'transform rotate-180' : ''}`}>
       <div className={`w-[120%] h-full ${slower ? 'animate-cloud-slow' : 'animate-cloud'} -ml-[10%]`}>
-        <Image src={nube2} alt="" className="w-full h-full object-cover object-center opacity-50 mix-blend-multiply" />
+        <Image src={nube2} alt="" priority className="w-full h-full object-cover object-center opacity-50 mix-blend-multiply" />
       </div>
     </div>
   );

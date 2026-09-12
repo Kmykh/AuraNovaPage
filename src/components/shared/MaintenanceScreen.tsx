@@ -10,13 +10,13 @@ export default function MaintenanceScreen() {
     <div className={styles.container}>
       {/* Elementos decorativos */}
       <div className={styles.decoTopRight}>
-        <Image src={flo1} alt="" width={300} height={300} className={styles.floatingImage} />
+        <Image src={flo1} alt="" width={300} height={300} className={styles.floatingImage}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className={styles.decoBottomLeft}>
-        <Image src={flo2} alt="" width={250} height={250} className={styles.floatingImageAlt} />
+        <Image src={flo2} alt="" width={250} height={250} className={styles.floatingImageAlt}  style={{ width: 'auto', height: 'auto' }} />
       </div>
       <div className={styles.decoCenter}>
-        <Image src={angeles} alt="" width={400} height={400} className={styles.subtleImage} />
+        <Image src={angeles} alt="" width={400} height={400} className={styles.subtleImage}  style={{ width: 'auto', height: 'auto' }} />
       </div>
 
       <div className={styles.content}>
