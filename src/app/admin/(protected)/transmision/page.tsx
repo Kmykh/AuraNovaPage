@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import Link from 'next/link';
 import { useLiveAdmin } from '@/hooks/use-live-signalr';
-import { AuthSession } from '@/lib/auth-storage';
 import { 
-  Radio, Wifi, WifiOff, ExternalLink, ShieldAlert, 
-  CheckCircle2, AlertCircle, Send, Sparkles, Settings
+  Radio, Wifi, WifiOff, Send, Tv, MonitorOff, Sparkles, 
+  ExternalLink, Eye, Flame, Settings
 } from 'lucide-react';
 import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
 
@@ -16,212 +15,234 @@ export default function TransmisionPage() {
     error,
     liveText,
     setLiveText,
-    isLiveActive,
+    isLiveTextActive,
+    toggleLiveText,
+    isTikTokActive,
     tikTokUsername,
     streamLiveText,
-    toggleLiveStream,
+    toggleTikTokLive,
   } = useLiveAdmin();
 
-  const [currentRole, setCurrentRole] = useState<string | null>(null);
-  const [isToggling, setIsToggling] = useState(false);
-  const [messageInput, setMessageInput] = useState('');
-  const [sentSuccess, setSentSuccess] = useState(false);
+  // Emitir cada pulsación de tecla al backend en tiempo real
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setLiveText(text);
+    streamLiveText(text);
+  }, [setLiveText, streamLiveText]);
 
-  useEffect(() => {
-    setCurrentRole(AuthSession.getRole());
-  }, []);
+  // Toggle Compuerta de Texto en Vivo
+  const handleLiveTextToggle = useCallback(() => {
+    toggleLiveText(!isLiveTextActive);
+  }, [isLiveTextActive, toggleLiveText]);
 
-  useEffect(() => {
-    if (liveText) {
-      setMessageInput(liveText);
-    }
-  }, [liveText]);
-
-  // Activar / Desactivar Live
-  const handleToggle = async () => {
-    setIsToggling(true);
-    try {
-      await toggleLiveStream(!isLiveActive);
-    } finally {
-      setIsToggling(false);
-    }
-  };
-
-  // Transmitir mensaje
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    streamLiveText(messageInput);
-    setSentSuccess(true);
-    setTimeout(() => setSentSuccess(false), 2500);
-  };
+  // Toggle TikTok Live
+  const handleTikTokToggle = useCallback(() => {
+    toggleTikTokLive(!isTikTokActive, null);
+  }, [isTikTokActive, toggleTikTokLive]);
 
   const username = tikTokUsername ? tikTokUsername.replace(/^@/, '') : 'aura.nova40';
 
   return (
-    <div className="space-y-8 max-w-3xl">
-      {/* ─── ENCABEZADO ─── */}
+    <div className="space-y-8 max-w-5xl">
+      {/* ─── HEADER ─── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ff0050] to-[#00f2ea] flex items-center justify-center shadow-lg shadow-[#ff0050]/20">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white">
-              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.52a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.24 8.24 0 0 0 4.76 1.52V6.78a4.83 4.83 0 0 1-1-.09z"/>
-            </svg>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-md">
+            <Radio size={20} className="text-white" />
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-brown flex items-center gap-2">
-              Aviso de TikTok LIVE
+              Consola de Transmisión
               <NewFeatureBadge label="LIVE" size="sm" />
             </h1>
-            <p className="text-sage text-sm">
-              Activa o desactiva el aviso de transmisión y envía anuncios a tus clientes
-            </p>
+            <p className="text-sage text-sm">Transmite mensajes y activa el directo de TikTok en la tienda</p>
           </div>
         </div>
 
-        {/* Estado de conexión */}
-        <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${
+        {/* Indicador de conexión */}
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border ${
           isConnected 
             ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-            : 'bg-amber-50 border-amber-200 text-amber-700'
+            : 'bg-red-50 border-red-200 text-red-600'
         }`}>
-          {isConnected ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{isConnected ? 'Tiempo real conectado' : 'Modo HTTP'}</span>
+          {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
+          {isConnected ? 'Hub conectado' : 'Desconectado'}
         </div>
       </div>
 
-      {/* ─── ALERTA DE ERROR / AUTORIZACIÓN ─── */}
+      {/* Error alert */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-800 space-y-2 animate-in fade-in duration-300">
-          <div className="flex items-center gap-2 font-bold text-sm text-red-700">
-            <AlertCircle size={18} className="text-red-600 shrink-0" />
-            <span>Atención: {error}</span>
-          </div>
-          <p className="text-xs text-red-600/90 leading-relaxed pl-6">
-            Rol actual: <strong className="font-mono bg-red-100 px-1.5 py-0.5 rounded">{currentRole || 'Desconocido'}</strong>.
-            En tu backend C#, agrega <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-red-200">[Authorize(Roles = &quot;Admin,SuperAdmin&quot;)]</code>.
-          </p>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl text-sm">
+          {error}
         </div>
       )}
 
-      {/* ─── CARD PRINCIPAL: ACTIVADOR DEL LIVE ─── */}
-      <div className="bg-white p-6 sm:p-8 rounded-[28px] shadow-sm border border-sage/15 space-y-6">
-        
-        {/* Interruptor maestro */}
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-          isLiveActive 
-            ? 'bg-red-500/5 border-red-500/30 shadow-sm' 
-            : 'bg-stone-50 border-stone-200/80'
-        }`}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                {isLiveActive ? (
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-                  </span>
-                ) : (
-                  <span className="h-3 w-3 rounded-full bg-stone-400" />
-                )}
-                <span className={`text-sm font-extrabold uppercase tracking-wider ${
-                  isLiveActive ? 'text-red-600' : 'text-stone-600'
-                }`}>
-                  {isLiveActive ? '🔴 EN VIVO EN TIKTOK (Aviso Visible)' : '⚪ APAGADO (Aviso Oculto)'}
-                </span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* ─── COLUMNA PRINCIPAL ─── */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Card: Texto en Vivo */}
+          <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/5 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <Send size={16} className="text-red-500" />
               </div>
-              <p className="text-xs text-sage leading-relaxed max-w-md">
-                {isLiveActive 
-                  ? 'Tus clientes están viendo el aviso "EN VIVO EN TIKTOK" en la tienda con el botón directo a tu transmisión.' 
-                  : 'El aviso está oculto. La tienda funciona normalmente.'}
-              </p>
+              <h2 className="font-serif font-bold text-lg text-brown mr-auto">Anuncio en Vivo</h2>
+              
+              <div className="flex items-center gap-4 bg-[#FAFAFA] border border-sage/15 px-3 py-1.5 rounded-full">
+                <span className={`text-xs font-bold ${isLiveTextActive ? 'text-red-500' : 'text-sage'}`}>
+                  {isLiveTextActive ? 'COMPUERTA ABIERTA' : 'CERRADO'}
+                </span>
+                <button
+                  onClick={handleLiveTextToggle}
+                  disabled={!isConnected}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                    isLiveTextActive 
+                      ? 'bg-red-500 focus:ring-red-400' 
+                      : 'bg-sage/30 focus:ring-sage'
+                  } disabled:opacity-50`}
+                  aria-label="Abrir o cerrar compuerta"
+                >
+                  <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                    isLiveTextActive ? 'translate-x-6' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
             </div>
 
-            {/* Switch Toggle */}
-            <button
-              onClick={handleToggle}
-              disabled={isToggling}
-              className={`relative inline-flex h-10 w-20 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
-                isLiveActive 
-                  ? 'bg-gradient-to-r from-[#ff0050] to-[#00f2ea] focus:ring-red-400' 
-                  : 'bg-stone-300 focus:ring-stone-400'
+            <textarea
+              value={liveText}
+              onChange={handleTextChange}
+              placeholder="Escribe aquí y los clientes lo verán en tiempo real..."
+              rows={4}
+              className={`w-full bg-[#FAFAFA] border rounded-2xl px-5 py-4 text-brown font-serif text-base placeholder:text-sage/50 placeholder:italic focus:outline-none focus:ring-2 transition-all resize-none ${
+                isLiveTextActive ? 'border-red-300 focus:ring-red-200 focus:border-red-300' : 'border-sage/15 focus:ring-gold/30 focus:border-gold/30 opacity-60'
               }`}
-              aria-label="Prender o apagar aviso de TikTok Live"
-            >
-              <span
-                className={`pointer-events-none inline-block h-9 w-9 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${
-                  isLiveActive ? 'translate-x-10' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
+              disabled={!isConnected || !isLiveTextActive}
+            />
 
-        {/* Cuenta vinculada */}
-        <div className="p-4 rounded-xl bg-[#FAFAFA] border border-sage/15 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-brown">Usuario de TikTok:</span>
-            <span className="font-mono text-[#ff0050] font-bold">@{username}</span>
-          </div>
-          <Link 
-            href="/admin/configuracion" 
-            className="inline-flex items-center gap-1 font-semibold text-[#c8a96b] hover:text-[#4a3933] transition-colors"
-          >
-            <Settings size={13} />
-            <span>Cambiar usuario</span>
-          </Link>
-        </div>
+            <p className="mt-3 text-xs text-sage/60">
+              <Sparkles size={12} className="inline mr-1 text-gold" />
+              {isLiveTextActive 
+                ? "La compuerta está ABIERTA. Lo que escribas se transmitirá instantáneamente." 
+                : "Abre la compuerta para transmitir. Si está cerrada, el frontend no mandará nada."}
+            </p>
 
-        {/* Formulario de Mensaje del Live */}
-        <form onSubmit={handleSendMessage} className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="messageInput" className="block text-xs font-bold uppercase tracking-wider text-brown">
-              Mensaje o Anuncio en Vivo
-            </label>
-            {sentSuccess && (
-              <span className="text-xs text-emerald-600 font-bold animate-in fade-in flex items-center gap-1">
-                <CheckCircle2 size={13} /> ¡Mensaje transmitido!
-              </span>
+            {/* Preview de cómo se ve el banner */}
+            {liveText.trim() && (
+              <div className="mt-5 p-4 rounded-xl bg-gradient-to-r from-[#4a3933] via-[#5c4a42] to-[#4a3933] text-[#faf7f2]">
+                <p className="text-[10px] uppercase tracking-widest text-[#c8a96b] font-bold mb-1">Vista previa del banner público</p>
+                <p className="text-sm font-serif italic">
+                  {liveText}
+                  <span className="inline-block w-[2px] h-3.5 bg-[#c8a96b] ml-0.5 animate-pulse align-text-bottom" />
+                </p>
+              </div>
             )}
           </div>
-          
-          <div className="flex gap-2">
-            <input
-              id="messageInput"
-              type="text"
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              placeholder="Ej: ¡Aprovecha 20% OFF en todos los ramos durante este live!"
-              className="flex-1 bg-[#FAFAFA] border border-sage/20 rounded-xl px-4 py-3 text-sm text-brown focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold"
-            />
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-brown text-white font-bold text-xs uppercase tracking-wider hover:bg-brown/90 transition-all shrink-0"
-            >
-              <Send size={14} />
-              <span>Transmitir</span>
-            </button>
+
+          {/* Card: Control TikTok */}
+          <div className="bg-white p-6 sm:p-8 rounded-[24px] shadow-sm border border-sage/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-pink-500/5 to-cyan-500/5 rounded-bl-full pointer-events-none" />
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff0050]/10 to-[#00f2ea]/10 flex items-center justify-center">
+                {isTikTokActive ? <Tv size={16} className="text-[#ff0050]" /> : <MonitorOff size={16} className="text-sage" />}
+              </div>
+              <h2 className="font-serif font-bold text-lg text-brown">TikTok Live</h2>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6">
+              {/* Toggle */}
+              <button
+                onClick={handleTikTokToggle}
+                disabled={!isConnected}
+                className={`relative w-14 h-8 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isTikTokActive 
+                    ? 'bg-gradient-to-r from-[#ff0050] to-[#00f2ea] focus:ring-[#ff0050]' 
+                    : 'bg-sage/30 focus:ring-sage'
+                } disabled:opacity-50`}
+                aria-label="Activar o desactivar TikTok Live"
+              >
+                <span className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                  isTikTokActive ? 'translate-x-6' : 'translate-x-0'
+                }`} />
+              </button>
+
+              <span className={`text-sm font-bold ${isTikTokActive ? 'text-[#ff0050]' : 'text-sage'}`}>
+                {isTikTokActive ? '🔴 EN DIRECTO' : 'Apagado'}
+              </span>
+            </div>
+
+            <div className="mt-6 p-4 rounded-xl bg-[#FAFAFA] border border-sage/15">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-brown">Usuario En Uso</p>
+                  <p className="text-sm font-mono text-sage mt-1">@{username}</p>
+                </div>
+                <Link 
+                  href="/admin/configuracion" 
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff0050]/10 to-[#00f2ea]/10 flex items-center justify-center hover:scale-105 transition-transform"
+                  title="Configurar en Ajustes"
+                >
+                  <Settings size={18} className="text-brown" />
+                </Link>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <p className="text-[11px] text-sage">
-            Este mensaje aparece dentro de la tarjeta flotante de TikTok LIVE para todos los clientes en la tienda.
-          </p>
-        </form>
+        {/* ─── COLUMNA LATERAL: Vista previa del aviso en la tienda ─── */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-[24px] shadow-sm border border-sage/10 space-y-4">
+            <h3 className="font-serif font-bold text-brown flex items-center gap-2 text-base">
+              <Eye size={16} className="text-gold" /> Aviso en Esquina Inferior
+            </h3>
+            
+            <p className="text-xs text-sage leading-relaxed">
+              Así es como tus clientes ven el aviso flotante de TikTok Live con ofertas en la esquina inferior derecha:
+            </p>
 
-        {/* Acceso rápido a la tienda */}
-        <div className="pt-4 border-t border-sage/10 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-sage">
-            <CheckCircle2 size={15} className="text-emerald-600" />
-            <span>Sincronización instantánea con la tienda.</span>
+            {/* Mockup visual del aviso */}
+            <div className="p-4 rounded-2xl bg-stone-100 border border-stone-200">
+              <div className="w-full bg-[#1a1412] text-white rounded-xl p-3.5 shadow-xl border border-[#ff0050]/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-black text-white">TikTok LIVE</span>
+                    <span className="bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">
+                      ¡EN VIVO!
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-stone-400">@{username}</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-amber-400 text-[11px] font-bold">
+                  <Flame size={12} className="text-[#ff0050]" />
+                  <span>¡Ofertas y descuentos en directo!</span>
+                </div>
+
+                <p className="text-[10px] text-stone-300 leading-tight">
+                  Estamos transmitiendo en vivo por TikTok. Únete para ver ofertas exclusivas.
+                </p>
+
+                <div className="w-full py-1.5 rounded-lg bg-gradient-to-r from-[#ff0050] to-[#00f2ea] text-white font-bold text-[10px] text-center">
+                  Ir al TikTok LIVE ↗
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Link
+                href="/"
+                target="_blank"
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#ff0050] hover:text-brown transition-colors"
+              >
+                <span>Ver tienda pública</span>
+                <ExternalLink size={12} />
+              </Link>
+            </div>
           </div>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff0050] hover:text-brown transition-colors"
-          >
-            <span>Ver cómo se ve en la tienda</span>
-            <ExternalLink size={13} />
-          </Link>
         </div>
 
       </div>
