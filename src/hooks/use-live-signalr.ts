@@ -29,20 +29,22 @@ export function useLivePublic() {
     connectionRef.current = connection;
 
     // ── Hidratación inicial ──
-    connection.on('ReceiveLiveState', (state: LiveState) => {
+    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+      if (!state) return;
       setLiveText(state.currentLiveText || '');
-      setIsLiveActive(state.isTikTokLiveActive);
+      setIsLiveActive(Boolean(state.isTikTokLiveActive));
       setTikTokUsername(state.tikTokUsername || null);
     });
 
     // ── Texto letra por letra ──
-    connection.on('ReceiveLiveTyping', (text: string) => {
-      setLiveText(text);
+    connection.on('ReceiveLiveTyping', (text?: string | null) => {
+      setLiveText(text || '');
     });
 
     // ── Live on/off ──
-    connection.on('ReceiveTikTokLiveState', (data: TikTokLiveStatePayload) => {
-      setIsLiveActive(data.isActive);
+    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
+      if (!data) return;
+      setIsLiveActive(Boolean(data.isActive));
       setTikTokUsername(data.tikTokUsername || null);
     });
 
@@ -99,14 +101,16 @@ export function useLiveAdmin() {
     connectionRef.current = connection;
 
     // Escuchar el estado inicial
-    connection.on('ReceiveLiveState', (state: LiveState) => {
+    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+      if (!state) return;
       setLiveText(state.currentLiveText || '');
-      setIsLiveActive(state.isTikTokLiveActive);
+      setIsLiveActive(Boolean(state.isTikTokLiveActive));
       setTikTokUsername(state.tikTokUsername || '');
     });
 
-    connection.on('ReceiveTikTokLiveState', (data: TikTokLiveStatePayload) => {
-      setIsLiveActive(data.isActive);
+    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
+      if (!data) return;
+      setIsLiveActive(Boolean(data.isActive));
       setTikTokUsername(data.tikTokUsername || '');
     });
 
