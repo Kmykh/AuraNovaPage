@@ -3,33 +3,27 @@
 import React from 'react';
 import { useLivePublic } from '@/hooks/use-live-signalr';
 import { LiveBanner } from './LiveBanner';
-import { TikTokLiveWidget } from './TikTokLiveWidget';
+import { LiveStatusWidget } from './LiveStatusWidget';
 
 /**
- * Wrapper global que se inyecta en el layout público.
- * Conecta al hub de forma anónima y renderiza condicionalmente
- * el banner de texto en vivo y el widget de TikTok.
+ * Wrapper global inyectado en el layout público.
+ * Muestra el banner de anuncio en vivo cuando hay texto activo,
+ * y la píldora informativa que avisa elegantemente si estamos en vivo o fuera del aire.
  */
 export function LiveOverlay() {
   const {
     liveText,
     isTikTokActive,
     tikTokUsername,
-    viewerCount,
-    totalLikes,
-    comments,
     isConnected,
   } = useLivePublic();
 
   return (
     <>
       <LiveBanner text={liveText} isConnected={isConnected} />
-      <TikTokLiveWidget
+      <LiveStatusWidget
         isActive={isTikTokActive}
         tikTokUsername={tikTokUsername}
-        viewerCount={viewerCount}
-        totalLikes={totalLikes}
-        comments={comments}
       />
     </>
   );
