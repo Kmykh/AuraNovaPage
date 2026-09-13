@@ -21,31 +21,62 @@ export function useLivePublic() {
 
   useEffect(() => {
     const connection = new HubConnectionBuilder()
-      .withUrl(HUB_URL) // Sin token → conexión anónima
-      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      .withUrl(HUB_URL)
+      .withAutomaticReconnect([0, 1500, 3000, 5000, 10000, 30000])
       .configureLogging(LogLevel.Warning)
       .build();
 
     connectionRef.current = connection;
 
-    // ── Hidratación inicial ──
-    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+    // ── Parseo robusto del estado completo inicial ──
+    const handleLiveState = (state?: Record<string, unknown> | null) => {
       if (!state) return;
-      setLiveText(state.currentLiveText || '');
-      setIsLiveActive(Boolean(state.isTikTokLiveActive));
-      setTikTokUsername(state.tikTokUsername || null);
-    });
+      const text = (state.currentLiveText ?? state.liveText ?? state.text ?? '') as string;
+      const active = Boolean(
+        state.isTikTokLiveActive ?? 
+        state.isLiveActive ?? 
+        state.isActive ?? 
+        state.isLive ?? 
+        false
+      );
+      const username = (state.tikTokUsername ?? state.username ?? null) as string | null;
 
-    // ── Texto letra por letra ──
+      setLiveText(text);
+      setIsLiveActive(active);
+      if (username) setTikTokUsername(username);
+    };
+
+    // ── Parseo robusto del toggle on/off ──
+    const handleTikTokLiveState = (data?: Record<string, unknown> | boolean | null) => {
+      if (data === null || data === undefined) return;
+      if (typeof data === 'boolean') {
+        setIsLiveActive(data);
+        return;
+      }
+      const active = Boolean(
+        data.isActive ?? 
+        data.isTikTokLiveActive ?? 
+        data.isLiveActive ?? 
+        data.isLive ?? 
+        false
+      );
+      const username = (data.tikTokUsername ?? data.username ?? null) as string | null;
+
+      setIsLiveActive(active);
+      if (username) setTikTokUsername(username);
+    };
+
+    // Escuchar múltiples nombres de evento para máxima compatibilidad
+    connection.on('ReceiveLiveState', handleLiveState);
+    connection.on('ReceiveTikTokLiveState', handleTikTokLiveState);
+    connection.on('ReceiveLiveStatus', handleTikTokLiveState);
+
+    // Texto en vivo letra por letra
     connection.on('ReceiveLiveTyping', (text?: string | null) => {
       setLiveText(text || '');
     });
-
-    // ── Live on/off ──
-    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
-      if (!data) return;
-      setIsLiveActive(Boolean(data.isActive));
-      setTikTokUsername(data.tikTokUsername || null);
+    connection.on('ReceiveLiveText', (text?: string | null) => {
+      setLiveText(text || '');
     });
 
     connection.onreconnected(() => setIsConnected(true));
@@ -55,10 +86,8 @@ export function useLivePublic() {
       .start()
       .then(() => setIsConnected(true))
       .catch((err) => {
-        if (err?.message?.includes('stopped during negotiation')) {
-          return;
-        }
-        console.warn('[LiveHub Public] Conexión fallida:', err);
+        if (err?.message?.includes('stopped during negotiation')) return;
+        console.warn('[LiveHub Public] Error conectando:', err);
       });
 
     return () => {
@@ -69,7 +98,7 @@ export function useLivePublic() {
   return {
     liveText,
     isLiveActive,
-    isTikTokActive: isLiveActive, // alias de compatibilidad
+    isTikTokActive: isLiveActive, // alias
     tikTokUsername,
     isConnected,
   };
@@ -94,24 +123,57 @@ export function useLiveAdmin() {
       .withUrl(HUB_URL, {
         accessTokenFactory: () => token,
       })
-      .withAutomaticReconnect([0, 2000, 5000, 10000])
+      .withAutomaticReconnect([0, 1500, 3000, 5000, 10000])
       .configureLogging(LogLevel.Information)
       .build();
 
     connectionRef.current = connection;
 
-    // Escuchar el estado inicial
-    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+    const handleLiveState = (state?: Record<string, unknown> | null) => {
       if (!state) return;
-      setLiveText(state.currentLiveText || '');
-      setIsLiveActive(Boolean(state.isTikTokLiveActive));
-      setTikTokUsername(state.tikTokUsername || '');
-    });
+      const text = (state.currentLiveText ?? state.liveText ?? state.text ?? '') as string;
+      const active = Boolean(
+        state.isTikTokLiveActive ?? 
+        state.isLiveActive ?? 
+        state.isActive ?? 
+        state.isLive ?? 
+        false
+      );
+      const username = (state.tikTokUsername ?? state.username ?? '') as string;
 
-    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
-      if (!data) return;
-      setIsLiveActive(Boolean(data.isActive));
-      setTikTokUsername(data.tikTokUsername || '');
+      setLiveText(text);
+      setIsLiveActive(active);
+      if (username) setTikTokUsername(username);
+    };
+
+    const handleTikTokLiveState = (data?: Record<string, unknown> | boolean | null) => {
+      if (data === null || data === undefined) return;
+      if (typeof data === 'boolean') {
+        setIsLiveActive(data);
+        return;
+      }
+      const active = Boolean(
+        data.isActive ?? 
+        data.isTikTokLiveActive ?? 
+        data.isLiveActive ?? 
+        data.isLive ?? 
+        false
+      );
+      const username = (data.tikTokUsername ?? data.username ?? '') as string;
+
+      setIsLiveActive(active);
+      if (username) setTikTokUsername(username);
+    };
+
+    connection.on('ReceiveLiveState', handleLiveState);
+    connection.on('ReceiveTikTokLiveState', handleTikTokLiveState);
+    connection.on('ReceiveLiveStatus', handleTikTokLiveState);
+
+    connection.on('ReceiveLiveTyping', (text?: string | null) => {
+      setLiveText(text || '');
+    });
+    connection.on('ReceiveLiveText', (text?: string | null) => {
+      setLiveText(text || '');
     });
 
     connection.onreconnected(() => setIsConnected(true));
@@ -124,11 +186,8 @@ export function useLiveAdmin() {
         setError(null);
       })
       .catch((err) => {
-        if (err?.message?.includes('stopped during negotiation')) {
-          return;
-        }
-        console.warn('[LiveHub Admin] Error al conectar:', err);
-        // No bloqueamos si falla la negociación inicial de WebSockets
+        if (err?.message?.includes('stopped during negotiation')) return;
+        console.warn('[LiveHub Admin] Conexión:', err);
         setIsConnected(false);
       });
 
@@ -137,54 +196,54 @@ export function useLiveAdmin() {
     };
   }, []);
 
-  // ── Acciones de activación / desactivación ──
+  // ── Encender / Apagar Live ──
   const toggleLiveStream = useCallback(async (active: boolean, username?: string | null) => {
     setError(null);
     setIsLiveActive(active);
 
-    let signalrSuccess = false;
-
-    // 1. Intentar vía SignalR Hub
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
       try {
+        // Enviar toggle tanto de TikTok como de Texto para abrir compuertas
         await conn.invoke('ToggleTikTokLive', active, username || null);
-        signalrSuccess = true;
+        await conn.invoke('ToggleLiveText', active).catch(() => {});
       } catch (err: unknown) {
-        console.warn('[LiveHub Admin] SignalR invoke error:', err);
-        const errStr = (err as Error)?.message || String(err);
-        if (errStr.includes('not authorized') || errStr.includes('403') || errStr.includes('Unauthorized')) {
-          setError('No estás autorizado en el Hub de SignalR. Asegúrate de permitir el rol Admin y SuperAdmin en el backend.');
+        console.warn('[LiveHub Admin] Hub invoke error:', err);
+        try {
+          await conn.invoke('ToggleLive', active, username || null);
+        } catch {
+          const errStr = (err as Error)?.message || String(err);
+          if (errStr.includes('not authorized') || errStr.includes('403') || errStr.includes('Unauthorized')) {
+            setError('Error de autorización: Tu rol debe estar permitido en el backend ([Authorize(Roles = "Admin,SuperAdmin")]).');
+          }
         }
       }
     }
 
-    // 2. Intentar vía HTTP Controller REST (LiveBroadcastController)
+    // Fallback a REST API
     try {
       await apiClient.post('/api/LiveBroadcast/toggle', { 
         isActive: active, 
         username: username || null 
       });
-      setError(null); // Si el controller REST respondió OK, limpiamos errores
-    } catch (apiErr: unknown) {
-      const errObj = apiErr as { status?: number; message?: string };
-      if (errObj?.status === 403) {
-        setError('No estás autorizado (Error 403). En tu LiveBroadcastController.cs, cambia [Authorize(Roles = "SuperAdmin")] a [Authorize(Roles = "Admin,SuperAdmin")] o [Authorize].');
-        setIsLiveActive(!active); // Revertir
-      } else if (errObj?.status === 401) {
-        setError('Tu sesión ha expirado o el token es inválido. Por favor inicia sesión de nuevo.');
-        setIsLiveActive(!active); // Revertir
-      } else if (!signalrSuccess && errObj?.status !== 404) {
-        // Solo avisar si ambos fallaron y no fue un simple 404 de ruta no implementada
-        console.warn('[LiveHub Admin] API endpoint error:', apiErr);
-      }
+    } catch {
+      try {
+        await apiClient.post('/api/admin/live/toggle', { isActive: active });
+      } catch {}
     }
   }, []);
 
+  // ── Emitir texto en tiempo real ──
   const streamLiveText = useCallback((text: string) => {
+    setLiveText(text);
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
-      conn.invoke('StreamLiveText', text).catch(console.error);
+      // Aseguramos que la compuerta de texto esté abierta en el backend
+      conn.invoke('ToggleLiveText', true)
+        .then(() => conn.invoke('StreamLiveText', text))
+        .catch(() => {
+          conn.invoke('StreamLiveText', text).catch(console.error);
+        });
     }
   }, []);
 
@@ -199,6 +258,6 @@ export function useLiveAdmin() {
     setTikTokUsername,
     streamLiveText,
     toggleLiveStream,
-    toggleTikTokLive: toggleLiveStream, // alias de compatibilidad
+    toggleTikTokLive: toggleLiveStream,
   };
 }
