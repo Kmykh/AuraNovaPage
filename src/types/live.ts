@@ -3,26 +3,14 @@ export interface LiveState {
   currentLiveText: string;
   isLiveTextActive?: boolean;
   isTikTokLiveActive: boolean;
-  tikTokUsername: string | null;
-  viewerCount: number;
-  totalLikes: number;
+  tikTokUsername?: string | null;
+  // Campos opcionales por compatibilidad con respuestas antiguas del backend
+  viewerCount?: number;
+  totalLikes?: number;
 }
 
-/** Estado on/off del TikTok Live */
+/** Estado on/off del directo */
 export interface TikTokLiveStatePayload {
   isActive: boolean;
-  tikTokUsername: string | null;
-}
-
-/** Estadísticas de TikTok en tiempo real */
-export interface TikTokStats {
-  viewerCount: number;
-  totalLikes: number;
-}
-
-/** Comentario de un espectador de TikTok */
-export interface TikTokComment {
-  username: string;
-  comment: string;
-  userAvatarUrl: string | null;
+  tikTokUsername?: string | null;
 }

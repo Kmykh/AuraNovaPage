@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { HubConnectionBuilder, HubConnection, LogLevel, HubConnectionState } from '@microsoft/signalr';
 import { AuthSession } from '@/lib/auth-storage';
-import type { LiveState, TikTokLiveStatePayload, TikTokStats, TikTokComment } from '@/types/live';
+import type { LiveState, TikTokLiveStatePayload } from '@/types/live';
 
 const HUB_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://auranova-backend.onrender.com') + '/hubs/live';
 
@@ -14,11 +14,8 @@ export function useLivePublic() {
   const connectionRef = useRef<HubConnection | null>(null);
 
   const [liveText, setLiveText] = useState('');
-  const [isTikTokActive, setIsTikTokActive] = useState(false);
+  const [isLiveActive, setIsLiveActive] = useState(false);
   const [tikTokUsername, setTikTokUsername] = useState<string | null>(null);
-  const [viewerCount, setViewerCount] = useState(0);
-  const [totalLikes, setTotalLikes] = useState(0);
-  const [comments, setComments] = useState<TikTokComment[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -33,10 +30,8 @@ export function useLivePublic() {
     // ── Hidratación inicial ──
     connection.on('ReceiveLiveState', (state: LiveState) => {
       setLiveText(state.currentLiveText || '');
-      setIsTikTokActive(state.isTikTokLiveActive);
-      setTikTokUsername(state.tikTokUsername);
-      setViewerCount(state.viewerCount);
-      setTotalLikes(state.totalLikes);
+      setIsLiveActive(state.isTikTokLiveActive);
+      setTikTokUsername(state.tikTokUsername || null);
     });
 
     // ── Texto letra por letra ──
@@ -44,21 +39,10 @@ export function useLivePublic() {
       setLiveText(text);
     });
 
-    // ── TikTok on/off ──
+    // ── Live on/off ──
     connection.on('ReceiveTikTokLiveState', (data: TikTokLiveStatePayload) => {
-      setIsTikTokActive(data.isActive);
-      setTikTokUsername(data.tikTokUsername);
-    });
-
-    // ── Estadísticas ──
-    connection.on('ReceiveTikTokStats', (stats: TikTokStats) => {
-      setViewerCount(stats.viewerCount);
-      setTotalLikes(stats.totalLikes);
-    });
-
-    // ── Comentarios (mantener últimos 50) ──
-    connection.on('ReceiveTikTokComment', (c: TikTokComment) => {
-      setComments(prev => [...prev.slice(-49), c]);
+      setIsLiveActive(data.isActive);
+      setTikTokUsername(data.tikTokUsername || null);
     });
 
     connection.onreconnected(() => setIsConnected(true));
@@ -81,11 +65,9 @@ export function useLivePublic() {
 
   return {
     liveText,
-    isTikTokActive,
+    isLiveActive,
+    isTikTokActive: isLiveActive, // alias de compatibilidad
     tikTokUsername,
-    viewerCount,
-    totalLikes,
-    comments,
     isConnected,
   };
 }
@@ -99,11 +81,8 @@ export function useLiveAdmin() {
   const [isConnected, setIsConnected] = useState(false);
   const [liveText, setLiveText] = useState('');
   const [isLiveTextActive, setIsLiveTextActive] = useState(false);
-  const [isTikTokActive, setIsTikTokActive] = useState(false);
+  const [isLiveActive, setIsLiveActive] = useState(false);
   const [tikTokUsername, setTikTokUsername] = useState('');
-  const [viewerCount, setViewerCount] = useState(0);
-  const [totalLikes, setTotalLikes] = useState(0);
-  const [comments, setComments] = useState<TikTokComment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,23 +100,12 @@ export function useLiveAdmin() {
     connection.on('ReceiveLiveState', (state: LiveState) => {
       setLiveText(state.currentLiveText || '');
       setIsLiveTextActive(state.isLiveTextActive || false);
-      setIsTikTokActive(state.isTikTokLiveActive);
+      setIsLiveActive(state.isTikTokLiveActive);
       setTikTokUsername(state.tikTokUsername || '');
-      setViewerCount(state.viewerCount);
-      setTotalLikes(state.totalLikes);
-    });
-
-    connection.on('ReceiveTikTokStats', (stats: TikTokStats) => {
-      setViewerCount(stats.viewerCount);
-      setTotalLikes(stats.totalLikes);
-    });
-
-    connection.on('ReceiveTikTokComment', (c: TikTokComment) => {
-      setComments(prev => [...prev.slice(-99), c]);
     });
 
     connection.on('ReceiveTikTokLiveState', (data: TikTokLiveStatePayload) => {
-      setIsTikTokActive(data.isActive);
+      setIsLiveActive(data.isActive);
       setTikTokUsername(data.tikTokUsername || '');
     });
 
@@ -179,10 +147,11 @@ export function useLiveAdmin() {
     }
   }, []);
 
-  const toggleTikTokLive = useCallback((active: boolean, username: string | null) => {
+  const toggleLiveStream = useCallback((active: boolean, username?: string | null) => {
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
-      conn.invoke('ToggleTikTokLive', active, username).catch(console.error);
+      setIsLiveActive(active);
+      conn.invoke('ToggleTikTokLive', active, username || null).catch(console.error);
     }
   }, []);
 
@@ -193,13 +162,12 @@ export function useLiveAdmin() {
     setLiveText,
     isLiveTextActive,
     toggleLiveText,
-    isTikTokActive,
+    isLiveActive,
+    isTikTokActive: isLiveActive, // alias de compatibilidad
     tikTokUsername,
     setTikTokUsername,
-    viewerCount,
-    totalLikes,
-    comments,
     streamLiveText,
-    toggleTikTokLive,
+    toggleLiveStream,
+    toggleTikTokLive: toggleLiveStream, // alias de compatibilidad
   };
 }
