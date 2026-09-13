@@ -3,9 +3,33 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { HubConnectionBuilder, HubConnection, LogLevel, HubConnectionState } from '@microsoft/signalr';
 import { AuthSession } from '@/lib/auth-storage';
-import type { LiveState, TikTokLiveStatePayload } from '@/types/live';
 
 const HUB_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://auranova-backend.onrender.com') + '/hubs/live';
+
+// Helpers para parsear tanto camelCase como PascalCase de C# ASP.NET Core
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractBoolean(obj: any, ...keys: string[]): boolean {
+  if (obj === null || obj === undefined) return false;
+  if (typeof obj === 'boolean') return obj;
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) {
+      return Boolean(obj[key]);
+    }
+  }
+  return false;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractString(obj: any, ...keys: string[]): string | null {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj === 'string') return obj;
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) {
+      return String(obj[key]);
+    }
+  }
+  return null;
+}
 
 // ────────────────────────────────────────────────────
 //  Hook para CLIENTES PÚBLICOS (oyentes anónimos)
@@ -14,7 +38,7 @@ export function useLivePublic() {
   const connectionRef = useRef<HubConnection | null>(null);
 
   const [liveText, setLiveText] = useState('');
-  const [isLiveActive, setIsLiveActive] = useState(false);
+  const [isTikTokActive, setIsTikTokActive] = useState(false);
   const [tikTokUsername, setTikTokUsername] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -27,25 +51,37 @@ export function useLivePublic() {
 
     connectionRef.current = connection;
 
-    // ── Hidratación inicial ──
-    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+    // ── Hidratación inicial (acepta camelCase y PascalCase de C#) ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection.on('ReceiveLiveState', (state: any) => {
       if (!state) return;
-      setLiveText(state.currentLiveText || '');
-      setIsLiveActive(Boolean(state.isTikTokLiveActive));
-      setTikTokUsername(state.tikTokUsername || null);
+      const text = extractString(state, 'currentLiveText', 'CurrentLiveText', 'liveText', 'LiveText', 'text', 'Text') || '';
+      const active = extractBoolean(state, 'isTikTokLiveActive', 'IsTikTokLiveActive', 'isActive', 'IsActive', 'isLiveActive', 'IsLiveActive', 'isLive', 'IsLive');
+      const user = extractString(state, 'tikTokUsername', 'TikTokUsername', 'username', 'Username');
+
+      setLiveText(text);
+      setIsTikTokActive(active);
+      if (user) setTikTokUsername(user);
     });
 
-    // ── Texto en tiempo real letra por letra ──
+    // ── Texto en vivo letra por letra ──
     connection.on('ReceiveLiveTyping', (text?: string | null) => {
       setLiveText(text || '');
     });
 
-    // ── TikTok on/off ──
-    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
-      if (!data) return;
-      setIsLiveActive(Boolean(data.isActive));
-      setTikTokUsername(data.tikTokUsername || null);
-    });
+    // ── TikTok on/off (acepta camelCase, PascalCase y booleano directo) ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleTikTokLive = (data: any) => {
+      if (data === null || data === undefined) return;
+      const active = extractBoolean(data, 'isActive', 'IsActive', 'isTikTokLiveActive', 'IsTikTokLiveActive', 'isLiveActive', 'IsLiveActive', 'isLive', 'IsLive');
+      const user = extractString(data, 'tikTokUsername', 'TikTokUsername', 'username', 'Username');
+
+      setIsTikTokActive(active);
+      if (user) setTikTokUsername(user);
+    };
+
+    connection.on('ReceiveTikTokLiveState', handleTikTokLive);
+    connection.on('ReceiveLiveStatus', handleTikTokLive);
 
     connection.onreconnected(() => setIsConnected(true));
     connection.onclose(() => setIsConnected(false));
@@ -55,7 +91,7 @@ export function useLivePublic() {
       .then(() => setIsConnected(true))
       .catch((err) => {
         if (err?.message?.includes('stopped during negotiation')) return;
-        console.warn('[LiveHub Public] Conexión fallida:', err);
+        console.warn('[LiveHub Public] Conexión:', err);
       });
 
     return () => {
@@ -65,8 +101,8 @@ export function useLivePublic() {
 
   return {
     liveText,
-    isLiveActive,
-    isTikTokActive: isLiveActive, // alias
+    isTikTokActive,
+    isLiveActive: isTikTokActive, // alias
     tikTokUsername,
     isConnected,
   };
@@ -96,20 +132,33 @@ export function useLiveAdmin() {
 
     connectionRef.current = connection;
 
-    // Escuchar el estado inicial
-    connection.on('ReceiveLiveState', (state?: LiveState | null) => {
+    // Escuchar el estado inicial (acepta camelCase y PascalCase)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    connection.on('ReceiveLiveState', (state: any) => {
       if (!state) return;
-      setLiveText(state.currentLiveText || '');
-      setIsLiveTextActive(Boolean(state.isLiveTextActive));
-      setIsTikTokActive(Boolean(state.isTikTokLiveActive));
-      setTikTokUsername(state.tikTokUsername || '');
+      const text = extractString(state, 'currentLiveText', 'CurrentLiveText', 'liveText', 'LiveText') || '';
+      const textActive = extractBoolean(state, 'isLiveTextActive', 'IsLiveTextActive');
+      const tikTokActive = extractBoolean(state, 'isTikTokLiveActive', 'IsTikTokLiveActive', 'isActive', 'IsActive');
+      const user = extractString(state, 'tikTokUsername', 'TikTokUsername') || '';
+
+      setLiveText(text);
+      setIsLiveTextActive(textActive);
+      setIsTikTokActive(tikTokActive);
+      if (user) setTikTokUsername(user);
     });
 
-    connection.on('ReceiveTikTokLiveState', (data?: TikTokLiveStatePayload | null) => {
-      if (!data) return;
-      setIsTikTokActive(Boolean(data.isActive));
-      setTikTokUsername(data.tikTokUsername || '');
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleTikTokLive = (data: any) => {
+      if (data === null || data === undefined) return;
+      const active = extractBoolean(data, 'isActive', 'IsActive', 'isTikTokLiveActive', 'IsTikTokLiveActive');
+      const user = extractString(data, 'tikTokUsername', 'TikTokUsername');
+
+      setIsTikTokActive(active);
+      if (user) setTikTokUsername(user);
+    };
+
+    connection.on('ReceiveTikTokLiveState', handleTikTokLive);
+    connection.on('ReceiveLiveStatus', handleTikTokLive);
 
     connection.onreconnected(() => setIsConnected(true));
     connection.onclose(() => setIsConnected(false));
@@ -123,7 +172,7 @@ export function useLiveAdmin() {
       .catch((err) => {
         if (err?.message?.includes('stopped during negotiation')) return;
         console.error('[LiveHub Admin] Error:', err);
-        setError('No se pudo conectar al Hub de transmisión. Verifica tu sesión.');
+        setError('No se pudo conectar al Hub de transmisión.');
       });
 
     return () => {
@@ -133,34 +182,28 @@ export function useLiveAdmin() {
 
   // ── Acciones del Admin ──
   const toggleLiveText = useCallback((active: boolean) => {
+    setIsLiveTextActive(active);
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
-      setIsLiveTextActive(active);
-      conn.invoke('ToggleLiveText', active).catch((err) => {
-        console.error('[LiveHub] ToggleLiveText error:', err);
-      });
+      conn.invoke('ToggleLiveText', active).catch(console.error);
     }
   }, []);
 
   const streamLiveText = useCallback((text: string) => {
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
-      conn.invoke('StreamLiveText', text).catch((err) => {
-        console.error('[LiveHub] StreamLiveText error:', err);
-      });
+      conn.invoke('StreamLiveText', text).catch(console.error);
     }
   }, []);
 
   const toggleTikTokLive = useCallback((active: boolean, username: string | null = null) => {
+    setIsTikTokActive(active); // Actualización optimista inmediata en UI
     const conn = connectionRef.current;
     if (conn && conn.state === HubConnectionState.Connected) {
-      setIsTikTokActive(active);
       conn.invoke('ToggleTikTokLive', active, username).catch((err) => {
         console.error('[LiveHub] ToggleTikTokLive error:', err);
-        const errStr = String(err?.message || err);
-        if (errStr.includes('not authorized') || errStr.includes('403') || errStr.includes('Unauthorized')) {
-          setError('No estás autorizado para activar el live. En tu backend C#, permite [Authorize(Roles = "Admin,SuperAdmin")].');
-        }
+        // Fallback por si el método en backend requiere string vacío en vez de null
+        conn.invoke('ToggleTikTokLive', active, username || '').catch(console.error);
       });
     }
   }, []);

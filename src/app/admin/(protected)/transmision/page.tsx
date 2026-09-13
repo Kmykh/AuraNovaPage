@@ -37,8 +37,8 @@ export default function TransmisionPage() {
 
   // Toggle TikTok Live
   const handleTikTokToggle = useCallback(() => {
-    toggleTikTokLive(!isTikTokActive, null);
-  }, [isTikTokActive, toggleTikTokLive]);
+    toggleTikTokLive(!isTikTokActive, tikTokUsername || 'aura.nova40');
+  }, [isTikTokActive, tikTokUsername, toggleTikTokLive]);
 
   const username = tikTokUsername ? tikTokUsername.replace(/^@/, '') : 'aura.nova40';
 

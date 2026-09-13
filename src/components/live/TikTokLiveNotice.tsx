@@ -15,6 +15,14 @@ export function TikTokLiveNotice({
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Al activarse el live, restauramos la visibilidad automáticamente
+  React.useEffect(() => {
+    if (isActive) {
+      setIsDismissed(false);
+      setIsExpanded(true);
+    }
+  }, [isActive]);
+
   if (!isActive || isDismissed) return null;
 
   const username = tikTokUsername ? tikTokUsername.replace(/^@/, '') : 'aura.nova40';
