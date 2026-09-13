@@ -55,7 +55,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
   const visibleMainNavItems = React.useMemo(() => {
     return mainNavItems.filter(item => {
-      if (item.name === 'Transmisión' && !role?.includes('SuperAdmin')) {
+      // Transmisión disponible para cualquier administrador autenticado
+      if (item.name === 'Transmisión' && !role) {
         return false;
       }
       return true;
