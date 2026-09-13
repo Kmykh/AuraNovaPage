@@ -6,7 +6,7 @@ import { ProductGrid } from './ProductGrid';
 export function ProductCardSkeleton() {
   return (
     <div className="flex flex-col h-full animate-pulse">
-      <div className="relative w-full aspect-[4/5] bg-cream/50 rounded-2xl overflow-hidden border border-sage/5">
+      <div className="relative w-full aspect-[4/5] bg-cream/50 rounded-[26px] overflow-hidden border border-black/[0.04]">
       </div>
       
       <div className="flex flex-col pt-4 px-1 gap-1">

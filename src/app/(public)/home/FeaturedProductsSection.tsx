@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useProducts } from '@/hooks/use-products';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { ProductCardSkeleton } from '@/components/shared/ProductSkeleton';
+import { ProductSectionSlider } from '@/components/shared/ProductSectionSlider';
 import { Button } from '@/components/ui/Button';
 
 import flo1 from '../images/flo1.png';
@@ -33,19 +34,24 @@ export function FeaturedProductsSection() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 sm:mb-16 gap-6">
           <div className="max-w-xl">
-            <span className="uppercase tracking-[0.3em] text-[11px] font-semibold text-gold mb-4 block">Catálogo</span>
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-brown mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C8A96B]/15 border border-[#C8A96B]/25 backdrop-blur-md mb-3.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96B]" />
+              <span className="uppercase tracking-[0.2em] text-[11px] font-bold text-[#8C6D32] font-sans">
+                Catálogo
+              </span>
+            </div>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#4A3933] mb-3">
               Nuestros detalles
             </h2>
-            <p className="text-sage text-lg">
+            <p className="text-[#6F5F57] text-base sm:text-lg leading-relaxed">
               Explora una selección de nuestras creaciones más queridas.
             </p>
           </div>
           {!isMaintenanceMode && (
             <Link href="/productos" tabIndex={-1}>
-              <Button className="hidden md:flex bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg px-8 h-12 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+              <Button className="hidden md:flex bg-[#4A3933] hover:bg-[#3D2E28] text-white border-none transition-all duration-300 rounded-full font-medium text-sm px-8 h-12 shadow-[0_4px_16px_rgba(74,57,51,0.18)] hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]">
                 Ver catálogo completo
               </Button>
             </Link>
@@ -53,11 +59,11 @@ export function FeaturedProductsSection() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ProductSectionSlider theme="gold">
             {Array.from({ length: 4 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
-          </div>
+          </ProductSectionSlider>
         ) : (isError || isMaintenanceMode) ? (
           <div className="text-center py-16 max-w-2xl mx-auto">
             <p className="text-[#5C4B41] font-serif text-2xl mb-4 italic">
@@ -72,17 +78,17 @@ export function FeaturedProductsSection() {
             Pronto añadiremos nuevos detalles.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ProductSectionSlider theme="gold">
             {featured.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
-          </div>
+          </ProductSectionSlider>
         )}
 
         {!isMaintenanceMode && (
-          <div className="mt-12 md:hidden flex justify-center">
-            <Link href="/productos" tabIndex={-1} className="w-full">
-              <Button className="w-full bg-[#c8a96b] hover:bg-[#b59555] text-white border-none transition-all duration-300 rounded-full font-serif italic text-lg h-12 shadow-sm">
+          <div className="mt-8 md:hidden flex justify-center px-2">
+            <Link href="/productos" tabIndex={-1} className="w-full max-w-sm">
+              <Button className="w-full bg-[#4A3933] hover:bg-[#3D2E28] text-white border-none transition-all duration-300 rounded-full font-medium text-sm h-12 shadow-[0_4px_16px_rgba(74,57,51,0.18)] active:scale-[0.98]">
                 Ver catálogo completo
               </Button>
             </Link>

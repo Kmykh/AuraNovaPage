@@ -1,24 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ProductResponse } from '../../types/products';
 import { formatCurrency, formatStageName, getImageUrl } from '../../lib/formatters';
-import { PackageOpen, ShoppingBag, Paintbrush } from 'lucide-react';
+import { PackageOpen, ShoppingBag, Paintbrush, X, Sparkles } from 'lucide-react';
 import { useCartStore } from '../../store/cart.store';
 import { toast } from 'sonner';
 import estatuo from '../../app/(public)/images/estatuo.png';
 
 interface ProductCardProps {
   product: ProductResponse;
+  isActive?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, isActive = true }: ProductCardProps) {
   const { id, name, price, imageUrl, isAvailable, stock } = product;
   const addItem = useCartStore(state => state.addItem);
+  const [showMobileActions, setShowMobileActions] = useState(false);
 
   // Derive visual stock availability
   const isOutOfStock = !isAvailable || stock <= 0;
   const isLowStock = !isOutOfStock && stock > 0 && stock <= 3;
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    // En pantallas móviles (< 768px), el toque en la imagen despliega los botones verticales
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowMobileActions(prev => !prev);
+    }
+  };
 
   const hasCustomizations =
     (product.availableColors && product.availableColors.length > 0) ||
@@ -53,9 +64,11 @@ export function ProductCard({ product }: ProductCardProps) {
     <div className="group relative flex flex-col h-full animate-in fade-in duration-700">
 
       {/* ── Image Box with Badges ── */}
+      {/* ── Image Box with Badges & Mobile Tap Action ── */}
       <Link
         href={`/productos/${id}`}
-        className="block relative w-full aspect-[4/5] overflow-hidden bg-[#F9F8F6] rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold shadow-xs group-hover:shadow-xl transition-all duration-500"
+        onClick={handleImageClick}
+        className="block relative w-full aspect-[4/5] overflow-hidden bg-[#F9F8F6] rounded-[26px] border border-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold shadow-[0_4px_20px_rgba(0,0,0,0.04)] group-hover:shadow-xl transition-all duration-500 cursor-pointer"
       >
         {imageUrl ? (
           <Image
@@ -71,10 +84,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* ── Campaign Stage Badge (PREVENTA / FLORES AMARILLAS) ── */}
+        {/* ── Campaign Stage Badge (Warm Brown Pill) ── */}
         {product.isCampaignActive && product.campaignStageName && (
-          <div className="absolute top-3 left-3 z-10">
-            <span className="bg-[#8f2d3b] text-white text-[10px] font-serif uppercase tracking-[0.2em] font-bold px-2.5 py-1 rounded-sm shadow-md border border-white/20 backdrop-blur-md inline-block">
+          <div className="absolute top-3.5 left-3.5 z-10">
+            <span className="bg-[#4A3933]/90 backdrop-blur-md text-[#FDFCFB] text-[10px] font-sans uppercase tracking-[0.16em] font-semibold px-3 py-1 rounded-full shadow-sm border border-white/20 inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96B]" />
               {formatStageName(product.campaignStageName)}
             </span>
           </div>
@@ -83,15 +97,89 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* ── Stock Availability Badges (Top Right) ── */}
         <div className="absolute top-3.5 right-3.5 flex flex-col gap-2 items-end z-10">
           {isOutOfStock ? (
-            <span className="bg-rose-500/95 backdrop-blur-md text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full shadow-sm">
+            <span className="bg-stone-850/90 backdrop-blur-md text-white text-[10px] uppercase tracking-wider font-semibold px-3 py-1 rounded-full shadow-sm border border-white/10">
               Agotado
             </span>
           ) : isLowStock ? (
-            <span className="bg-[#c8a96b]/95 backdrop-blur-md text-white text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-full shadow-sm">
+            <span className="bg-[#C8A96B]/95 backdrop-blur-md text-white text-[10px] uppercase tracking-wider font-semibold px-3 py-1 rounded-full shadow-sm border border-white/20">
               Últimas {stock}
             </span>
           ) : null}
         </div>
+
+        {/* ── Translucent pill at bottom of image (Mobile only) ── */}
+        {!showMobileActions && (
+          <div className="absolute inset-x-3 bottom-3.5 z-15 md:hidden flex justify-center pointer-events-none">
+            <span className="bg-[#4A3933]/80 backdrop-blur-md text-white/95 text-[10px] font-sans font-medium px-3 py-1.5 rounded-full shadow-md border border-white/20 flex items-center gap-1.5">
+              <ShoppingBag size={12} className="text-[#C8A96B]" />
+              Presione la imagen para agregar al carrito
+            </span>
+          </div>
+        )}
+
+        {/* ── Mobile Vertical Actions Overlay (Se activa al presionar la imagen) ── */}
+        {showMobileActions && (
+          <div
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowMobileActions(false);
+            }}
+            className="md:hidden absolute inset-0 z-30 bg-[#4A3933]/75 backdrop-blur-md flex flex-col justify-center items-center p-5 gap-2.5 animate-in fade-in zoom-in-95 duration-200"
+          >
+            {/* Close button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMobileActions(false);
+              }}
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30"
+              aria-label="Cerrar"
+            >
+              <X size={14} />
+            </button>
+
+            <span className="text-white/90 text-xs font-serif italic mb-1 text-center">
+              ¿Qué deseas hacer con este detalle?
+            </span>
+
+            {/* Botón 1: Agregar al carrito */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAddToCart(e);
+                setShowMobileActions(false);
+              }}
+              disabled={isOutOfStock}
+              className="w-full h-11 rounded-full bg-white text-[#4A3933] font-medium text-xs flex items-center justify-center gap-2 shadow-lg hover:bg-[#FAF7F2] active:scale-95 transition-all disabled:opacity-50"
+            >
+              <ShoppingBag size={15} className="text-[#C8A96B]" />
+              <span>{isOutOfStock ? 'Agotado' : 'Agregar al carrito'}</span>
+            </button>
+
+            {/* Botón 2: Personalizar o Ver detalle */}
+            {hasCustomizations && !isOutOfStock ? (
+              <Link
+                href={`/productos/${id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full h-11 rounded-full bg-[#C8A96B] text-white font-medium text-xs flex items-center justify-center gap-2 shadow-lg hover:bg-[#B89759] active:scale-95 transition-all"
+              >
+                <Paintbrush size={14} />
+                <span>Personalizar detalle</span>
+              </Link>
+            ) : (
+              <Link
+                href={`/productos/${id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full h-11 rounded-full bg-white/20 text-white border border-white/30 font-medium text-xs flex items-center justify-center gap-2 shadow-sm hover:bg-white/30 active:scale-95 transition-all"
+              >
+                <span>Ver detalle completo</span>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Decorative corner image on hover */}
         <div
@@ -171,52 +259,24 @@ export function ProductCard({ product }: ProductCardProps) {
           </h3>
         </Link>
 
-        {/* Price & Action (Fuente refinada boutique font-serif) */}
+        {/* Price Section - Limpio y elegante, sin botones apretados */}
         <div className="flex items-center justify-between mt-1">
-          <div className="flex flex-col">
+          <div className="flex items-baseline gap-2">
             {product.isCampaignActive ? (
-              <div className="flex items-baseline gap-2">
-                <span className="font-serif font-bold text-lg text-[#8f2d3b] tracking-tight">
+              <>
+                <span className="font-serif font-bold text-lg text-[#4A3933] tracking-tight">
                   {formatCurrency(product.effectivePrice)}
                 </span>
                 <span className="font-serif text-xs text-stone-400 line-through font-normal tracking-normal">
                   {formatCurrency(price)}
                 </span>
-              </div>
+              </>
             ) : (
-              <span className="font-serif font-bold text-base text-[#3d2e28] tracking-tight">
+              <span className="font-serif font-bold text-base text-[#4A3933] tracking-tight">
                 {formatCurrency(product.effectivePrice)}
               </span>
             )}
           </div>
-
-          {/* Mobile "Add to Cart" Button */}
-          {hasCustomizations && !isOutOfStock ? (
-            <div className="md:hidden flex gap-1.5">
-              <button
-                className="p-2 rounded-full bg-cream text-brown hover:bg-[#c8a96b] hover:text-white transition-colors"
-                aria-label="Personalizar"
-              >
-                <Paintbrush size={16} />
-              </button>
-              <button
-                onClick={handleAddToCart}
-                className="p-2 rounded-full bg-[#c8a96b] text-white hover:bg-[#b89759] transition-colors"
-                aria-label="Agregar al carrito"
-              >
-                <ShoppingBag size={16} />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="md:hidden p-2 rounded-full bg-cream text-brown hover:bg-gold hover:text-white transition-colors disabled:opacity-50"
-              aria-label="Agregar al carrito"
-            >
-              <ShoppingBag size={18} />
-            </button>
-          )}
         </div>
       </div>
     </div>
