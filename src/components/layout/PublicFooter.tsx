@@ -75,7 +75,7 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/nosotros" className="text-sm font-medium text-sage hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold rounded-sm flex items-center group">
+                <Link href="/#conoce-aura-nova" className="text-sm font-medium text-sage hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold rounded-sm flex items-center group">
                   <span className="w-0 h-[2px] bg-gold transition-all duration-300 group-hover:w-4 mr-0 group-hover:mr-2 rounded-full"></span> Nosotros
                 </Link>
               </li>
@@ -89,7 +89,7 @@ export function PublicFooter() {
             </h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/contacto" className="text-sm font-medium text-sage hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold rounded-sm flex items-center group">
+                <Link href="/#contacto" className="text-sm font-medium text-sage hover:text-gold transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold rounded-sm flex items-center group">
                   <span className="w-0 h-[2px] bg-gold transition-all duration-300 group-hover:w-4 mr-0 group-hover:mr-2 rounded-full"></span> Contacto
                 </Link>
               </li>
