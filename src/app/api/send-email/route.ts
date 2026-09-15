@@ -98,10 +98,11 @@ export async function POST(request: Request) {
                 <td style="padding: 15px 0;">
                   <table width="100%" border="0" cellspacing="0" cellpadding="0">
                     <tr>
-                      <td width="50%" align="center">
+                      <td width="${token !== 'NO-DISPONIBLE' ? '50%' : '100%'}" align="center">
                         <p style="margin: 0 0 8px 0; font-size: 9px; color: #a4968f; text-transform: uppercase; letter-spacing: 3px;">Pedido</p>
                         <p style="margin: 0; font-family: 'Georgia', serif; font-size: 20px; color: #4a3933; font-style: italic;">${order.orderCode}</p>
                       </td>
+                      ${token !== 'NO-DISPONIBLE' ? `
                       <td width="1%" align="center">
                         <div style="width: 1px; height: 40px; background-color: #e4d8cd;"></div>
                       </td>
@@ -109,11 +110,14 @@ export async function POST(request: Request) {
                         <p style="margin: 0 0 8px 0; font-size: 9px; color: #a4968f; text-transform: uppercase; letter-spacing: 3px;">Token de rastreo</p>
                         <p style="margin: 0; font-family: monospace; font-size: 18px; color: #b89759; letter-spacing: 2px;">${token}</p>
                       </td>
+                      ` : ''}
                     </tr>
                   </table>
+                  ${token !== 'NO-DISPONIBLE' ? `
                   <p style="margin: 25px 0 0 0; font-size: 12px; color: #a4968f; text-align: center; font-style: italic; letter-spacing: 0.5px;">
                     Utiliza el token en nuestra web para rastrear el progreso de tu pedido.
                   </p>
+                  ` : ''}
                 </td>
               </tr>
 

@@ -219,6 +219,32 @@ export function CustomOrderClient() {
       const response = await OrdersService.createCustomOrder(request);
       setCreatedOrder(response);
       window.scrollTo(0, 0);
+      
+      // Disparar silenciosamente el envío de correo de confirmación (quote_received)
+      if (customer.email.trim()) {
+        try {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              order: response,
+              customer: {
+                name: customer.name.trim(),
+                email: customer.email.trim()
+              },
+              items: snapshot.items,
+              subtotal: 0,
+              deliveryType: deliveryType,
+              estimatedDeliveryCost: estimatedDeliveryCost,
+              emailType: 'quote_received',
+              preview: false
+            })
+          });
+        } catch (error) {
+          console.error("No se pudo enviar el correo de confirmación", error);
+        }
+      }
+
       toast.success('¡Solicitud personalizada enviada!');
     } catch (error: any) {
       console.error(error);
