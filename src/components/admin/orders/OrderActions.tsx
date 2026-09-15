@@ -91,7 +91,7 @@ export function OrderActions({ order }: OrderActionsProps) {
           subtotal: order.subtotal || 0,
           deliveryType: order.deliveryType,
           estimatedDeliveryCost: order.deliveryCost || 0,
-          emailType: 'receipt',
+          emailType: order.status === 0 ? 'quote_received' : 'receipt',
           preview: true
         })
       });
@@ -126,7 +126,7 @@ export function OrderActions({ order }: OrderActionsProps) {
           subtotal: order.subtotal || 0,
           deliveryType: order.deliveryType,
           estimatedDeliveryCost: order.deliveryCost || 0,
-          emailType: 'receipt',
+          emailType: order.status === 0 ? 'quote_received' : 'receipt',
           preview: false
         })
       });
