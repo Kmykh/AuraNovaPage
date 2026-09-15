@@ -7,7 +7,7 @@ import { AdminOrderDetailResponse } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useStartPreparation, useSetEstimatedReadyDate, useMarkAsReady, useDeliverToAgency, useChangeOrderStatus } from '@/hooks/use-admin-orders';
-import { AlertCircle, Calendar, Play, CheckCircle2, Truck, XCircle, DollarSign, ExternalLink } from 'lucide-react';
+import { AlertCircle, Calendar, Play, CheckCircle2, Truck, XCircle, DollarSign, ExternalLink, Mail, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface OrderActionsProps {
@@ -18,10 +18,14 @@ export function OrderActions({ order }: OrderActionsProps) {
   const [isConfirmPaymentModalOpen, setIsConfirmPaymentModalOpen] = useState(false);
   const [isEstimatedDateModalOpen, setIsEstimatedDateModalOpen] = useState(false);
   const [isDeliverAgencyModalOpen, setIsDeliverAgencyModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // States for modals
   const [estimatedDate, setEstimatedDate] = useState('');
   const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({ provider: '', trackingCode: '', proofFile: null });
+  const [emailPreviewHtml, setEmailPreviewHtml] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // Mutations
   const { mutate: startPreparation, isPending: isStartingPrep } = useStartPreparation(order.id);
@@ -70,6 +74,73 @@ export function OrderActions({ order }: OrderActionsProps) {
     deliverAgency(agencyData, {
       onSuccess: () => setIsDeliverAgencyModalOpen(false)
     });
+  };
+
+  const loadEmailPreview = async () => {
+    setIsGeneratingPreview(true);
+    setEmailPreviewHtml(null);
+    setIsEmailModalOpen(true);
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: order,
+          customer: order.customer,
+          items: order.items || [],
+          subtotal: order.subtotal || 0,
+          deliveryType: order.deliveryType,
+          estimatedDeliveryCost: order.deliveryCost || 0,
+          emailType: 'receipt',
+          preview: true
+        })
+      });
+      if (!res.ok) throw new Error('Error al generar preview');
+      const data = await res.json();
+      if (data.html) {
+        setEmailPreviewHtml(data.html);
+      } else {
+        toast.error('No se pudo generar la previsualización');
+      }
+    } catch (error) {
+      toast.error('Error de conexión al generar preview');
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!order.customer?.email) {
+      toast.error('El cliente no tiene un correo electrónico registrado.');
+      return;
+    }
+    setIsSendingEmail(true);
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order: order,
+          customer: order.customer,
+          items: order.items || [],
+          subtotal: order.subtotal || 0,
+          deliveryType: order.deliveryType,
+          estimatedDeliveryCost: order.deliveryCost || 0,
+          emailType: 'receipt',
+          preview: false
+        })
+      });
+      if (res.ok) {
+        toast.success('Correo enviado exitosamente.');
+        setIsEmailModalOpen(false);
+      } else {
+        toast.error('Hubo un error al enviar el correo.');
+      }
+    } catch (error) {
+      toast.error('Error de red al enviar correo.');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   // Rendering logic based on status
@@ -131,6 +202,12 @@ export function OrderActions({ order }: OrderActionsProps) {
             Comprobante recibido: revísalo en la sección de Comprobante
           </span>
         )}
+
+        <div className="w-full h-px bg-sage/10 my-2"></div>
+        <Button onClick={loadEmailPreview} variant="outline" className="border-brown text-brown hover:bg-brown/5">
+          <Mail className="w-4 h-4 mr-2" />
+          Previsualizar y Reenviar Correo
+        </Button>
       </div>
 
       {/* Modal Fecha Estimada */}
@@ -201,6 +278,41 @@ export function OrderActions({ order }: OrderActionsProps) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal Previsualizar y Enviar Correo */}
+      <Modal isOpen={isEmailModalOpen} onClose={() => !isSendingEmail && setIsEmailModalOpen(false)} title="Previsualizar y Reenviar Correo">
+        <div className="space-y-4">
+          <div className="bg-[#fcf9f2] p-3 rounded-lg border border-[#c8a96b]/20 text-xs text-brown">
+            <p><strong>Destinatario:</strong> {order.customer?.email || <span className="text-red-500 font-bold">No hay correo registrado</span>}</p>
+            <p><strong>Asunto:</strong> Confirmación de Pedido {order.orderCode} - Aura Nova</p>
+          </div>
+          
+          <div className="border border-sage/20 rounded-xl overflow-hidden bg-white h-[400px] flex items-center justify-center relative">
+            {isGeneratingPreview ? (
+              <div className="flex flex-col items-center text-sage">
+                <div className="w-8 h-8 border-4 border-sage/20 border-t-gold rounded-full animate-spin mb-3"></div>
+                <p className="text-sm font-medium">Generando preview...</p>
+              </div>
+            ) : emailPreviewHtml ? (
+              <iframe 
+                srcDoc={emailPreviewHtml} 
+                className="w-full h-full border-none"
+                title="Email Preview"
+              />
+            ) : (
+              <p className="text-sage text-sm">No se pudo cargar la vista previa.</p>
+            )}
+          </div>
+          
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setIsEmailModalOpen(false)} disabled={isSendingEmail}>Cancelar</Button>
+            <Button onClick={handleSendEmail} disabled={isGeneratingPreview || isSendingEmail || !order.customer?.email || !emailPreviewHtml} className="bg-gold text-white hover:bg-gold/90">
+              <Mail className="w-4 h-4 mr-2" />
+              {isSendingEmail ? 'Enviando...' : 'Reenviar Correo Ahora'}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
     </div>

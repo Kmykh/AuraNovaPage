@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request: Request) {
   try {
-    const { order, customer, items, subtotal, deliveryType, estimatedDeliveryCost, emailType = 'receipt' } = await request.json();
+    const { order, customer, items, subtotal, deliveryType, estimatedDeliveryCost, emailType = 'receipt', preview } = await request.json();
 
     const token = order.trackingToken || order.TrackingToken || order.token || 'NO-DISPONIBLE';
 
@@ -214,6 +214,12 @@ export async function POST(request: Request) {
       html: htmlContent,
     };
 
+    const isPreview = request.url.includes('preview=true') || preview;
+    
+    if (isPreview) {
+      return NextResponse.json({ success: true, html: htmlContent });
+    }
+
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ success: true });
@@ -222,3 +228,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Error sending email' }, { status: 500 });
   }
 }
+
