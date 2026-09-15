@@ -114,7 +114,7 @@ export function AdminQuoteDetail({ id }: { id: string }) {
                       subtotal: order.subtotal || 0,
                       deliveryType: quote.deliveryType === 'NationalShipping' ? 2 : (quote.deliveryType === 'MeetingPoint' ? 1 : 0),
                       estimatedDeliveryCost: numericShippingCost,
-                      emailType: 'receipt'
+                      emailType: quote.isCustomOrder ? 'quote_received' : 'receipt'
                     })
                   });
                 } catch (error) {
