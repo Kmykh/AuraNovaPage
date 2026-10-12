@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { SITE_URL } from '@/lib/site';
 
 export async function POST(request: Request) {
   try {
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
               <!-- Elegant Header with Flower -->
               <tr>
                 <td align="center" style="padding-bottom: 20px;">
-                  <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/flortallo.png" width="70" style="display: block; margin-bottom: 20px; opacity: 0.85;" alt="Flor Aura Nova" />
+                  <img src="${SITE_URL}/mail/flortallo.png" width="70" style="display: block; margin-bottom: 20px; opacity: 0.85;" alt="Flor Aura Nova" />
                   <h1 style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 38px; font-weight: normal; color: #b89759; font-style: italic; margin: 0; letter-spacing: 3px;">Aura Nova</h1>
                   <p style="font-size: 10px; color: #d38b8b; text-transform: uppercase; letter-spacing: 5px; margin-top: 12px; margin-bottom: 0;">Detalles con cariño</p>
                 </td>
@@ -183,7 +184,7 @@ export async function POST(request: Request) {
                   <table width="100%" border="0" cellspacing="0" cellpadding="0">
                     <tr>
                       <td width="30%" align="left" valign="middle">
-                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/muroromano.png" width="70" style="display: block; max-width: 70px; opacity: 0.9;" alt="" />
+                         <img src="${SITE_URL}/mail/muroromano.png" width="70" style="display: block; max-width: 70px; opacity: 0.9;" alt="" />
                       </td>
                       <td width="40%" align="center" valign="middle">
                         <p style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 17px; color: #d38b8b; font-style: italic; margin: 0 0 10px 0; letter-spacing: 0.5px;">
@@ -195,7 +196,7 @@ export async function POST(request: Request) {
                         </p>
                       </td>
                       <td width="30%" align="right" valign="middle">
-                         <img src="https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence/mail/angeles.png" width="130" style="display: block; max-width: 130px; opacity: 0.9;" alt="" />
+                         <img src="${SITE_URL}/mail/angeles.png" width="130" style="display: block; max-width: 130px; opacity: 0.9;" alt="" />
                       </td>
                     </tr>
                   </table>

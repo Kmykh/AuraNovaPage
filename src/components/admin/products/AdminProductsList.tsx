@@ -196,6 +196,7 @@ export function AdminProductsList() {
                     src={getImageUrl(p.imageUrl)} 
                     alt={p.name} 
                     fill 
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500" 
                   />
                 ) : (
@@ -307,7 +308,7 @@ export function AdminProductsList() {
                       <div className="flex items-center gap-4">
                         <div className="relative w-12 h-12 rounded-xl bg-cream flex-shrink-0 overflow-hidden border border-sage/20">
                           {p.imageUrl ? (
-                            <Image src={getImageUrl(p.imageUrl)} alt={p.name} fill className="object-cover" />
+                            <Image src={getImageUrl(p.imageUrl)} alt={p.name} fill sizes="64px" className="object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-sage text-xs">
                               <Package size={16} />
@@ -378,7 +379,7 @@ export function AdminProductsList() {
               <div key={p.id} className="p-4 flex items-center gap-4">
                 <div className="relative w-14 h-14 rounded-xl bg-cream flex-shrink-0 overflow-hidden border border-sage/20">
                   {p.imageUrl ? (
-                    <Image src={getImageUrl(p.imageUrl)} alt={p.name} fill className="object-cover" />
+                    <Image src={getImageUrl(p.imageUrl)} alt={p.name} fill sizes="64px" className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-sage">
                       <Package size={18} />

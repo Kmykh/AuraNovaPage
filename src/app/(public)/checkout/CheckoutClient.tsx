@@ -826,9 +826,8 @@ export function CheckoutClient() {
                 <div key={item.cartItemId || item.productId} className="bg-white/80 rounded-2xl p-3 border border-[#e8dcdc]/60 shadow-2xs space-y-2">
                   <div className="flex gap-3 items-center">
                     {item.imageUrl ? (
-                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#faf7f2] border border-[#e8dcdc]/60 flex-shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#faf7f2] border border-[#e8dcdc]/60 flex-shrink-0">
+                        <Image src={item.imageUrl} alt={item.name} fill sizes="56px" className="object-cover" />
                       </div>
                     ) : (
                       <div className="w-14 h-14 rounded-xl bg-[#faf7f2] flex items-center justify-center flex-shrink-0 text-[#d38b8b]/40">

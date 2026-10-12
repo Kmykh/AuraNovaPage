@@ -120,6 +120,7 @@ export function PaymentInstructions({ total, orderCode }: PaymentInstructionsPro
                 className="object-contain p-1 group-hover:scale-105 transition-transform"
                 sizes="150px"
                 priority
+                unoptimized // el QR llega sin recompresión para escanearse bien
               />
               <span className="absolute bottom-1 right-1 bg-[#4a3933]/80 text-white text-[8px] px-1.5 py-0.5 rounded-md backdrop-blur-xs font-mono">
                 Ampliar
@@ -212,6 +213,7 @@ export function PaymentInstructions({ total, orderCode }: PaymentInstructionsPro
                 src={getImageUrl(info.qrImageUrl)} 
                 alt="QR de Yape Ampliado"
                 fill
+                unoptimized
                 className="object-contain p-3"
               />
             </div>

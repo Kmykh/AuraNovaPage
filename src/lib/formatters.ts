@@ -1,3 +1,5 @@
+import { MEDIA_BASE_URL } from './site';
+
 /**
  * Formatea un número como moneda peruana (PEN).
  * Ejemplo: 79.9 -> "S/ 79.90"
@@ -22,17 +24,14 @@ export function getImageUrl(path: string | null | undefined): string {
   // 1. Si el producto no tiene imagen, devolvemos un placeholder (imagen por defecto)
   if (!path) return '/placeholder-image.jpg'; 
   
-  // 2. Si por alguna razón la base de datos ya tiene guardada una URL completa (empieza con http), la devolvemos tal cual
-  // Mantenemos 'blob:' para que las vistas previas locales funcionen.
-  if (path.startsWith('http') || path.startsWith('blob:')) return path; 
+  // 2. URLs completas (incluye las URLs firmadas de archivos privados que devuelve la API),
+  // vistas previas locales (blob:) e imágenes antiguas en base64 (data:) se usan tal cual.
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path; 
   
-  // 3. Magia: Si es una ruta corta (ej. "products/uuid.jpg" o "payment-evidence/uuid.jpg"), le pegamos la URL base de tu Supabase
-  const SUPABASE_BASE_URL = 'https://jfxbsnhzbkdawncdatwb.supabase.co/storage/v1/object/public/payment-evidence';
-  
-  // Limpiamos los slashes dobles por si acaso
+  // 3. Ruta corta del catálogo (ej. "products/uuid.webp"): se le antepone la base pública de medios
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   
-  return `${SUPABASE_BASE_URL}/${cleanPath}`;
+  return `${MEDIA_BASE_URL}/${cleanPath}`;
 }
 
 /**

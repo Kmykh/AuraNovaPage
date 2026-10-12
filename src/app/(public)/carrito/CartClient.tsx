@@ -123,6 +123,7 @@ export function CartClient() {
                         src={item.imageUrl} 
                         alt={item.name}
                         fill
+                        sizes="128px"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (

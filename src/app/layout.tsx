@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { QueryProvider } from "../providers/QueryProvider";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -18,6 +19,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Aura Nova | Detalles Florales Exclusivos en Huancayo",
   description: "Regalos y detalles florales hechos con mucho cariño pensados para celebrar, sorprender y hacer sentir especial a alguien en Huancayo.",
   keywords: ["flores", "regalos", "huancayo", "detalles florales", "rosas", "arreglos florales", "aura nova", "floreria"],
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Aura Nova | Diseño Floral Exclusivo",
     description: "Detalles hechos con mucho cariño pensados para celebrar, sorprender y hacer sentir especial a alguien.",
-    url: "https://auranova.pe",
+    url: SITE_URL,
     siteName: "Aura Nova",
     locale: "es_PE",
     type: "website",

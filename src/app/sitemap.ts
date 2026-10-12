@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://auranova.com.pe';
+  const baseUrl = SITE_URL;
 
   return [
     {
