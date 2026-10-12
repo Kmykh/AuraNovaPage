@@ -439,7 +439,7 @@ export function CampaignWizard({ mode = 'create', campaignId }: CampaignWizardPr
                   <div key={p.productId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-sage/15 bg-[#FAF9F6]">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-12 h-12 rounded-lg bg-white border border-sage/15 relative overflow-hidden shrink-0">
-                        {p.productImageUrl && <Image src={getImageUrl(p.productImageUrl)} alt={p.productName} fill className="object-cover" />}
+                        {p.productImageUrl && <Image src={getImageUrl(p.productImageUrl)} alt={p.productName} fill sizes="64px" className="object-cover" />}
                       </div>
                       <div className="min-w-0">
                         <span className="font-bold text-sm text-brown truncate block">{p.productName}</span>
@@ -511,7 +511,7 @@ export function CampaignWizard({ mode = 'create', campaignId }: CampaignWizardPr
                       className="flex flex-col items-center text-center p-3 rounded-xl border border-sage/10 bg-[#FAF9F6] hover:border-gold/50 hover:bg-gold/5 transition-all"
                     >
                       <div className="w-12 h-12 rounded-lg bg-white border border-sage/10 relative overflow-hidden mb-1.5">
-                        {prod.imageUrl && <Image src={getImageUrl(prod.imageUrl)} alt={prod.name} fill className="object-cover" />}
+                        {prod.imageUrl && <Image src={getImageUrl(prod.imageUrl)} alt={prod.name} fill sizes="64px" className="object-cover" />}
                       </div>
                       <span className="font-bold text-xs text-brown truncate w-full">{prod.name}</span>
                       <span className="text-[10px] text-sage">{formatCurrency(prod.price)}</span>

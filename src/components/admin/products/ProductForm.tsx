@@ -384,6 +384,7 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
                       src={getImageUrl(previewUrl)} 
                       alt="Vista previa del producto" 
                       fill 
+                      sizes="(max-width: 640px) 100vw, 400px"
                       className="object-cover group-hover:scale-105 transition-transform duration-500" 
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 z-10">
@@ -921,7 +922,7 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
           <div className="flex flex-col sm:flex-row gap-6 items-start bg-[#FAF9F6] p-6 rounded-2xl border border-sage/15">
             <div className="w-full sm:w-48 aspect-square relative rounded-xl overflow-hidden bg-white border border-sage/20 shrink-0">
               {previewUrl ? (
-                <Image src={getImageUrl(previewUrl)} alt="Preview" fill className="object-cover" />
+                <Image src={getImageUrl(previewUrl)} alt="Preview" fill sizes="192px" className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sage/40">
                   <ImageIcon size={32} />

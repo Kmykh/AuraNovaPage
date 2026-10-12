@@ -2,6 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import { ProductDetailClient } from './ProductDetailClient';
 import { ProductsService } from '@/services/products.service';
+import { getImageUrl } from '@/lib/formatters';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -17,7 +18,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       title: `Aura Nova | ${product.name}`,
       description: product.description || `Descubre ${product.name} en Aura Nova.`,
       openGraph: {
-        images: product.imageUrl ? [product.imageUrl] : [],
+        // URL absoluta: con la ruta relativa ("products/x.webp") WhatsApp/Facebook no encontraban la imagen
+        images: product.imageUrl ? [getImageUrl(product.imageUrl)] : [],
       }
     };
   } catch {

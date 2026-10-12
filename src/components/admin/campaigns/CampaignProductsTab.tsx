@@ -76,7 +76,7 @@ export function CampaignProductsTab({ campaign }: Props) {
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="w-14 h-14 rounded-xl bg-[#FAF9F6] border border-sage/15 overflow-hidden relative shrink-0">
                       {prod.productImageUrl ? (
-                        <Image src={getImageUrl(prod.productImageUrl)} alt={prod.productName} fill className="object-cover" />
+                        <Image src={getImageUrl(prod.productImageUrl)} alt={prod.productName} fill sizes="64px" className="object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sage/40">
                           <Package size={20} />
@@ -320,7 +320,7 @@ function AddProductModal({ isOpen, onClose, campaign }: { isOpen: boolean, onClo
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-12 h-12 rounded-xl bg-white border border-sage/15 relative overflow-hidden shrink-0">
                       {prod.imageUrl ? (
-                        <Image src={getImageUrl(prod.imageUrl)} alt={prod.name} fill className="object-cover" />
+                        <Image src={getImageUrl(prod.imageUrl)} alt={prod.name} fill sizes="64px" className="object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-sage/40">
                           <Package size={18} />
