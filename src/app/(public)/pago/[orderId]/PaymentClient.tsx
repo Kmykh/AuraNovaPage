@@ -141,7 +141,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
             <div className="flex items-center gap-2 justify-center sm:justify-start">
               <span className="text-xs uppercase font-bold tracking-widest text-[#887870]">Pedido</span>
               <span className="font-mono font-bold text-[#4a3933] text-sm bg-[#faf7f2] px-2 py-0.5 rounded-md border border-[#c8a96b]/20">
-                {orderCode || 'PED-PENDIENTE'}
+                {orderCode || 'Tu pedido'}
               </span>
               <span className="text-[11px] font-semibold text-[#b58129] bg-[#fdf6e7] border border-[#b58129]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#b58129] animate-pulse" />

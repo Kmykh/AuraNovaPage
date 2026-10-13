@@ -6,15 +6,16 @@ import { getDeliveryTypeLabel } from '@/lib/tracking-helpers';
 import { X, Package, MapPin, Truck, Copy, Check, ExternalLink, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DeliveryType } from '@/types/enums';
+import { trackingUrl } from '@/lib/tracking-code';
 
 interface TrackingOrderDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   tracking: PublicTrackingResponse;
-  trackingToken: string;
+  trackingCode: string;
 }
 
-export function TrackingOrderDetailsModal({ isOpen, onClose, tracking, trackingToken }: TrackingOrderDetailsModalProps) {
+export function TrackingOrderDetailsModal({ isOpen, onClose, tracking, trackingCode }: TrackingOrderDetailsModalProps) {
   const [copied, setCopied] = React.useState(false);
 
   if (!isOpen) return null;
@@ -30,7 +31,7 @@ export function TrackingOrderDetailsModal({ isOpen, onClose, tracking, trackingT
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/seguimiento?code=${tracking.orderCode}&token=${trackingToken}`;
+    const url = trackingUrl(trackingCode);
     if (navigator.share) {
       try {
         await navigator.share({

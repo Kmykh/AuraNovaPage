@@ -17,7 +17,8 @@ import {
   X,
   Flower2,
   Megaphone,
-  Radio
+  Radio,
+  BookOpen,
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
 import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
@@ -31,6 +32,7 @@ const mainNavItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
   { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
+  { name: 'Catálogo PDF', href: '/admin/catalogo', icon: BookOpen },
   { name: 'Pedidos Personalizados', href: '/admin/cotizaciones', icon: FileText },
   { name: 'Transmisión', href: '/admin/transmision', icon: Radio },
 ];
@@ -98,7 +100,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           className={`transition-colors duration-200 ${isActive ? 'text-gold' : 'text-sage/70 group-hover:text-gold'}`} 
         />
         <span className="truncate">{item.name}</span>
-        {item.name === 'Campañas' && (
+        {(item.name === 'Campañas' || item.name === 'Catálogo PDF') && (
           <span className="ml-auto">
             <NewFeatureBadge size="sm" label="NEW" />
           </span>

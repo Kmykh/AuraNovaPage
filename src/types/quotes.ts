@@ -16,6 +16,12 @@ export interface QuoteResponse {
   isCustomOrder?: boolean;
   referenceImageUrl?: string | null;
   customizationNotes?: string | null;
+  // Brief del pedido personalizado (URLs firmadas y temporales)
+  referenceImages?: string[];
+  referenceLinks?: string[];
+  desiredDate?: string | null;
+  occasion?: string | null;
+  budgetRange?: string | null;
 }
 
 export interface UpdateQuoteRequest {

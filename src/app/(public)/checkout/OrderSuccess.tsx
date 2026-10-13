@@ -9,6 +9,7 @@ import flo2 from '@/app/(public)/images/flo2.png';
 import flo4 from '@/app/(public)/images/flo4.png';
 import { Button } from '@/components/ui/Button';
 import { ArrowRight, Home, CheckCircle2, Info } from 'lucide-react';
+import { trackingPath } from '@/lib/tracking-code';
 
 export interface OrderDetailsSnapshot {
   customer?: {
@@ -96,7 +97,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
       }));
       router.push(`/pago/${order.id || (order as any).Id}`);
     } else {
-      router.push(`/seguimiento?code=${orderCode}&token=${trackingToken}`);
+      router.push(trackingPath(trackingToken));
     }
   };
 
@@ -354,7 +355,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                       {/* CLAVE Y CÓDIGO */}
                       <div className="text-[10px] text-[#777] space-y-1 pt-1">
                         <div className="flex justify-between items-center">
-                          <span>CLAVE DE RASTREO:</span>
+                          <span>CÓDIGO DE SEGUIMIENTO:</span>
                           <span className="font-bold bg-[#f3ece2] text-[#4a3933] px-1.5 py-0.5 rounded tracking-wider">{trackingToken}</span>
                         </div>
                       </div>
@@ -429,7 +430,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </div>
                 <p className="leading-relaxed">
-                  Guarda tu <strong>código de pedido</strong> para hacerle seguimiento. Te enviaremos una copia al correo y te contactaremos por WhatsApp en breve.
+                  Guarda tu <strong>código de seguimiento</strong> (<span className="font-mono font-bold text-[#4a3933]">{trackingToken}</span>): es lo único que necesitas para ver tu pedido. Te lo enviamos también por correo y WhatsApp.
                 </p>
               </div>
               <div className="flex items-start gap-4">
@@ -437,7 +438,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </div>
                 <p className="leading-relaxed">
-                  Con tu código podrás ingresar a nuestra sección de rastreo y ver el estado de tu envío en tiempo real.
+                  En la sección de seguimiento verás cada paso de tu pedido en tiempo real, desde el taller hasta tus manos.
                 </p>
               </div>
             </div>

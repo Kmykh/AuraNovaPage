@@ -108,15 +108,18 @@ export async function POST(request: Request) {
                         <div style="width: 1px; height: 40px; background-color: #e4d8cd;"></div>
                       </td>
                       <td width="49%" align="center">
-                        <p style="margin: 0 0 8px 0; font-size: 9px; color: #a4968f; text-transform: uppercase; letter-spacing: 3px;">Token de rastreo</p>
+                        <p style="margin: 0 0 8px 0; font-size: 9px; color: #a4968f; text-transform: uppercase; letter-spacing: 3px;">Código de seguimiento</p>
                         <p style="margin: 0; font-family: monospace; font-size: 18px; color: #b89759; letter-spacing: 2px;">${token}</p>
                       </td>
                       ` : ''}
                     </tr>
                   </table>
                   ${token !== 'NO-DISPONIBLE' ? `
-                  <p style="margin: 25px 0 0 0; font-size: 12px; color: #a4968f; text-align: center; font-style: italic; letter-spacing: 0.5px;">
-                    Utiliza el token en nuestra web para rastrear el progreso de tu pedido.
+                  <p style="margin: 25px 0 0 0; text-align: center;">
+                    <a href="${SITE_URL}/seguimiento/${token}" style="display: inline-block; background-color: #4a3933; color: #ffffff; text-decoration: none; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 14px 28px; border-radius: 999px;">Ver mi pedido</a>
+                  </p>
+                  <p style="margin: 14px 0 0 0; font-size: 11px; color: #a4968f; text-align: center; font-style: italic; letter-spacing: 0.5px;">
+                    O ingresa tu código en ${SITE_URL.replace(/^https?:\/\//, '')}/seguimiento
                   </p>
                   ` : ''}
                 </td>

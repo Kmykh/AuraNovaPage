@@ -15,6 +15,7 @@ import { WhatsAppFallbackButton } from '@/components/shared/WhatsAppFallbackButt
 import { ArrowLeft, AlertCircle, Calculator, CheckCircle, Package, MapPin } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { DeliveryType } from '@/types/enums';
+import { CustomOrderBriefPanel } from '@/components/admin/orders/CustomOrderBriefPanel';
 
 export function AdminQuoteDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -231,18 +232,7 @@ export function AdminQuoteDetail({ id }: { id: string }) {
                   <span className="block text-xs font-bold text-sage uppercase tracking-wider mb-2">Indicaciones del Cliente:</span>
                   <p className="text-sm text-brown whitespace-pre-wrap leading-relaxed">{quote.customizationNotes}</p>
                 </div>
-                {quote.referenceImageUrl && (
-                  <div className="bg-[#FAFAFA] p-4 rounded-xl border border-sage/10">
-                    <span className="block text-xs font-bold text-sage uppercase tracking-wider mb-3">Foto de referencia:</span>
-                    <a href={quote.referenceImageUrl} target="_blank" rel="noreferrer" className="group block w-full rounded-xl border-2 border-dashed border-sage/20 overflow-hidden hover:border-gold relative bg-white">
-                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                         <span className="bg-white text-brown text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full shadow-lg">Click para agrandar</span>
-                       </div>
-                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                       <img src={quote.referenceImageUrl} alt="Referencia" className="w-full h-auto max-h-96 object-contain" />
-                    </a>
-                  </div>
-                )}
+                <CustomOrderBriefPanel brief={quote} />
               </div>
             ) : (
               <>
