@@ -14,7 +14,9 @@ export default function robots(): MetadataRoute.Robots {
         '/carrito',
         '/checkout',
         '/pago/',
-        '/pago/*'
+        '/pago/*',
+        '/seguimiento/',
+        '/catalogo-pdf'
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

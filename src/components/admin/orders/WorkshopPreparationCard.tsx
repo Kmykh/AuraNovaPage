@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
 import { NewFeatureExplanation } from '@/components/admin/shared/NewFeatureExplanation';
+import { CustomOrderBriefPanel } from './CustomOrderBriefPanel';
 
 interface WorkshopPreparationCardProps {
   items: AdminOrderDetailItem[];
@@ -27,6 +28,11 @@ interface WorkshopPreparationCardProps {
   isCustomOrder?: boolean;
   customizationNotes?: string | null;
   referenceImageUrl?: string | null;
+  referenceImages?: string[];
+  referenceLinks?: string[];
+  desiredDate?: string | null;
+  occasion?: string | null;
+  budgetRange?: string | null;
 }
 
 export function WorkshopPreparationCard({
@@ -35,36 +41,14 @@ export function WorkshopPreparationCard({
   customerName,
   isCustomOrder,
   customizationNotes,
-  referenceImageUrl
+  referenceImageUrl,
+  referenceImages,
+  referenceLinks,
+  desiredDate,
+  occasion,
+  budgetRange
 }: WorkshopPreparationCardProps) {
   const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
-
-  // Helper para descargar imagen desde URL
-  const handleDownloadImage = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url, { mode: 'cors' });
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-      toast.success('Imagen descargada correctamente', { description: filename });
-    } catch {
-      // Fallback si CORS bloquea el fetch directo
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.info('Abriendo imagen para guardar...', { description: filename });
-    }
-  };
 
   // Generador de Tarjeta Dedicatoria en Alta Resolución (1600x1000 PNG)
   const handleDownloadDedicationCard = async (item: AdminOrderDetailItem, index: number) => {
@@ -565,43 +549,10 @@ export function WorkshopPreparationCard({
                 </div>
               </div>
 
-              {/* Imagen de Referencia con Descarga */}
-              {referenceImageUrl && (
-                <div className="space-y-2">
-                  <span className="text-xs uppercase font-bold tracking-wider text-[#887870] block">
-                    Foto de Referencia Subida por el Cliente:
-                  </span>
-                  <div className="bg-white p-3 rounded-xl border border-[#c8a96b]/20 flex flex-col sm:flex-row items-center gap-4">
-                    <a 
-                      href={referenceImageUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="relative w-32 h-32 rounded-lg overflow-hidden border border-[#c8a96b]/30 shrink-0 hover:opacity-90 transition-opacity block"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={referenceImageUrl} 
-                        alt="Referencia del cliente" 
-                        className="w-full h-full object-cover" 
-                      />
-                    </a>
-                    <div className="space-y-2 text-center sm:text-left">
-                      <p className="text-xs text-[#887870]">
-                        Utiliza esta foto como guía de estilo para el arreglo artesanal.
-                      </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => handleDownloadImage(referenceImageUrl, `Referencia_${orderCode}.jpg`)}
-                        className="bg-[#4a3933] hover:bg-[#382b26] text-white text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5 text-[#c8a96b]" />
-                        Descargar Foto Referencia
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Fotos, enlaces y datos del encargo */}
+              <CustomOrderBriefPanel
+                brief={{ orderCode, referenceImageUrl, referenceImages, referenceLinks, desiredDate, occasion, budgetRange }}
+              />
             </div>
           </div>
         )}

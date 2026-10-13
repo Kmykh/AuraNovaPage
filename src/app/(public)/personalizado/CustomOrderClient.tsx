@@ -10,8 +10,10 @@ import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
 import { 
   Upload, X, MapPin, Truck, Map, Package, 
-  ArrowRight, ArrowLeft, Sparkles, AlertTriangle, Info, Check 
+  ArrowRight, ArrowLeft, Sparkles, AlertTriangle, Info, Check,
+  ImagePlus, Link2, CalendarHeart, PartyPopper, Wallet, Plus, Loader2
 } from 'lucide-react';
+import { compressImage } from '@/lib/compress-image';
 import { useDeliveryZones, useMeetingPoints } from '@/hooks/use-checkout';
 import { DeliveryType, CreateOrderResponse } from '@/types/checkout';
 import { CreateCustomOrderRequest } from '@/types/orders';
@@ -19,6 +21,32 @@ import { OrdersService } from '@/services/orders.service';
 import { useMounted } from '@/hooks/use-mounted';
 
 import flo1 from '../images/flo1.png';
+
+const MAX_REFERENCE_IMAGES = 5;
+const MAX_REFERENCE_LINKS = 5;
+const MAX_ORIGINAL_IMAGE_BYTES = 15 * 1024 * 1024;
+
+const OCCASIONS = ['Cumpleaños', 'Aniversario', 'San Valentín', 'Día de la Madre', 'Graduación', 'Solo porque sí'];
+const BUDGETS = ['Hasta S/ 60', 'S/ 60 – 100', 'S/ 100 – 150', 'Más de S/ 150', 'Aún no lo sé'];
+
+interface ReferenceImage {
+  file: File;
+  preview: string;
+}
+
+function isValidLink(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/** Hoy en Perú (YYYY-MM-DD), para no permitir fechas pasadas. */
+function todayInPeru() {
+  return new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
 
 const INSPIRATION_TAGS = [
   'Rosas & Lirios 🌹',
@@ -52,49 +80,78 @@ export function CustomOrderClient() {
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState({ department: 'Junín', province: 'Huancayo', district: '' });
 
-  // Image State
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Reference State: fotos, enlaces y datos del encargo
+  const [images, setImages] = useState<ReferenceImage[]>([]);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [links, setLinks] = useState<string[]>([]);
+  const [linkInput, setLinkInput] = useState('');
+  const [occasion, setOccasion] = useState('');
+  const [desiredDate, setDesiredDate] = useState('');
+  const [budgetRange, setBudgetRange] = useState('');
+  const imagePreview = images[0]?.preview ?? null;
+
+  const addImages = async (fileList: FileList | File[] | null | undefined) => {
+    const files = Array.from(fileList ?? []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    const room = MAX_REFERENCE_IMAGES - images.length;
+    if (room <= 0) {
+      toast.error(`Máximo ${MAX_REFERENCE_IMAGES} fotos`, { description: 'Quita alguna para agregar otra.' });
+      return;
+    }
+    if (files.length > room) {
+      toast.info(`Solo se agregarán ${room} foto(s)`, { description: `El máximo es ${MAX_REFERENCE_IMAGES} por pedido.` });
+    }
+
+    const tooBig = files.filter((f) => f.size > MAX_ORIGINAL_IMAGE_BYTES);
+    if (tooBig.length) {
+      toast.error('Alguna foto es muy pesada', { description: 'Cada imagen debe pesar menos de 15 MB.' });
+    }
+
+    setIsProcessingImages(true);
+    try {
+      // Se comprimen en el dispositivo: suben rápido incluso con datos móviles
+      const accepted = files.filter((f) => f.size <= MAX_ORIGINAL_IMAGE_BYTES).slice(0, room);
+      const compressed = await Promise.all(accepted.map((file) => compressImage(file)));
+      setImages((prev) => [...prev, ...compressed.map((file) => ({ file, preview: URL.createObjectURL(file) }))]);
+    } finally {
+      setIsProcessingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Archivo muy grande', { description: 'La imagen no debe pesar más de 5MB.' });
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    void addImages(e.target.files);
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Archivo muy grande', { description: 'La imagen no debe pesar más de 5MB.' });
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    void addImages(e.dataTransfer.files);
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const addLink = () => {
+    const value = linkInput.trim();
+    if (!value) return;
+    if (!isValidLink(value)) {
+      toast.error('Enlace no válido', { description: 'Pega el enlace completo, por ejemplo https://pin.it/...' });
+      return;
+    }
+    if (links.length >= MAX_REFERENCE_LINKS) {
+      toast.error(`Máximo ${MAX_REFERENCE_LINKS} enlaces`);
+      return;
+    }
+    if (!links.includes(value)) setLinks((prev) => [...prev, value]);
+    setLinkInput('');
   };
 
   const handleAddInspiration = (tag: string) => {
@@ -156,11 +213,6 @@ export function CustomOrderClient() {
     try {
       setIsSubmitting(true);
       
-      let referenceImageUrl = null;
-      if (imageFile) {
-        referenceImageUrl = await convertFileToBase64(imageFile);
-      }
-
       const request: CreateCustomOrderRequest = {
         customer: {
           name: customer.name.trim(),
@@ -177,7 +229,10 @@ export function CustomOrderClient() {
           district: location.district.trim()
         },
         customizationNotes: customizationNotes.trim(),
-        referenceImageUrl: referenceImageUrl
+        referenceLinks: links,
+        desiredDate: desiredDate || null,
+        occasion: occasion || null,
+        budgetRange: budgetRange || null
       };
 
       const selectedZone = deliveryZones?.find(z => z.id === deliveryZoneId);
@@ -216,7 +271,7 @@ export function CustomOrderClient() {
         }
       }
 
-      const response = await OrdersService.createCustomOrder(request);
+      const response = await OrdersService.createCustomOrderWithImages(request, images.map((image) => image.file));
       setCreatedOrder(response);
       window.scrollTo(0, 0);
       
@@ -282,7 +337,7 @@ export function CustomOrderClient() {
               Diseño exclusivo hecho a mano para ti
             </h2>
             <p className="text-[#887870] text-sm md:text-base mt-3 max-w-xl leading-relaxed">
-              Cuéntanos tu idea, flores o temática especial. Sube una foto de referencia y nuestros floristas artesanos crearán una propuesta única.
+              Cuéntanos tu idea, flores o temática especial. Sube hasta 5 fotos o enlaces del modelo que te gusta y nuestros floristas artesanos crearán una propuesta única.
             </p>
           </>
         ) : (
@@ -367,71 +422,185 @@ export function CustomOrderClient() {
                 </div>
               </div>
               
-              {/* Lado Derecho: Zona de Carga de Imagen de Referencia */}
+              {/* Lado Derecho: Fotos y enlaces de referencia */}
               <div className="space-y-4 flex flex-col">
-                <label className="text-xs font-bold uppercase tracking-widest text-[#887870] block">
-                  Foto de referencia (Opcional)
-                </label>
-                
-                <div 
-                  className={`relative w-full flex-1 min-h-[220px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-all overflow-hidden cursor-pointer ${
-                    imagePreview 
-                      ? 'border-[#c8a96b] bg-white shadow-sm' 
-                      : isDragging 
-                        ? 'border-[#c8a96b] bg-[#c8a96b]/10 scale-[1.01]' 
-                        : 'border-[#e8dcdc] hover:border-[#c8a96b] bg-[#faf8f5]'
+                <div className="flex items-baseline justify-between">
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#887870] block">
+                    Fotos de referencia
+                  </label>
+                  <span className="text-[11px] font-semibold text-[#c8a96b]">{images.length}/{MAX_REFERENCE_IMAGES}</span>
+                </div>
+
+                <div
+                  className={`relative w-full rounded-2xl border-2 border-dashed p-3 transition-all ${
+                    isDragging ? 'border-[#c8a96b] bg-[#c8a96b]/10 scale-[1.01]' : 'border-[#e8dcdc] bg-[#faf8f5]'
                   }`}
-                  onClick={() => !imagePreview && fileInputRef.current?.click()}
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                 >
-                  {imagePreview ? (
-                    <div className="relative w-full h-full min-h-[220px] flex items-center justify-center p-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imagePreview} alt="Preview" className="w-full h-full max-h-[200px] object-contain rounded-xl shadow-xs" />
-                      
-                      <button 
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setImageFile(null); setImagePreview(null); }}
-                        className="absolute top-4 right-4 bg-[#4a3933]/80 hover:bg-red-500 text-white p-2 rounded-full shadow-md transition-all hover:scale-110"
-                        title="Quitar imagen"
-                      >
-                        <X size={15} />
-                      </button>
-
-                      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-black/5 flex items-center gap-1.5 text-[10px] font-medium text-[#4a3933]">
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span>Foto adjunta con éxito</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center p-6 flex flex-col items-center">
-                      <div className="bg-white p-4 rounded-full text-[#c8a96b] mb-3 shadow-sm border border-[#e8dcdc]/60 group-hover:scale-105 transition-transform">
+                  {images.length === 0 && !isProcessingImages ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full min-h-[200px] flex flex-col items-center justify-center text-center p-6"
+                    >
+                      <div className="bg-white p-4 rounded-full text-[#c8a96b] mb-3 shadow-sm border border-[#e8dcdc]/60">
                         <Upload size={26} />
                       </div>
-                      <p className="text-[#4a3933] text-sm font-semibold">
-                        Haz clic o arrastra tu imagen aquí
-                      </p>
-                      <p className="text-xs text-[#887870] mt-1">
-                        Sube capturas de Pinterest, Instagram o fotos de referencia
-                      </p>
+                      <p className="text-[#4a3933] text-sm font-semibold">Sube el modelo que te gusta</p>
+                      <p className="text-xs text-[#887870] mt-1">Capturas de Pinterest, TikTok, Instagram o tus propias fotos</p>
                       <span className="text-[10px] text-[#887870]/70 mt-2 bg-white px-2.5 py-0.5 rounded-full border border-[#e8dcdc]">
-                        JPG, PNG, WEBP hasta 5MB
+                        Hasta {MAX_REFERENCE_IMAGES} fotos · JPG, PNG o WEBP
                       </span>
+                    </button>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {images.map((image, index) => (
+                        <div key={image.preview} className="group relative aspect-square overflow-hidden rounded-xl border border-[#e8dcdc] bg-white">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={image.preview} alt={`Referencia ${index + 1}`} className="h-full w-full object-cover" />
+                          {index === 0 && (
+                            <span className="absolute bottom-1.5 left-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-bold text-[#4a3933]">Principal</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute right-1.5 top-1.5 rounded-full bg-[#4a3933]/80 p-1.5 text-white shadow transition hover:scale-110 hover:bg-red-500"
+                            title="Quitar foto"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      {isProcessingImages && (
+                        <div className="flex aspect-square items-center justify-center rounded-xl border border-[#e8dcdc] bg-white">
+                          <Loader2 className="h-5 w-5 animate-spin text-[#c8a96b]" />
+                        </div>
+                      )}
+                      {images.length < MAX_REFERENCE_IMAGES && !isProcessingImages && (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#e8dcdc] bg-white text-[#c8a96b] transition hover:border-[#c8a96b]"
+                        >
+                          <ImagePlus size={20} />
+                          <span className="text-[10px] font-semibold">Agregar</span>
+                        </button>
+                      )}
                     </div>
                   )}
-                  
-                  <input 
-                    type="file" 
+
+                  <input
+                    type="file"
                     accept="image/png, image/jpeg, image/webp"
-                    ref={fileInputRef} 
-                    className="hidden" 
+                    multiple
+                    ref={fileInputRef}
+                    className="hidden"
                     onChange={handleImageChange}
                   />
                 </div>
+
+                {/* Enlaces de inspiración */}
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#887870] block mb-2">
+                    Enlaces de inspiración (opcional)
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Link2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c8a96b]" />
+                      <input
+                        type="url"
+                        inputMode="url"
+                        value={linkInput}
+                        onChange={(e) => setLinkInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
+                        placeholder="Pega un enlace de Pinterest, TikTok..."
+                        className="w-full rounded-full border border-[#e8dcdc] bg-[#faf8f5] py-2.5 pl-10 pr-3 text-sm text-[#4a3933] outline-none transition focus:border-[#c8a96b] focus:ring-4 focus:ring-[#c8a96b]/15"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addLink}
+                      className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#4a3933] text-white transition hover:bg-[#5e4a42]"
+                      title="Agregar enlace"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                  {links.length > 0 && (
+                    <ul className="mt-2.5 flex flex-wrap gap-1.5">
+                      {links.map((link) => (
+                        <li key={link} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e8dcdc] bg-white py-1 pl-3 pr-1.5 text-xs text-[#5e4a42]">
+                          <span className="truncate max-w-[200px]">{link.replace(/^https?:\/\/(www\.)?/, '')}</span>
+                          <button type="button" onClick={() => setLinks((prev) => prev.filter((l) => l !== link))} className="rounded-full p-0.5 hover:bg-[#fdf0f0] hover:text-red-500" title="Quitar enlace">
+                            <X size={12} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
 
+            </div>
+
+            {/* Ocasión, fecha y presupuesto */}
+            <div className="mt-8 grid grid-cols-1 gap-6 border-t border-[#e8dcdc] pt-8 md:grid-cols-3 relative z-10">
+              <div>
+                <label className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#887870]">
+                  <PartyPopper className="h-3.5 w-3.5 text-[#d38b8b]" /> Ocasión
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {OCCASIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setOccasion(occasion === option ? '' : option)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        occasion === option ? 'border-[#d38b8b] bg-[#d38b8b] text-white' : 'border-[#e8dcdc] bg-[#faf8f5] text-[#4a3933] hover:border-[#d38b8b]'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="desired-date" className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#887870]">
+                  <CalendarHeart className="h-3.5 w-3.5 text-[#c8a96b]" /> ¿Para cuándo lo necesitas?
+                </label>
+                <input
+                  id="desired-date"
+                  type="date"
+                  min={todayInPeru()}
+                  value={desiredDate}
+                  onChange={(e) => setDesiredDate(e.target.value)}
+                  className="w-full rounded-2xl border border-[#e8dcdc] bg-[#faf8f5] px-4 py-3 text-sm text-[#4a3933] outline-none transition focus:border-[#c8a96b] focus:ring-4 focus:ring-[#c8a96b]/15"
+                />
+                <p className="mt-1.5 text-[11px] text-[#887870]">Te confirmamos si llegamos a tiempo.</p>
+              </div>
+
+              <div>
+                <label className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#887870]">
+                  <Wallet className="h-3.5 w-3.5 text-[#c8a96b]" /> Presupuesto aproximado
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {BUDGETS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setBudgetRange(budgetRange === option ? '' : option)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                        budgetRange === option ? 'border-[#c8a96b] bg-[#c8a96b] text-white' : 'border-[#e8dcdc] bg-[#faf8f5] text-[#4a3933] hover:border-[#c8a96b]'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Pie de Acción Paso 1 */}
@@ -729,9 +898,15 @@ export function CustomOrderClient() {
                       <span className="text-xs text-[#887870] mt-0.5 line-clamp-2 italic leading-relaxed">
                         &ldquo;{customizationNotes}&rdquo;
                       </span>
-                      {imagePreview && (
+                      {images.length > 0 && (
                         <span className="text-[10px] text-[#c8a96b] font-medium mt-1 inline-flex items-center gap-1">
-                          <Check className="w-3 h-3 text-emerald-600" /> Foto de referencia incluida
+                          <Check className="w-3 h-3 text-emerald-600" /> {images.length === 1 ? '1 foto de referencia' : `${images.length} fotos de referencia`}
+                          {links.length > 0 && ` · ${links.length} enlace${links.length > 1 ? 's' : ''}`}
+                        </span>
+                      )}
+                      {(occasion || desiredDate) && (
+                        <span className="text-[10px] text-[#887870] mt-0.5">
+                          {[occasion, desiredDate && `para el ${new Date(`${desiredDate}T12:00:00`).toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })}`].filter(Boolean).join(' · ')}
                         </span>
                       )}
                     </div>

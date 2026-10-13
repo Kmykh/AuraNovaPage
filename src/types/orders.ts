@@ -52,6 +52,12 @@ export interface CreateCustomOrderRequest {
   delivery: CreateOrderDeliveryRequest;
   referenceImageUrl?: string | null;
   customizationNotes?: string | null;
+  /** Enlaces de inspiración (Pinterest, TikTok, Instagram…). Las imágenes se envían como archivos. */
+  referenceLinks?: string[];
+  /** "YYYY-MM-DD" */
+  desiredDate?: string | null;
+  occasion?: string | null;
+  budgetRange?: string | null;
 }
 
 export interface AdminOrderListItemResponse {
@@ -135,6 +141,12 @@ export interface AdminOrderDetailResponse {
   isCustomOrder?: boolean;
   referenceImageUrl?: string | null;
   customizationNotes?: string | null;
+  // Brief del pedido personalizado (URLs firmadas y temporales)
+  referenceImages?: string[];
+  referenceLinks?: string[];
+  desiredDate?: string | null;
+  occasion?: string | null;
+  budgetRange?: string | null;
   
   // Timing
   startedAt?: string | null;

@@ -359,6 +359,11 @@ export function AdminOrderDetail({ id }: { id: string }) {
                 isCustomOrder={order.isCustomOrder}
                 customizationNotes={order.customizationNotes}
                 referenceImageUrl={order.referenceImageUrl}
+                referenceImages={order.referenceImages}
+                referenceLinks={order.referenceLinks}
+                desiredDate={order.desiredDate}
+                occasion={order.occasion}
+                budgetRange={order.budgetRange}
               />
 
               {/* Items Table (Contabilidad y Desglose Financiero) */}

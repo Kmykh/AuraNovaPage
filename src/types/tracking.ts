@@ -25,6 +25,8 @@ export interface TrackingItem {
 }
 
 export interface PublicTrackingResponse {
+  /** Id interno: para subir el comprobante o aceptar la cotización desde el seguimiento. */
+  orderId?: string;
   orderCode: string;
   customerFirstName?: string;
   status: OrderStatus;
@@ -35,6 +37,13 @@ export interface PublicTrackingResponse {
   referenceImageUrl?: string;
   customizationNotes?: string;
   notes?: string;
+
+  // Brief del pedido personalizado (URLs firmadas y temporales)
+  referenceImages?: string[];
+  referenceLinks?: string[];
+  desiredDate?: string | null;
+  occasion?: string | null;
+  budgetRange?: string | null;
 
   // Legacy flat fields
   total?: number | null;
