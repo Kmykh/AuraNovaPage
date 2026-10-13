@@ -9,8 +9,15 @@ export interface ProductResponse {
   isCampaignActive: boolean;
   campaignName?: string;
   campaignStageName?: string;
+  /** Hasta cuándo dura el precio de la etapa actual */
+  campaignStageEndsAt?: string | null;
+  /** Solo en el detalle: etapas de la campaña con el precio de este producto */
+  campaignStages?: ProductCampaignStage[] | null;
   stock: number;
+  /** Portada (la primera de `images`) */
   imageUrl: string | null;
+  /** Galería en orden, incluye la portada */
+  images?: string[];
   isAvailable: boolean;
   availableColors: string[];
   availableFlowerTypes: string[];
@@ -23,12 +30,22 @@ export interface ProductResponse {
   audience?: ProductAudience | null;
 }
 
+export interface ProductCampaignStage {
+  name: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  isCurrent: boolean;
+}
+
 export interface CreateProductRequest {
   name: string;
   description?: string;
   price: number;
   stock: number;
   imageUrl?: string;
+  /** Galería completa en orden (la primera es la portada) */
+  imageUrls?: string[];
   availableColors?: string[];
   availableFlowerTypes?: string[];
   allowsLights?: boolean;
@@ -43,6 +60,7 @@ export interface UpdateProductRequest {
   description?: string;
   price: number;
   imageUrl?: string;
+  imageUrls?: string[];
   availableColors?: string[];
   availableFlowerTypes?: string[];
   allowsLights?: boolean;
@@ -50,6 +68,17 @@ export interface UpdateProductRequest {
   allowsPhraseCard?: boolean;
   categoryId?: string | null;
   audience?: ProductAudience | null;
+}
+
+export interface ColorOption {
+  name: string;
+  /** "#rrggbb" o "multicolor" */
+  hex: string;
+}
+
+export interface CustomizationOptions {
+  colors: ColorOption[];
+  flowerTypes: string[];
 }
 
 export interface UpdateProductStockRequest {

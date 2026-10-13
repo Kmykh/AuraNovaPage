@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { PublicTrackingResponse } from '@/types/tracking';
 import { formatCurrency, getImageUrl } from '@/lib/formatters';
+import { ItemOptions } from '@/components/shared/ItemOptions';
 import { getDeliveryTypeLabel } from '@/lib/tracking-helpers';
 import { deliveryTypeName, formatLongDate } from '@/lib/tracking-progress';
 
@@ -42,7 +43,7 @@ export function TrackingOrderSummary({ tracking, onOpenTicket }: { tracking: Pub
       {items.length > 0 ? (
         <ul className="mt-5 divide-y divide-[#f1e9e4]">
           {items.map((item, index) => (
-            <li key={`${item.productName}-${index}`} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+            <li key={`${item.productName}-${index}`} className="flex items-start gap-4 py-3 first:pt-0 last:pb-0">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[#e8dcdc]/60 bg-[#faf7f2]">
                 {item.imageUrl ? (
                   <Image src={getImageUrl(item.imageUrl)} alt={item.productName} fill sizes="64px" className="object-cover" />
@@ -53,6 +54,14 @@ export function TrackingOrderSummary({ tracking, onOpenTicket }: { tracking: Pub
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-[#4a3933] sm:text-base">{item.productName}</p>
                 <p className="text-xs text-[#887870]">Cantidad: {item.quantity}</p>
+                <ItemOptions
+                  className="mt-1.5"
+                  colors={item.selectedColors}
+                  flowers={item.selectedFlowerTypes}
+                  hasLights={item.hasLights}
+                  hasButterfly={item.hasButterfly}
+                  hasPhraseCard={item.hasPhraseCard}
+                />
               </div>
               {item.unitPrice != null && (
                 <span className="shrink-0 text-sm font-bold text-[#4a3933]">{formatCurrency(item.unitPrice * item.quantity)}</span>

@@ -15,6 +15,9 @@ import { DeliveryType, CreateOrderRequest, CreateOrderResponse } from '@/types/c
 import { ApiProblemDetails, isTransientApiError } from '@/lib/api-errors';
 import { TransientApiErrorState } from '@/components/shared/TransientApiErrorState';
 import Image from 'next/image';
+import { ItemOptions } from '@/components/shared/ItemOptions';
+import { itemColors, itemFlowers } from '@/lib/product-options';
+import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
 import flo1 from '../images/flo1.png';
 
 export function CheckoutClient() {
@@ -31,8 +34,8 @@ export function CheckoutClient() {
   const [orderSnapshot, setOrderSnapshot] = useState<OrderDetailsSnapshot | null>(null);
   const [isContingencyMode, setIsContingencyMode] = useState(false);
 
-  // Customer Form State
-  const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
+  // Customer Form State: se recuerdan los datos del último pedido en este navegador
+  const [customer, setCustomer] = useState(readSavedCustomer);
   
   // Delivery State
   const [deliveryType, setDeliveryType] = useState<DeliveryType>(DeliveryType.Delivery);
@@ -85,6 +88,11 @@ export function CheckoutClient() {
       return;
     }
     
+    if (!isValidPeruPhone(customer.phone)) {
+      toast.error('Revisa tu número de WhatsApp', { description: 'Debe tener 9 dígitos y empezar con 9 (ej. 987654321).' });
+      return;
+    }
+
     if (!location.department.trim() || !location.province.trim() || !location.district.trim()) {
       toast.error('Faltan datos de ubicación', { description: 'Completa departamento, provincia y distrito.' });
       return;
@@ -115,10 +123,8 @@ export function CheckoutClient() {
       items: items.map(i => ({ 
         productId: i.productId, 
         quantity: i.quantity,
-        selectedPrimaryColor: i.selectedPrimaryColor,
-        selectedSecondaryColor: i.selectedSecondaryColor,
-        selectedFlowerType: i.selectedFlowerType,
-        selectedFlowerColor: i.selectedFlowerColor,
+        selectedColors: itemColors(i),
+        selectedFlowerTypes: itemFlowers(i),
         hasLights: i.hasLights,
         hasButterfly: i.hasButterfly,
         hasPhraseCard: i.hasPhraseCard,
@@ -150,10 +156,8 @@ export function CheckoutClient() {
             name: i.name,
             quantity: i.quantity,
             price: i.price,
-            selectedPrimaryColor: i.selectedPrimaryColor,
-            selectedSecondaryColor: i.selectedSecondaryColor,
-            selectedFlowerType: i.selectedFlowerType,
-            selectedFlowerColor: i.selectedFlowerColor,
+            selectedColors: itemColors(i),
+            selectedFlowerTypes: itemFlowers(i),
             hasLights: i.hasLights,
             hasButterfly: i.hasButterfly,
             hasPhraseCard: i.hasPhraseCard,
@@ -173,6 +177,7 @@ export function CheckoutClient() {
         };
 
         setOrderSnapshot(snapshot);
+        saveCustomer({ name: customer.name.trim(), phone: customer.phone.trim(), email: customer.email.trim() });
         if (typeof window !== 'undefined') {
           try {
             sessionStorage.setItem('latestOrderSnapshot', JSON.stringify(snapshot));
@@ -230,6 +235,13 @@ export function CheckoutClient() {
     msg += `*Productos seleccionados:*\n`;
     items.forEach(item => {
       msg += `- ${item.quantity}x ${item.name} (${formatCurrency(item.price * item.quantity)})\n`;
+      const colors = itemColors(item);
+      const flowers = itemFlowers(item);
+      if (colors.length) msg += `  Colores: ${colors.join(' / ')}\n`;
+      if (flowers.length) msg += `  Flores: ${flowers.join(' / ')}\n`;
+      if (item.hasLights) msg += `  Con luces\n`;
+      if (item.hasButterfly) msg += `  Con mariposas\n`;
+      if (item.phraseText) msg += `  Tarjeta: "${item.phraseText}"\n`;
     });
     
     msg += `\n*Modalidad de entrega:*\n`;
@@ -850,40 +862,14 @@ export function CheckoutClient() {
                   </div>
 
                   {/* Personalization Specs */}
-                  {(item.selectedPrimaryColor || item.selectedSecondaryColor || item.selectedFlowerType || item.selectedFlowerColor || item.hasLights || item.hasButterfly || item.hasPhraseCard || item.phraseText) && (
+                  {(itemColors(item).length > 0 || itemFlowers(item).length > 0 || item.hasLights || item.hasButterfly || item.hasPhraseCard || item.phraseText) && (
                     <div className="pt-2 border-t border-black/5 space-y-1.5">
-                      <div className="flex flex-wrap gap-1 text-[9px]">
-                        {item.selectedPrimaryColor && (
-                          <span className="bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 px-1.5 py-0.5 rounded-md">
-                            Base: {item.selectedPrimaryColor}
-                          </span>
-                        )}
-                        {item.selectedSecondaryColor && (
-                          <span className="bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 px-1.5 py-0.5 rounded-md">
-                            Secundario: {item.selectedSecondaryColor}
-                          </span>
-                        )}
-                        {item.selectedFlowerType && (
-                          <span className="bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 px-1.5 py-0.5 rounded-md">
-                            Flor: {item.selectedFlowerType}
-                          </span>
-                        )}
-                        {item.selectedFlowerColor && (
-                          <span className="bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 px-1.5 py-0.5 rounded-md">
-                            Color flor: {item.selectedFlowerColor}
-                          </span>
-                        )}
-                        {item.hasLights && (
-                          <span className="bg-[#fff8eb] text-[#b58129] border border-[#e8be66]/40 px-1.5 py-0.5 rounded-md">
-                            ✨ Luces LED
-                          </span>
-                        )}
-                        {item.hasButterfly && (
-                          <span className="bg-[#fff5f5] text-[#b85b6b] border border-[#e8a3b0]/40 px-1.5 py-0.5 rounded-md">
-                            🦋 Mariposa
-                          </span>
-                        )}
-                      </div>
+                      <ItemOptions
+                        colors={itemColors(item)}
+                        flowers={itemFlowers(item)}
+                        hasLights={item.hasLights}
+                        hasButterfly={item.hasButterfly}
+                      />
 
                       {/* Dedication Card Quote in Ticket */}
                       {(item.hasPhraseCard || item.phraseText) && (
@@ -964,7 +950,7 @@ export function CheckoutClient() {
             className="w-full h-14 text-xs tracking-widest uppercase flex items-center justify-center gap-2.5 rounded-full bg-[#4a3933] hover:bg-[#382b26] text-white font-sans font-bold shadow-xl shadow-[#4a3933]/20 transition-all duration-300 hover:-translate-y-1 disabled:opacity-50 disabled:pointer-events-none relative z-10"
             disabled={isSubmitting || items.some(i => !i.isAvailable)}
           >
-            {isSubmitting ? 'Procesando orden...' : 'Confirmar Pedido y Continuar'}
+            {isSubmitting ? 'Procesando pedido…' : `Confirmar pedido · ${formatCurrency(subtotal + estimatedDeliveryCost)}`}
           </Button>
 
           <p className="text-[10px] text-[#887870] uppercase tracking-wider font-bold text-center mt-4 flex items-center justify-center gap-1.5 relative z-10">

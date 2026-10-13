@@ -47,6 +47,8 @@ export interface CreateOrderCustomerRequest {
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
   selectedPrimaryColor?: string | null;
   selectedSecondaryColor?: string | null;
   selectedFlowerType?: string | null;

@@ -21,29 +21,43 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
-import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
+import { useAdminOrderCounts, needsActionCount } from '@/hooks/use-admin-orders';
 
 interface AdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const mainNavItems = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
-  { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
-  { name: 'Catálogo PDF', href: '/admin/catalogo', icon: BookOpen },
-  { name: 'Pedidos Personalizados', href: '/admin/cotizaciones', icon: FileText },
-  { name: 'Transmisión', href: '/admin/transmision', icon: Radio },
-];
+type NavItem = { name: string; href: string; icon: React.ElementType };
 
-const businessNavItems = [
-  { name: 'Campañas', href: '/admin/campanas', icon: Megaphone },
-  { name: 'Categorías', href: '/admin/categorias', icon: Tags },
-  { name: 'Pagos', href: '/admin/pagos', icon: CreditCard },
-  { name: 'Envíos', href: '/admin/envios', icon: Truck },
-  { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
-  { name: 'Auditoría', href: '/admin/auditoria', icon: ShieldAlert },
+const navGroups: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Ventas',
+    items: [
+      { name: 'Inicio', href: '/admin', icon: LayoutDashboard },
+      { name: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
+      { name: 'Personalizados', href: '/admin/cotizaciones', icon: FileText },
+      { name: 'Pagos', href: '/admin/pagos', icon: CreditCard },
+      { name: 'Envíos', href: '/admin/envios', icon: Truck },
+    ],
+  },
+  {
+    title: 'Catálogo',
+    items: [
+      { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
+      { name: 'Categorías', href: '/admin/categorias', icon: Tags },
+      { name: 'Campañas', href: '/admin/campanas', icon: Megaphone },
+      { name: 'Catálogo PDF', href: '/admin/catalogo', icon: BookOpen },
+    ],
+  },
+  {
+    title: 'Ajustes',
+    items: [
+      { name: 'Transmisión', href: '/admin/transmision', icon: Radio },
+      { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
+      { name: 'Auditoría', href: '/admin/auditoria', icon: ShieldAlert },
+    ],
+  },
 ];
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
@@ -55,26 +69,20 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     setRole(AuthSession.getRole());
   }, []);
 
-  const visibleMainNavItems = React.useMemo(() => {
-    return mainNavItems.filter(item => {
-      // Transmisión disponible para cualquier administrador autenticado
-      if (item.name === 'Transmisión' && !role) {
-        return false;
-      }
-      return true;
-    });
-  }, [role]);
+  const { data: counts } = useAdminOrderCounts();
+  const pendingOrders = needsActionCount(counts?.byStatus);
 
-  const visibleBusinessNavItems = React.useMemo(() => {
-    return businessNavItems.filter(item => {
-      if (item.name === 'Auditoría' && !role?.includes('SuperAdmin')) {
-        return false;
-      }
+  const visibleGroups = React.useMemo(() => navGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      // Transmisión: cualquier administrador autenticado. Auditoría: solo SuperAdmin.
+      if (item.name === 'Transmisión' && !role) return false;
+      if (item.name === 'Auditoría' && !role?.includes('SuperAdmin')) return false;
       return true;
-    });
-  }, [role]);
+    }),
+  })), [role]);
 
-  const NavLink = ({ item }: { item: typeof mainNavItems[0] }) => {
+  const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = item.href === '/admin' 
       ? pathname === '/admin' 
       : pathname?.startsWith(item.href);
@@ -100,9 +108,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           className={`transition-colors duration-200 ${isActive ? 'text-gold' : 'text-sage/70 group-hover:text-gold'}`} 
         />
         <span className="truncate">{item.name}</span>
-        {(item.name === 'Campañas' || item.name === 'Catálogo PDF') && (
-          <span className="ml-auto">
-            <NewFeatureBadge size="sm" label="NEW" />
+        {item.name === 'Pedidos' && pendingOrders > 0 && (
+          <span
+            className="ml-auto min-w-[20px] rounded-full bg-[#d38b8b] px-1.5 py-0.5 text-center text-[10px] font-bold text-white"
+            title="Pedidos que necesitan tu atención"
+          >
+            {pendingOrders}
           </span>
         )}
         {item.name === 'Transmisión' && (
@@ -150,26 +161,21 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
         <nav className="flex flex-1 flex-col overflow-y-auto pt-5 px-3 pb-4 gap-7">
           
-          <div className="space-y-1">
-            <h3 className="px-3 text-[10px] font-bold text-sage/60 uppercase tracking-[0.15em] mb-2.5">Operación</h3>
-            {visibleMainNavItems.map((item) => (
-              <NavLink key={item.name} item={item} />
-            ))}
-          </div>
-
-          <div className="space-y-1">
-            <h3 className="px-3 text-[10px] font-bold text-sage/60 uppercase tracking-[0.15em] mb-2.5">Negocio</h3>
-            {visibleBusinessNavItems.map((item) => (
-              <NavLink key={item.name} item={item} />
-            ))}
-          </div>
+          {visibleGroups.map(group => (
+            <div key={group.title} className="space-y-1">
+              <h3 className="px-3 text-[10px] font-bold text-sage/60 uppercase tracking-[0.15em] mb-2.5">{group.title}</h3>
+              {group.items.map(item => (
+                <NavLink key={item.name} item={item} />
+              ))}
+            </div>
+          ))}
         </nav>
 
         {/* Bottom branding */}
         <div className="px-5 py-4 border-t border-sage/8">
           <div className="flex items-center gap-2 text-sage/50">
             <Flower2 size={14} />
-            <span className="text-[10px] font-medium tracking-wide">Aura Nova Admin v2.0</span>
+            <span className="text-[10px] font-medium tracking-wide">Aura Nova Admin v3.0</span>
           </div>
         </div>
       </div>

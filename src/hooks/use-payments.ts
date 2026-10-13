@@ -11,7 +11,7 @@ export function usePaymentInfo() {
 }
 
 export function useUploadPaymentEvidence() {
-  return useMutation<PaymentResponse, Error, { orderId: string; file: File }>({
-    mutationFn: ({ orderId, file }) => paymentsService.uploadPaymentEvidence(orderId, file),
+  return useMutation<PaymentResponse, Error, { orderId: string; file: File; onProgress?: (percent: number) => void }>({
+    mutationFn: ({ orderId, file, onProgress }) => paymentsService.uploadPaymentEvidence(orderId, file, onProgress),
   });
 }

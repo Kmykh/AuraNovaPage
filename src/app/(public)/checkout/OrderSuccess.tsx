@@ -10,6 +10,7 @@ import flo4 from '@/app/(public)/images/flo4.png';
 import { Button } from '@/components/ui/Button';
 import { ArrowRight, Home, CheckCircle2, Info } from 'lucide-react';
 import { trackingPath } from '@/lib/tracking-code';
+import { TicketOptionLines } from '@/components/checkout/TicketOptionLines';
 
 export interface OrderDetailsSnapshot {
   customer?: {
@@ -22,6 +23,9 @@ export interface OrderDetailsSnapshot {
     name: string;
     quantity: number;
     price: number;
+    selectedColors?: string[];
+    selectedFlowerTypes?: string[];
+    /** @deprecated pedidos guardados con la versión anterior */
     selectedPrimaryColor?: string;
     selectedSecondaryColor?: string;
     selectedFlowerType?: string;
@@ -82,20 +86,21 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
     };
   }, []);
 
-  const isPaymentRequired = order.status === 2 || (order.status as any) === 'WaitingPayment';
+  const statusValue = order.status as unknown;
+  const isPaymentRequired = statusValue === 2 || statusValue === 'WaitingPayment';
+  // Pedido personalizado (o que requiere cotizar): todavía no tiene precio
+  const isQuote = statusValue === 0 || statusValue === 'WaitingQuote';
 
   const orderCode = order.orderCode || (order as any).OrderCode;
   const trackingToken = order.trackingToken || (order as any).TrackingToken || (order as any).token || '';
+  const orderId = order.id;
+  const orderTotal = order.total ?? null;
 
+  // La página de pago lee el estado real del backend: aquí solo se recuerda el código de seguimiento
   const handleProceed = () => {
-    if (isPaymentRequired) {
-      sessionStorage.setItem('tempPaymentContext', JSON.stringify({
-        orderCode: orderCode,
-        total: order.total || (order as any).Total,
-        shippingCost: order.deliveryCost || (order as any).DeliveryCost || 0,
-        status: isPaymentRequired ? 2 : order.status
-      }));
-      router.push(`/pago/${order.id || (order as any).Id}`);
+    sessionStorage.setItem('tempPaymentContext', JSON.stringify({ orderCode, trackingCode: trackingToken }));
+    if ((isPaymentRequired || isQuote) && orderId) {
+      router.push(`/pago/${orderId}`);
     } else {
       router.push(trackingPath(trackingToken));
     }
@@ -111,8 +116,6 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
   };
 
   if (!mounted) return null;
-
-  console.log("OrderSuccess Rendered: Horizontal Layout Active");
 
   return (
     <div className="w-full flex flex-col items-center justify-start relative z-10">
@@ -213,7 +216,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-[#777]">ESTADO:</span>
-                          <span className="font-bold text-[#b58129]">{isPaymentRequired ? 'POR ABONAR (50% O 100%)' : 'CONFIRMADO'}</span>
+                          <span className="font-bold text-[#b58129]">{isPaymentRequired ? 'POR ABONAR (50% O 100%)' : isQuote ? 'EN COTIZACIÓN' : 'CONFIRMADO'}</span>
                         </div>
                       </div>
 
@@ -309,10 +312,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                                 
                                 {/* Especificaciones de personalización */}
                                 <div className="text-[10px] text-[#555] space-y-0.5 pl-2 border-l border-stone-300">
-                                  {item.selectedPrimaryColor && <div>• Base: {item.selectedPrimaryColor}</div>}
-                                  {item.selectedSecondaryColor && <div>• Secundario: {item.selectedSecondaryColor}</div>}
-                                  {item.selectedFlowerType && <div>• Flor: {item.selectedFlowerType}</div>}
-                                  {item.selectedFlowerColor && <div>• Color flor: {item.selectedFlowerColor}</div>}
+                                  <TicketOptionLines item={item} />
                                   {item.hasLights && <div>• Luces LED incluidas ✨</div>}
                                   {item.hasButterfly && <div>• Mariposa decorativa 🦋</div>}
                                   {(item.hasPhraseCard || item.phraseText) && (
@@ -348,7 +348,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
 
                         <div className="flex justify-between font-bold text-sm text-[#b85b6b] pt-1">
                           <span>TOTAL A PAGAR</span>
-                          <span>{formatCurrency(order.total || (order as any).Total || 0)}</span>
+                          <span>{orderTotal != null ? formatCurrency(orderTotal) : 'POR COTIZAR'}</span>
                         </div>
                       </div>
 
@@ -395,7 +395,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
           {/* RIGHT: Texts and Action */}
           <div className="flex-1 flex flex-col justify-center items-center md:items-start text-center md:text-left mt-12 md:mt-0">
             <h1 className="text-4xl md:text-5xl font-serif text-[#4a3933] font-bold mb-4">
-              {isPaymentRequired ? '¡Casi listo!' : '¡Pedido confirmado!'}
+              {isPaymentRequired ? '¡Casi listo!' : isQuote ? '¡Recibimos tu idea!' : '¡Pedido confirmado!'}
             </h1>
             
             <div className="flex items-center gap-4 w-full justify-center md:justify-start mb-6">
@@ -405,9 +405,11 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
             </div>
             
             <p className="text-[#887870] text-sm md:text-base max-w-md mb-8">
-              {isPaymentRequired 
-                ? 'Tu pedido está en espera. Abona el 50% o el total para empezar a prepararlo.' 
-                : 'Gracias por tu compra. Tu pedido ha sido recibido y pronto llegará para crear sonrisas.'}
+              {isPaymentRequired
+                ? 'Tu pedido está reservado. Paga el 50% o el total con Yape y sube tu captura para empezar a prepararlo.'
+                : isQuote
+                  ? 'Revisaremos tus referencias y te enviaremos el precio por WhatsApp. En tu cotización podrás aceptarla y pagar en un solo paso.'
+                  : 'Gracias por tu compra. Tu pedido ha sido recibido y pronto llegará para crear sonrisas.'}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 mb-12 w-full justify-center md:justify-start">
@@ -419,7 +421,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                 onClick={handleProceed}
                 className={`h-10 text-xs tracking-widest uppercase flex items-center justify-center gap-2 rounded-full font-sans font-bold transition-all hover:scale-[1.02] shadow-lg px-8 ${isPaymentRequired ? 'bg-[#4a3933] hover:bg-[#3d2e29] text-white shadow-[#4a3933]/20' : 'bg-[#71a37c] hover:bg-[#5b8764] text-white shadow-[#71a37c]/30'}`}
               >
-                {isPaymentRequired ? 'IR A PAGAR AHORA' : 'VER ESTADO'} <ArrowRight size={16} />
+                {isPaymentRequired ? 'IR A PAGAR AHORA' : isQuote ? 'VER MI COTIZACIÓN' : 'VER ESTADO'} <ArrowRight size={16} />
               </Button>
             </div>
 

@@ -1,5 +1,5 @@
 import { apiClient } from '../lib/api-client';
-import { CreateOrderRequest, CreateOrderResponse, CreateCustomOrderRequest } from '../types/orders';
+import { CreateOrderRequest, CreateOrderResponse, CreateCustomOrderRequest, OrderPaymentSummary } from '../types/orders';
 
 export const OrdersService = {
   createOrder: async (request: CreateOrderRequest): Promise<CreateOrderResponse> => {
@@ -18,6 +18,12 @@ export const OrdersService = {
     form.append('data', JSON.stringify(request));
     images.forEach((image) => form.append('images', image, image.name));
     const { data } = await apiClient.post<CreateOrderResponse>('/api/orders/custom', form, { timeout: 120000 });
+    return data;
+  },
+
+  /** Estado, montos y productos del pedido para la página de pago (siempre desde la BD). */
+  getPaymentSummary: async (id: string): Promise<OrderPaymentSummary> => {
+    const { data } = await apiClient.get<OrderPaymentSummary>(`/api/orders/${id}/summary`);
     return data;
   },
 

@@ -22,6 +22,12 @@ export interface TrackingItem {
   quantity: number;
   unitPrice?: number;
   imageUrl?: string;
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
+  hasLights?: boolean;
+  hasButterfly?: boolean;
+  hasPhraseCard?: boolean;
+  phraseText?: string | null;
 }
 
 export interface PublicTrackingResponse {

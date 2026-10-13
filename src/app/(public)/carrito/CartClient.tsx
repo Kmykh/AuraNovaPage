@@ -3,13 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ItemOptions } from '@/components/shared/ItemOptions';
+import { itemColors, itemFlowers } from '@/lib/product-options';
 import { useCartStore } from '@/store/cart.store';
 import { useMounted } from '@/hooks/use-mounted';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal } from '@/components/ui/Modal';
-import { PackageOpen, Trash2, Plus, Minus, Info, ArrowRight, Truck, Sparkles, Mail, Palette, Flower2 } from 'lucide-react';
+import { PackageOpen, Trash2, Plus, Minus, Info, ArrowRight, Truck, Sparkles, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 import flo1 from '../images/flo1.png';
@@ -147,45 +149,16 @@ export function CartClient() {
                         </p>
                         
                         {/* Customization Details Showcase */}
-                        {(item.selectedPrimaryColor || item.selectedSecondaryColor || item.selectedFlowerType || item.selectedFlowerColor || item.hasLights || item.hasButterfly || item.hasPhraseCard || item.phraseText) && (
+                        {(itemColors(item).length > 0 || itemFlowers(item).length > 0 || item.hasLights || item.hasButterfly || item.hasPhraseCard || item.phraseText) && (
                           <div className="mt-3 space-y-2">
-                            {/* Chips Grid */}
-                            <div className="flex flex-wrap gap-1.5">
-                              {item.selectedPrimaryColor && (
-                                <span className="inline-flex items-center gap-1.5 bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  <span className="w-2 h-2 rounded-full bg-[#c8a96b] shadow-2xs" />
-                                  <span className="opacity-75 font-normal">Base:</span> {item.selectedPrimaryColor}
-                                </span>
-                              )}
-                              {item.selectedSecondaryColor && (
-                                <span className="inline-flex items-center gap-1.5 bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  <Palette className="w-3 h-3 text-[#c8a96b]" />
-                                  <span className="opacity-75 font-normal">Secundario:</span> {item.selectedSecondaryColor}
-                                </span>
-                              )}
-                              {item.selectedFlowerType && (
-                                <span className="inline-flex items-center gap-1.5 bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  <Flower2 className="w-3 h-3 text-[#d38b8b]" />
-                                  <span className="opacity-75 font-normal">Flor:</span> {item.selectedFlowerType}
-                                </span>
-                              )}
-                              {item.selectedFlowerColor && (
-                                <span className="inline-flex items-center gap-1.5 bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  <span className="w-2 h-2 rounded-full bg-[#d38b8b] shadow-2xs" />
-                                  <span className="opacity-75 font-normal">Color flor:</span> {item.selectedFlowerColor}
-                                </span>
-                              )}
-                              {item.hasLights && (
-                                <span className="inline-flex items-center gap-1 bg-[#fff8eb] text-[#b58129] border border-[#e8be66]/40 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  ✨ Luces LED
-                                </span>
-                              )}
-                              {item.hasButterfly && (
-                                <span className="inline-flex items-center gap-1 bg-[#fff5f5] text-[#b85b6b] border border-[#e8a3b0]/40 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-2xs">
-                                  🦋 Mariposa
-                                </span>
-                              )}
-                            </div>
+                            {/* Colores con su muestra, flores y extras */}
+                            <ItemOptions
+                              colors={itemColors(item)}
+                              flowers={itemFlowers(item)}
+                              hasLights={item.hasLights}
+                              hasButterfly={item.hasButterfly}
+                              size="md"
+                            />
 
                             {/* Dedication Card Preview */}
                             {(item.hasPhraseCard || item.phraseText) && (

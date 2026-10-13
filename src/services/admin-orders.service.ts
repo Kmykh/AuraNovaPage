@@ -1,6 +1,7 @@
 import { apiClient } from '../lib/api-client';
 import { PagedResponse } from '../types/common';
 import { 
+  AdminOrderCountsResponse,
   AdminOrderListItemResponse, 
   AdminOrderDetailResponse, 
   ChangeOrderStatusRequest, 
@@ -8,6 +9,26 @@ import {
   OrderStatusHistoryResponse 
 } from '../types/orders';
 import { NotificationResponse, WhatsAppPreparationResponse } from '../types/notifications';
+import { DeliveryType, OrderStatus } from '../types/enums';
+
+/**
+ * La API envía estado y tipo de entrega como texto ("PaymentReported", "NationalShipping");
+ * el panel los compara con los enums numéricos. Se normalizan aquí una sola vez.
+ */
+function toEnum<T extends Record<string, string | number>>(enumType: T, value: unknown): T[keyof T] {
+  if (typeof value === 'number') return value as T[keyof T];
+  const asNumber = Number(value);
+  if (Number.isInteger(asNumber)) return asNumber as T[keyof T];
+  return (enumType[value as keyof T] ?? value) as T[keyof T];
+}
+
+function normalizeOrder(order: AdminOrderDetailResponse): AdminOrderDetailResponse {
+  return {
+    ...order,
+    status: toEnum(OrderStatus, order.status) as OrderStatus,
+    deliveryType: toEnum(DeliveryType, order.deliveryType) as DeliveryType,
+  };
+}
 
 export const AdminOrdersService = {
   getOrders: async (params?: Record<string, string | number>): Promise<PagedResponse<AdminOrderListItemResponse>> => {
@@ -15,9 +36,14 @@ export const AdminOrdersService = {
     return data;
   },
 
+  getCounts: async (): Promise<AdminOrderCountsResponse> => {
+    const { data } = await apiClient.get<AdminOrderCountsResponse>('/api/admin/orders/counts');
+    return data;
+  },
+
   getOrder: async (id: string): Promise<AdminOrderDetailResponse> => {
     const { data } = await apiClient.get<AdminOrderDetailResponse>(`/api/admin/orders/${id}`);
-    return data;
+    return normalizeOrder(data);
   },
 
   changeStatus: async (id: string, request: ChangeOrderStatusRequest): Promise<OrderStatusChangeResponse> => {

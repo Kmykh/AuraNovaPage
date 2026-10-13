@@ -1,212 +1,170 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useMounted } from '@/hooks/use-mounted';
-import { OrderStatus } from '@/types/checkout';
-import { PaymentInstructions } from '@/components/checkout/PaymentInstructions';
-import { Button } from '@/components/ui/Button';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ChevronLeft, Receipt } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatters';
+import { useMounted } from '@/hooks/use-mounted';
+import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
+import { PaymentInstructions } from '@/components/checkout/PaymentInstructions';
 import { PaymentEvidenceUploader } from '@/components/checkout/PaymentEvidenceUploader';
-import { PaymentReportedState } from '@/components/checkout/PaymentReportedState';
 import { OrderTicketModal } from '@/components/checkout/OrderTicketModal';
+import {
+  AmountBreakdown, OrderNotFoundState, PaymentDoneState, PaymentReportedState, QuotePendingState, QuoteReadyState, SummaryItems,
+} from '@/components/checkout/PaymentStates';
 import { OrderDetailsSnapshot } from '@/app/(public)/checkout/OrderSuccess';
-
-import { NationalQuotePendingState } from '@/components/quotes/NationalQuotePendingState';
-import { QuoteReadyCard } from '@/components/quotes/QuoteReadyCard';
+import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { formatCurrency } from '@/lib/formatters';
+import { ApiProblemDetails } from '@/lib/api-errors';
 
 interface PaymentClientProps {
   orderId: string;
 }
 
+interface StoredContext {
+  orderCode?: string;
+  trackingCode?: string;
+}
+
+/** Datos que quedaron en este navegador al crear el pedido (ticket y código de seguimiento). */
+function readStoredContext(): { context: StoredContext; snapshot: OrderDetailsSnapshot | null } {
+  if (typeof window === 'undefined') return { context: {}, snapshot: null };
+  try {
+    const context = JSON.parse(sessionStorage.getItem('tempPaymentContext') || '{}') as StoredContext;
+    const snapshot = JSON.parse(sessionStorage.getItem('latestOrderSnapshot') || 'null') as OrderDetailsSnapshot | null;
+    return { context, snapshot };
+  } catch {
+    return { context: {}, snapshot: null };
+  }
+}
+
+/**
+ * Página de pago. El estado y los montos se leen siempre del backend (antes se tomaban del navegador
+ * al crear el pedido y por eso un pedido ya cotizado seguía mostrando "por cotizar").
+ */
 export function PaymentClient({ orderId }: PaymentClientProps) {
   const isMounted = useMounted();
-  
-  const getInitialContext = () => {
-    if (typeof window !== 'undefined') {
-      const rawContext = sessionStorage.getItem('tempPaymentContext');
-      if (rawContext) {
-        try {
-          return JSON.parse(rawContext);
-        } catch {
-          // Ignore parse errors
-        }
-      }
-    }
-    return { orderCode: '', total: null, status: null, shippingCost: 0 };
-  };
-
-  const initialContext = getInitialContext();
-  const [orderCode] = useState<string>(initialContext.orderCode);
-  const [total, setTotal] = useState<number | null>(initialContext.total);
-  const [shippingCost] = useState<number>(initialContext.shippingCost || 0);
-  const [status, setStatus] = useState<OrderStatus | null>(initialContext.status);
-  const [isReported, setIsReported] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: summary, isLoading, error, refetch, isFetching } = useOrderSummary(orderId);
+  const [stored] = useState(readStoredContext);
   const [isTicketOpen, setIsTicketOpen] = useState(false);
-  const [snapshot, setSnapshot] = useState<OrderDetailsSnapshot | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('latestOrderSnapshot');
-        if (stored) {
-          setSnapshot(JSON.parse(stored));
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }, []);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
 
-  if (!isMounted) {
+  if (!isMounted || isLoading) {
     return (
-      <div className="w-full flex justify-center py-20">
-        <div className="h-8 w-8 border-4 border-sage/20 border-t-gold rounded-full animate-spin"></div>
+      <div className="mx-auto max-w-5xl space-y-5">
+        <Skeleton variant="rect" className="h-24 w-full rounded-3xl" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Skeleton variant="rect" className="h-80 w-full rounded-[2rem]" />
+          <Skeleton variant="rect" className="h-80 w-full rounded-[2rem]" />
+        </div>
       </div>
     );
   }
 
-  // 1. Error state (Missing Context)
-  if (status === null && !isReported) {
+  if (error || !summary) {
+    if (error instanceof ApiProblemDetails && error.status === 404) return <OrderNotFoundState />;
     return (
-      <div className="max-w-2xl mx-auto py-12 text-center bg-cream/30 rounded-2xl border border-sage/10 p-8">
-        <AlertTriangle className="w-12 h-12 text-sage/40 mx-auto mb-4" />
-        <h2 className="text-xl font-serif font-semibold text-brown mb-2">Información no disponible</h2>
-        <p className="text-sage mb-6">No encontramos los detalles de tu pedido actual. Es posible que hayas refrescado la página.</p>
-        <Link href="/productos" tabIndex={-1}>
-          <Button variant="outline">Volver al catálogo</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  // 2. Waiting Quote Protector (Phase 8)
-  if (status === OrderStatus.WaitingQuote) {
-    return <NationalQuotePendingState orderCode={orderCode} total={total} />;
-  }
-
-  // 3. Quote Ready (Phase 8 Workaround)
-  if (status === OrderStatus.QuoteReady) {
-    return (
-      <QuoteReadyCard 
-        orderId={orderId} 
-        orderCode={orderCode} 
-        subtotal={total} 
-        shippingCost={shippingCost} 
-        onAcceptSuccess={() => {
-          setStatus(OrderStatus.WaitingPayment);
-          const newTotal = total !== null ? total + shippingCost : null;
-          setTotal(newTotal);
-          sessionStorage.setItem('tempPaymentContext', JSON.stringify({
-            orderCode,
-            total: newTotal,
-            status: OrderStatus.WaitingPayment
-          }));
-        }} 
+      <ErrorState
+        title="No pudimos cargar tu pedido"
+        message="Revisa tu conexión e inténtalo de nuevo."
+        onRetry={() => refetch()}
       />
     );
   }
 
-  // 4. Success State (Phase 7)
-  if (isReported || status === OrderStatus.PaymentReported) {
-    return <PaymentReportedState orderCode={orderCode} />;
+  // El código de seguimiento solo se conoce en el navegador donde se hizo el pedido
+  const sameOrder = stored.context.orderCode === summary.orderCode;
+  const trackingCode = sameOrder ? stored.context.trackingCode : undefined;
+  const snapshot = sameOrder ? stored.snapshot : null;
+
+  switch (summary.status) {
+    case 'WaitingQuote':
+      return <QuotePendingState summary={summary} trackingCode={trackingCode} isRefreshing={isFetching} />;
+    case 'QuoteReady':
+      return <QuoteReadyState summary={summary} onAccepted={refresh} />;
+    case 'PaymentReported':
+      return <PaymentReportedState orderCode={summary.orderCode} trackingCode={trackingCode} />;
+    case 'WaitingPayment':
+      break;
+    default:
+      return <PaymentDoneState summary={summary} trackingCode={trackingCode} />;
   }
 
-  // 5. Main Payment Form
+  const total = summary.total;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
-      {/* Navegación y Título Compacto */}
+    <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex items-center justify-between">
-        <Link 
-          href="/" 
-          className="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-[#887870] hover:text-[#4a3933] transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4 mr-0.5" />
-          Volver a la tienda
+        <Link href="/" className="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-[#887870] transition-colors hover:text-[#4a3933]">
+          <ChevronLeft className="mr-0.5 h-4 w-4" /> Volver a la tienda
         </Link>
-        <span className="text-[11px] text-[#887870]">
-          Paso final de confirmación
-        </span>
+        <span className="text-[11px] text-[#887870]">Paso final</span>
       </div>
-      
-      {/* Barra Superior Compacta de Resumen y Acceso al Ticket */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-[#c8a96b]/30 p-4 sm:p-5 shadow-[0_10px_30px_-10px_rgba(200,169,107,0.1)] flex flex-col sm:flex-row justify-between items-center gap-4">
-        {/* Izquierda: Info de Pedido y Estado */}
-        <div className="flex flex-wrap items-center gap-3 text-center sm:text-left">
-          <div className="w-10 h-10 rounded-2xl bg-[#faf7f2] border border-[#c8a96b]/30 flex items-center justify-center text-[#c8a96b] shrink-0">
-            <Receipt className="w-5 h-5" />
-          </div>
+
+      {summary.paymentRejectionReason && (
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
           <div>
-            <div className="flex items-center gap-2 justify-center sm:justify-start">
-              <span className="text-xs uppercase font-bold tracking-widest text-[#887870]">Pedido</span>
-              <span className="font-mono font-bold text-[#4a3933] text-sm bg-[#faf7f2] px-2 py-0.5 rounded-md border border-[#c8a96b]/20">
-                {orderCode || 'Tu pedido'}
-              </span>
-              <span className="text-[11px] font-semibold text-[#b58129] bg-[#fdf6e7] border border-[#b58129]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#b58129] animate-pulse" />
-                Esperando abono
-              </span>
-            </div>
-            <p className="text-xs text-[#887870] mt-0.5">
-              {snapshot?.items?.length 
-                ? `${snapshot.items.length} ${snapshot.items.length === 1 ? 'producto personalizado' : 'productos personalizados'}` 
-                : 'Detalles de tu orden listos'}
+            <p className="font-bold">Tu comprobante anterior no pudo validarse</p>
+            <p className="mt-0.5">Motivo: {summary.paymentRejectionReason}. Sube una nueva captura donde se vea bien el pago.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Resumen del pedido y monto a pagar */}
+      <div className="grid grid-cols-1 gap-5 rounded-3xl border border-[#c8a96b]/30 bg-white/95 p-5 shadow-[0_10px_30px_-10px_rgba(200,169,107,0.1)] backdrop-blur-md md:grid-cols-[1fr_280px]">
+        <div className="min-w-0">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#887870]">Pedido</span>
+            <span className="rounded-md border border-[#c8a96b]/20 bg-[#faf7f2] px-2 py-0.5 font-mono text-sm font-bold text-[#4a3933]">{summary.orderCode}</span>
+            <span className="flex items-center gap-1 rounded-full border border-[#b58129]/20 bg-[#fdf6e7] px-2.5 py-0.5 text-[11px] font-semibold text-[#b58129]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#b58129]" /> Esperando tu pago
+            </span>
+          </div>
+          {summary.items.length > 0 ? (
+            <SummaryItems summary={summary} />
+          ) : (
+            <p className="text-sm text-[#887870]">Diseño personalizado según tus referencias.</p>
+          )}
+        </div>
+        <div className="space-y-3">
+          <AmountBreakdown summary={summary} />
+          {total != null && (
+            <p className="text-center text-[11px] text-[#887870]">
+              Puedes pagar el total o un adelanto del 50% ({formatCurrency(total * 0.5)}).
             </p>
-          </div>
-        </div>
-
-        {/* Derecha: Importe y Botón Ver Ticket */}
-        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[#e8dcdc]/60">
-          <div className="text-left sm:text-right">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-[#887870] block">Total a Pagar</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-serif font-bold text-[#4a3933]">
-                {total !== null ? formatCurrency(total) : '---'}
-              </span>
-              {total !== null && (
-                <span className="text-[11px] text-[#c8a96b] font-medium hidden sm:inline">
-                  (50%: {formatCurrency(total * 0.5)})
-                </span>
-              )}
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            onClick={() => setIsTicketOpen(true)}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider rounded-full bg-[#faf7f2] hover:bg-[#f3ece2] text-[#4a3933] border border-[#c8a96b]/40 shadow-xs hover:shadow-md px-4 py-2.5 transition-all hover:scale-[1.02] active:scale-95"
-          >
-            <Receipt className="w-4 h-4 text-[#c8a96b]" />
-            <span>Ver mi Ticket</span>
-          </Button>
+          )}
+          {snapshot && (
+            <Button
+              type="button"
+              onClick={() => setIsTicketOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#c8a96b]/40 bg-[#faf7f2] text-xs font-bold uppercase tracking-wider text-[#4a3933] hover:bg-[#f3ece2]"
+            >
+              <Receipt className="h-4 w-4 text-[#c8a96b]" /> Ver mi ticket
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Grid de 2 Columnas Compactas: QR e Instrucciones + Subida de Comprobante */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
-        {/* Left Column: QR and Info */}
-        <PaymentInstructions total={total} orderCode={orderCode} />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8">
+        <PaymentInstructions total={total} orderCode={summary.orderCode} />
+        <PaymentEvidenceUploader orderId={orderId} onSuccess={refresh} />
+      </div>
 
-        {/* Right Column: Uploader */}
-        <PaymentEvidenceUploader 
-          orderId={orderId} 
-          onSuccess={() => {
-            setIsReported(true);
-            setStatus(OrderStatus.PaymentReported);
-          }} 
+      {snapshot && (
+        <OrderTicketModal
+          isOpen={isTicketOpen}
+          onClose={() => setIsTicketOpen(false)}
+          orderCode={summary.orderCode}
+          total={total}
+          shippingCost={summary.deliveryCost ?? 0}
+          snapshot={snapshot}
         />
-      </div>
-
-      {/* Modal con Ticket de Compra Completo */}
-      <OrderTicketModal
-        isOpen={isTicketOpen}
-        onClose={() => setIsTicketOpen(false)}
-        orderCode={orderCode}
-        total={total}
-        shippingCost={shippingCost}
-        snapshot={snapshot}
-      />
+      )}
     </div>
   );
 }

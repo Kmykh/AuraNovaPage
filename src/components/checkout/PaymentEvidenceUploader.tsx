@@ -1,197 +1,208 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
+import React, { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { AlertCircle, Camera, CheckCircle2, Loader2, RefreshCw, UploadCloud } from 'lucide-react';
 import { useUploadPaymentEvidence } from '@/hooks/use-payments';
 import { Button } from '@/components/ui/Button';
-import { toast } from 'sonner';
-import { UploadCloud, FileImage, X, AlertCircle } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
+import { compressImage } from '@/lib/compress-image';
 
 interface PaymentEvidenceUploaderProps {
   orderId: string;
   onSuccess: () => void;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+// Se acepta la foto tal cual sale del celular: se reduce en el navegador antes de subirla
+const MAX_ORIGINAL_SIZE = 25 * 1024 * 1024;
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const formatSize = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`);
 
 export function PaymentEvidenceUploader({ orderId, onSuccess }: PaymentEvidenceUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const [file, setFile] = useState<File | null>(null);
+  const [originalSize, setOriginalSize] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const { mutate: uploadEvidence, isPending } = useUploadPaymentEvidence();
 
-  // Prevenir leaks de memoria con Object URLs
-  useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const pickFile = async (selected: File | undefined) => {
     setErrorMsg(null);
-    const selectedFile = e.target.files?.[0];
-    
-    if (!selectedFile) return;
+    if (!selected) return;
 
-    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-      setErrorMsg('Formato no permitido. Usa JPG, PNG o WEBP.');
+    if (!ALLOWED_TYPES.includes(selected.type)) {
+      setErrorMsg('Sube una foto o captura en JPG, PNG o WEBP.');
+      return;
+    }
+    if (selected.size > MAX_ORIGINAL_SIZE) {
+      setErrorMsg('La imagen es demasiado grande. Envía una captura de pantalla de tu Yape.');
       return;
     }
 
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setErrorMsg('El archivo supera el tamaño máximo de 5 MB.');
+    setIsPreparing(true);
+    // Fotos de celular de 5-12 MB quedan en ~300 KB: suben rápido aun con datos móviles
+    const compressed = await compressImage(selected, 2000, 0.85);
+    setIsPreparing(false);
+
+    if (compressed.size > MAX_UPLOAD_SIZE) {
+      setErrorMsg('No pudimos reducir la imagen. Envía una captura de pantalla de tu Yape.');
       return;
     }
 
-    setFile(selectedFile);
-    
-    // Crear preview seguro
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(selectedFile));
+    setOriginalSize(selected.size);
+    setFile(compressed);
+    setPreviewUrl(URL.createObjectURL(compressed));
   };
 
   const clearFile = () => {
     setFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
+    setOriginalSize(null);
+    setPreviewUrl(null);
     setErrorMsg(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setErrorMsg('Selecciona un archivo primero.');
+      setErrorMsg('Primero elige la captura de tu pago.');
       return;
     }
 
+    setProgress(0);
     uploadEvidence(
-      { orderId, file },
+      { orderId, file, onProgress: setProgress },
       {
         onSuccess: () => {
-          toast.success('Comprobante enviado exitosamente');
+          toast.success('¡Comprobante recibido!');
           onSuccess();
         },
         onError: (error) => {
-          if (error instanceof ApiProblemDetails) {
-            // Manejar errores como 400, 409, 413
-            setErrorMsg(error.detail || 'Hubo un error validando tu comprobante.');
-          } else {
-            setErrorMsg('No pudimos comunicarnos con Aura Nova. Revisa tu conexión e inténtalo nuevamente.');
-          }
-        }
-      }
+          setProgress(null);
+          setErrorMsg(error instanceof ApiProblemDetails
+            ? error.detail || 'No pudimos validar tu comprobante.'
+            : 'No pudimos comunicarnos con Aura Nova. Revisa tu conexión e inténtalo de nuevo.');
+        },
+      },
     );
   };
 
+  const busy = isPending || isPreparing;
+
   return (
-    <div className="bg-white/90 backdrop-blur-xl rounded-[2.2rem] p-5 sm:p-6 shadow-[0_15px_35px_-10px_rgba(200,169,107,0.12)] border border-[#c8a96b]/25 flex flex-col justify-between h-full space-y-4">
-      {/* Header Compacto */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#e8dcdc]/70">
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-full bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 flex items-center justify-center font-bold text-xs shadow-2xs">
-            2
-          </span>
-          <div>
-            <span className="text-[9px] font-serif uppercase tracking-[0.2em] text-[#c8a96b] font-bold block">
-              Confirmación
-            </span>
-            <h3 className="font-serif text-lg sm:text-xl font-bold text-[#4a3933] leading-tight">
-              Envía tu Comprobante
-            </h3>
-          </div>
+    <div className="flex h-full flex-col justify-between space-y-4 rounded-[2.2rem] border border-[#c8a96b]/25 bg-white/90 p-5 shadow-[0_15px_35px_-10px_rgba(200,169,107,0.12)] backdrop-blur-xl sm:p-6">
+      <div className="flex items-center gap-2.5 border-b border-[#e8dcdc]/70 pb-3">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#c8a96b]/30 bg-[#fcf9f2] text-xs font-bold text-[#8f6d28]">2</span>
+        <div>
+          <span className="block font-serif text-[9px] font-bold uppercase tracking-[0.2em] text-[#c8a96b]">Último paso</span>
+          <h3 className="font-serif text-lg font-bold leading-tight text-[#4a3933] sm:text-xl">Sube la captura de tu pago</h3>
         </div>
-        <span className="text-[10px] text-[#887870] font-medium">
-          JPG, PNG o WEBP
-        </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-1 flex-col justify-between space-y-4">
         {!file ? (
-          <div 
-            className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-[#c8a96b]/35 hover:border-[#c8a96b] rounded-2xl p-5 bg-[#fdfbf7] hover:bg-white transition-all cursor-pointer min-h-[170px] text-center group shadow-2xs"
+          <button
+            type="button"
+            disabled={busy}
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              void pickFile(e.dataTransfer.files?.[0]);
+            }}
+            className={`group flex min-h-[190px] flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition ${
+              isDragging ? 'border-[#c8a96b] bg-white' : 'border-[#c8a96b]/35 bg-[#fdfbf7] hover:border-[#c8a96b] hover:bg-white'
+            }`}
           >
-            <div className="w-10 h-10 rounded-full bg-white border border-[#c8a96b]/30 flex items-center justify-center text-[#c8a96b] mb-2 group-hover:scale-110 transition-transform shadow-2xs">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <p className="font-serif font-bold text-sm text-[#4a3933] mb-0.5">
-              Haz clic o arrastra tu captura aquí
-            </p>
-            <p className="text-[11px] text-[#887870]">
-              Foto o captura legible de tu transferencia (hasta 5 MB)
-            </p>
-          </div>
+            {isPreparing ? (
+              <>
+                <Loader2 className="mb-2 h-8 w-8 animate-spin text-[#c8a96b]" />
+                <p className="text-sm font-semibold text-[#4a3933]">Preparando tu imagen…</p>
+              </>
+            ) : (
+              <>
+                <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-[#c8a96b]/30 bg-white text-[#c8a96b] transition group-hover:scale-110">
+                  <UploadCloud className="h-6 w-6" />
+                </span>
+                <p className="mb-0.5 font-serif text-sm font-bold text-[#4a3933]">Toca para elegir tu captura</p>
+                <p className="text-[11px] text-[#887870]">o arrástrala aquí. Debe verse el monto, la fecha y el nombre.</p>
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#8c6d36] ring-1 ring-[#c8a96b]/30">
+                  <Camera className="h-3.5 w-3.5" /> Captura de pantalla o foto
+                </span>
+              </>
+            )}
+          </button>
         ) : (
-          <div className="flex-1 flex flex-col space-y-2.5">
-            <div className="relative w-full rounded-2xl overflow-hidden bg-white border border-[#c8a96b]/30 h-[170px] flex items-center justify-center group shadow-2xs">
+          <div className="flex flex-1 flex-col space-y-2.5">
+            <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-2xl border border-[#c8a96b]/30 bg-white">
               {previewUrl && (
-                <Image 
-                  src={previewUrl} 
-                  alt="Vista previa del comprobante" 
-                  fill 
-                  className="object-contain p-2" 
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+                // Vista previa local (blob): no pasa por el optimizador de imágenes
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="Vista previa del comprobante" className="h-full w-full object-contain p-2" />
               )}
-              
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-xs">
-                <button 
+              {!isPending && (
+                <button
                   type="button"
                   onClick={clearFile}
-                  className="bg-white text-[#4a3933] font-bold text-xs px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-md hover:bg-[#fcf9f2] transition-colors"
+                  className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-[#4a3933] shadow-md hover:bg-[#fcf9f2]"
                 >
-                  <X className="w-3.5 h-3.5" /> Cambiar captura
+                  <RefreshCw className="h-3.5 w-3.5" /> Cambiar
                 </button>
-              </div>
+              )}
             </div>
-            
-            <div className="flex items-center justify-between bg-[#faf7f2] px-3 py-2 rounded-xl border border-[#e8dcdc] text-xs">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileImage className="w-4 h-4 text-[#c8a96b] shrink-0" />
-                <span className="font-medium text-[#4a3933] truncate max-w-[200px]">{file.name}</span>
-              </div>
-              <span className="text-[10px] text-[#887870] font-mono shrink-0">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-            </div>
+            <p className="flex items-center justify-between rounded-xl border border-[#e8dcdc] bg-[#faf7f2] px-3 py-2 text-xs text-[#4a3933]">
+              <span className="flex items-center gap-1.5 font-medium"><CheckCircle2 className="h-4 w-4 text-emerald-600" /> Imagen lista</span>
+              <span className="font-mono text-[10px] text-[#887870]">
+                {originalSize && originalSize > file.size ? `${formatSize(originalSize)} → ${formatSize(file.size)}` : formatSize(file.size)}
+              </span>
+            </p>
           </div>
         )}
 
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept="image/jpeg, image/png, image/webp" 
-          onChange={handleFileChange}
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(e) => void pickFile(e.target.files?.[0])}
           aria-label="Seleccionar comprobante de pago"
         />
 
         {errorMsg && (
-          <div className="flex items-start gap-2 text-rose-700 bg-rose-50 p-2.5 rounded-xl text-xs border border-rose-200" aria-live="polite">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
+          <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700" aria-live="polite">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
             <p>{errorMsg}</p>
           </div>
         )}
 
-        <div className="pt-2">
-          <Button 
-            type="submit" 
-            className="w-full h-12 text-xs font-bold uppercase tracking-widest rounded-full bg-[#4a3933] hover:bg-[#382b26] text-white shadow-lg shadow-[#4a3933]/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none" 
-            disabled={!file || isPending}
-          >
-            {isPending ? 'Validando y enviando comprobante...' : 'Confirmar y Enviar Comprobante'}
-          </Button>
-        </div>
+        {progress !== null && isPending && (
+          <div aria-live="polite">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[#f1e9e4]">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#c8a96b] to-[#d38b8b] transition-all" style={{ width: `${Math.max(progress, 5)}%` }} />
+            </div>
+            <p className="mt-1 text-center text-[11px] text-[#887870]">{progress < 100 ? `Subiendo… ${progress}%` : 'Verificando…'}</p>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          className="h-12 w-full rounded-full bg-[#4a3933] text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-[#4a3933]/20 transition hover:-translate-y-0.5 hover:bg-[#382b26] disabled:pointer-events-none disabled:opacity-50"
+          disabled={!file || busy}
+        >
+          {isPending ? 'Enviando comprobante…' : 'Enviar comprobante'}
+        </Button>
       </form>
     </div>
   );
