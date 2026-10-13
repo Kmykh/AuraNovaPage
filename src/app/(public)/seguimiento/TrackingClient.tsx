@@ -5,11 +5,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  ChevronLeft, Share2, Copy, Check, CreditCard, BadgeCheck, MessageCircle, CalendarDays, Loader2, Sparkles,
+  ChevronLeft, Share2, Copy, Check, CreditCard, BadgeCheck, MessageCircle, CalendarDays, Sparkles,
 } from 'lucide-react';
 import { useTracking } from '@/hooks/use-tracking';
 import { useBusinessSettings } from '@/hooks/use-info';
-import { checkoutService } from '@/services/checkout.service';
 import { TrackingHero } from '@/components/tracking/TrackingHero';
 import { TrackingTimeline } from '@/components/tracking/TrackingTimeline';
 import { TrackingOrderSummary, TrackingCustomBrief, TrackingDeliveryCard } from '@/components/tracking/TrackingDetails';
@@ -82,7 +81,6 @@ export function TrackingResult({ trackingCode }: { trackingCode: string }) {
       whatsappNumber={settings?.whatsappNumber}
       onBack={() => router.push('/seguimiento')}
       onOpenTicket={() => setShowTicket(true)}
-      onRefresh={() => refetch()}
       ticket={
         <TrackingOrderDetailsModal
           isOpen={showTicket}
@@ -101,11 +99,10 @@ interface TrackingViewProps {
   whatsappNumber?: string;
   onBack: () => void;
   onOpenTicket: () => void;
-  onRefresh: () => void;
   ticket: React.ReactNode;
 }
 
-function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTicket, onRefresh, ticket }: TrackingViewProps) {
+function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTicket, ticket }: TrackingViewProps) {
   const [copied, setCopied] = useState(false);
   const firstName = tracking.customerFirstName || 'AuraLover';
   const helpMessage = `Hola Aura Nova, tengo una consulta sobre mi pedido ${tracking.orderCode}.`;
@@ -182,7 +179,7 @@ function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTi
 
         <TrackingHero tracking={tracking} />
 
-        <NextStepCard tracking={tracking} whatsappNumber={whatsappNumber} onRefresh={onRefresh} />
+        <NextStepCard tracking={tracking} trackingCode={trackingCode} whatsappNumber={whatsappNumber} />
 
         <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-5">
           <div className="flex flex-col gap-5 sm:gap-6 lg:col-span-3">
@@ -215,35 +212,16 @@ function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTi
   );
 }
 
-function NextStepCard({ tracking, whatsappNumber, onRefresh }: { tracking: PublicTrackingResponse; whatsappNumber?: string; onRefresh: () => void }) {
+function NextStepCard({ tracking, trackingCode, whatsappNumber }: { tracking: PublicTrackingResponse; trackingCode: string; whatsappNumber?: string }) {
   const router = useRouter();
-  const [accepting, setAccepting] = useState(false);
   const status = statusName(tracking.status);
   const total = tracking.costs?.total ?? tracking.total ?? null;
 
+  // La página de pago lee montos y estado del backend; aquí solo se recuerda el código de seguimiento
   const goToPayment = () => {
     if (!tracking.orderId) return;
-    sessionStorage.setItem('tempPaymentContext', JSON.stringify({
-      orderCode: tracking.orderCode,
-      total,
-      shippingCost: tracking.costs?.deliveryCost ?? 0,
-      status: 2,
-    }));
+    sessionStorage.setItem('tempPaymentContext', JSON.stringify({ orderCode: tracking.orderCode, trackingCode }));
     router.push(`/pago/${tracking.orderId}`);
-  };
-
-  const acceptQuote = async () => {
-    if (!tracking.orderId) return;
-    setAccepting(true);
-    try {
-      await checkoutService.acceptQuote(tracking.orderId);
-      toast.success('¡Cotización aceptada! Ya puedes realizar el pago.');
-      onRefresh();
-    } catch {
-      toast.error('No pudimos aceptar la cotización. Inténtalo de nuevo o escríbenos.');
-    } finally {
-      setAccepting(false);
-    }
   };
 
   const eta = tracking.estimates?.estimatedReadyAt ? formatLongDate(tracking.estimates.estimatedReadyAt) : null;
@@ -254,9 +232,8 @@ function NextStepCard({ tracking, whatsappNumber, onRefresh }: { tracking: Publi
         title="Revisa y acepta tu cotización"
         message={total != null ? `El total de tu pedido personalizado es ${formatCurrency(total)}.` : 'Tu cotización ya está disponible.'}
         primary={
-          <button onClick={acceptQuote} disabled={accepting} className={primaryButton}>
-            {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />}
-            Aceptar cotización
+          <button onClick={goToPayment} className={primaryButton}>
+            <BadgeCheck className="h-4 w-4" /> Ver cotización y aceptar
           </button>
         }
         secondary={<WhatsAppButton number={whatsappNumber} message={`Hola Aura Nova, tengo una consulta sobre la cotización de mi pedido ${tracking.orderCode}.`} label="Consultar" />}

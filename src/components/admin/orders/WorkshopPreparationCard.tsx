@@ -1,54 +1,28 @@
 "use client";
 
 import React, { useState } from 'react';
-import { AdminOrderDetailItem } from '@/types/orders';
-import { Button } from '@/components/ui/Button';
-import { 
-  Sparkles, 
-  Download, 
-  Printer, 
-  Heart, 
-  CheckCircle2, 
-  FileText, 
-  Palette, 
-  Layers, 
-  Image as ImageIcon,
-  ExternalLink,
-  Info
-} from 'lucide-react';
+import Image from 'next/image';
+import { Download, Printer, Package, ClipboardList, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
-import { NewFeatureBadge } from '@/components/admin/shared/NewFeatureBadge';
-import { NewFeatureExplanation } from '@/components/admin/shared/NewFeatureExplanation';
+import { AdminOrderDetailItem, AdminOrderDetailResponse } from '@/types/orders';
+import { Button } from '@/components/ui/Button';
+import { ItemOptions } from '@/components/shared/ItemOptions';
+import { formatCurrency, getImageUrl } from '@/lib/formatters';
+import { itemColors, itemFlowers } from '@/lib/product-options';
+import { deliveryTypeName } from '@/lib/tracking-progress';
 import { CustomOrderBriefPanel } from './CustomOrderBriefPanel';
 
 interface WorkshopPreparationCardProps {
-  items: AdminOrderDetailItem[];
-  orderCode: string;
-  customerName?: string;
-  isCustomOrder?: boolean;
-  customizationNotes?: string | null;
-  referenceImageUrl?: string | null;
-  referenceImages?: string[];
-  referenceLinks?: string[];
-  desiredDate?: string | null;
-  occasion?: string | null;
-  budgetRange?: string | null;
+  order: AdminOrderDetailResponse;
 }
 
-export function WorkshopPreparationCard({
-  items,
-  orderCode,
-  customerName,
-  isCustomOrder,
-  customizationNotes,
-  referenceImageUrl,
-  referenceImages,
-  referenceLinks,
-  desiredDate,
-  occasion,
-  budgetRange
-}: WorkshopPreparationCardProps) {
+/** "Qué pidió": productos con su foto y personalización, dedicatorias listas para imprimir y el total. */
+export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps) {
+  const { items, orderCode } = order;
+  const customerName = order.customer?.name;
   const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
+  const units = items.reduce((sum, item) => sum + item.quantity, 0);
+  const isNational = deliveryTypeName(order.deliveryType) === 'NationalShipping';
 
   // Generador de Tarjeta Dedicatoria en Alta Resolución (1600x1000 PNG)
   const handleDownloadDedicationCard = async (item: AdminOrderDetailItem, index: number) => {
@@ -281,283 +255,151 @@ export function WorkshopPreparationCard({
   };
 
   return (
-    <div className="bg-white rounded-[24px] shadow-sm border border-[#c8a96b]/35 overflow-hidden">
-      {/* Cabecera del Taller de Preparación */}
-      <div className="p-6 sm:p-7 bg-gradient-to-r from-[#faf7f2] via-[#fffdfa] to-[#faf7f2] border-b border-[#c8a96b]/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-full bg-[#fdf6e7] border border-[#c8a96b]/40 flex items-center justify-center text-[#c8a96b] shrink-0">
-              <Palette className="w-4 h-4" />
-            </span>
-            <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#c8a96b]">
-              Hoja de Taller Artesanal
-            </span>
-            <NewFeatureBadge label="NUEVO" size="sm" />
-            <span className="text-[11px] font-bold bg-[#71a37c]/15 text-[#527d5c] border border-[#71a37c]/30 px-2 py-0.5 rounded-full">
-              Para Armado de Ramo
-            </span>
+    <section className="overflow-hidden rounded-[24px] border border-[#c8a96b]/30 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e8dcdc] bg-gradient-to-r from-[#faf7f2] to-white px-5 py-4 sm:px-7">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#fdf6e7] text-[#c8a96b]">
+            <ClipboardList className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#4a3933]">Qué pidió</h2>
+            <p className="text-xs text-[#887870]">
+              {order.isCustomOrder && items.length === 0
+                ? 'Diseño personalizado según sus referencias'
+                : `${units} ${units === 1 ? 'unidad' : 'unidades'} · ${items.length} ${items.length === 1 ? 'producto' : 'productos'}`}
+            </p>
           </div>
-          <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#4a3933]">
-            Personalización y Detalles de Elaboración
-          </h2>
-          <p className="text-xs text-[#887870] mt-0.5">
-            Especificaciones seleccionadas por el cliente para el armado físico del ramo y sus accesorios.
-          </p>
-        </div>
-
-        <div className="text-left sm:text-right shrink-0 bg-white/80 border border-[#c8a96b]/30 px-4 py-2 rounded-2xl shadow-2xs">
-          <span className="text-[10px] text-[#887870] uppercase font-bold block">Pedido</span>
-          <span className="font-mono font-bold text-sm text-[#4a3933]">{orderCode}</span>
         </div>
       </div>
 
-      {/* Lista de Ramos y Artículos */}
-      <div className="p-6 sm:p-7 space-y-6">
-        {/* Guía Explicativa de Novedad para Trabajadores */}
-        <NewFeatureExplanation
-          id="workshop_sheet_guide"
-          title="Ficha de Taller: Personalización de Ramos y Dedicatorias"
-          badgeLabel="NUEVO"
-          whatChanged="Se integró esta ficha dedicada exclusivamente al trabajo manual en el taller. Ahora se muestran con exactitud las flores y su color, los colores de envoltura (principal y secundario) y si lleva luces LED o mariposa 3D. Además, incluye la descarga directa de la dedicatoria en alta resolución (PNG) lista para imprimir."
-          howToUse={[
-            "Revisa los bloques '🌸 Tipo de Flores' y 'Paleta del Ramo' antes de iniciar la confección.",
-            "Verifica en 'Accesorios & Extras' si lleva Luces LED o Mariposa 3D para incorporarlas al arreglo.",
-            "Haz clic en 'Descargar Tarjeta (PNG)' para obtener la tarjeta dedicatoria en 1600x1000 px lista para imprimir o pulsa 'Imprimir' para enviarla directamente.",
-            "Si el pedido es personalizado, revisa las notas del cliente y descarga su foto de referencia como guía visual."
-          ]}
-          tips="Tip para floristas: Al descargar la tarjeta PNG obtienes las medidas exactas listas para recortar y colocar en el soporte del ramo."
-        />
-
-        {items.map((item, idx) => {
-          const hasCustomization = Boolean(
-            item.selectedPrimaryColor ||
-            item.selectedSecondaryColor ||
-            item.selectedFlowerType ||
-            item.selectedFlowerColor ||
-            item.hasLights ||
-            item.hasButterfly ||
-            item.hasPhraseCard ||
-            item.phraseText
-          );
-
-          return (
-            <div 
-              key={idx} 
-              className="bg-[#fdfbf7] rounded-2xl border border-[#c8a96b]/25 p-5 sm:p-6 shadow-2xs hover:shadow-xs transition-shadow space-y-5"
-            >
-              {/* Encabezado del Producto */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#e8dcdc]">
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-xl bg-[#4a3933] text-white flex items-center justify-center font-mono font-bold text-sm">
-                    {item.quantity}x
-                  </span>
-                  <div>
-                    <h3 className="font-serif text-lg font-bold text-[#4a3933]">
-                      {item.productName}
-                    </h3>
-                    <span className="text-[11px] text-[#887870]">
-                      Cantidad a preparar: <strong>{item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'}</strong>
-                    </span>
-                  </div>
-                </div>
-
-                {hasCustomization ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8f6d28] bg-[#fcf9f2] border border-[#c8a96b]/40 px-3 py-1 rounded-full">
-                    <Sparkles className="w-3.5 h-3.5 text-[#c8a96b]" />
-                    Ramo Personalizado
-                  </span>
-                ) : (
-                  <span className="text-xs text-[#887870] bg-white border border-stone-200 px-3 py-1 rounded-full">
-                    Diseño de Colección Estándar
-                  </span>
-                )}
-              </div>
-
-              {/* Grilla de Especificaciones del Ramo */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* 1. Flores & Tipo */}
-                <div className="bg-white p-4 rounded-xl border border-[#e8dcdc]/80 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#c8a96b]">
-                    <span>🌸 Tipo de Flores</span>
-                  </div>
-                  <div className="space-y-1.5 text-xs">
-                    <div>
-                      <span className="text-[#887870] block text-[10px] uppercase font-semibold">Flor Seleccionada:</span>
-                      <p className="font-bold text-[#4a3933] text-sm">
-                        {item.selectedFlowerType || 'Según catálogo base'}
-                      </p>
-                    </div>
-                    {item.selectedFlowerColor && (
-                      <div>
-                        <span className="text-[#887870] block text-[10px] uppercase font-semibold">Color de la Flor:</span>
-                        <span className="inline-flex items-center gap-1.5 font-semibold text-[#4a3933] bg-[#faf7f2] px-2.5 py-1 rounded-lg border border-[#c8a96b]/20 mt-0.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#c8a96b]" />
-                          {item.selectedFlowerColor}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 2. Paleta de Colores de Envoltura / Base */}
-                <div className="bg-white p-4 rounded-xl border border-[#e8dcdc]/80 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#c8a96b]">
-                    <Layers className="w-3.5 h-3.5" />
-                    <span>Paleta del Ramo</span>
-                  </div>
-                  <div className="space-y-1.5 text-xs">
-                    <div>
-                      <span className="text-[#887870] block text-[10px] uppercase font-semibold">Color Principal / Base:</span>
-                      <p className="font-bold text-[#4a3933] text-sm">
-                        {item.selectedPrimaryColor || 'Estándar'}
-                      </p>
-                    </div>
-                    {item.selectedSecondaryColor && (
-                      <div>
-                        <span className="text-[#887870] block text-[10px] uppercase font-semibold">Color Secundario:</span>
-                        <p className="font-semibold text-[#4a3933]">
-                          {item.selectedSecondaryColor}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3. Accesorios y Luces */}
-                <div className="bg-white p-4 rounded-xl border border-[#e8dcdc]/80 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#c8a96b]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Accesorios & Extras</span>
-                  </div>
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#4a3933] font-medium flex items-center gap-1">
-                        ✨ Luces LED cálidas:
-                      </span>
-                      {item.hasLights ? (
-                        <span className="font-bold text-[#b58129] bg-[#fdf6e7] px-2 py-0.5 rounded-md border border-[#c8a96b]/30">
-                          SÍ INCLUIR
-                        </span>
-                      ) : (
-                        <span className="text-[#887870] text-[11px]">No incluido</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#4a3933] font-medium flex items-center gap-1">
-                        🦋 Mariposa 3D decorativa:
-                      </span>
-                      {item.hasButterfly ? (
-                        <span className="font-bold text-[#71a37c] bg-[#eef7f0] px-2 py-0.5 rounded-md border border-[#71a37c]/30">
-                          SÍ INCLUIR
-                        </span>
-                      ) : (
-                        <span className="text-[#887870] text-[11px]">No incluido</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Tarjeta Dedicatoria Personalizada */}
-              {(item.hasPhraseCard || item.phraseText) && (
-                <div className="bg-white rounded-2xl border-2 border-dashed border-[#c8a96b]/40 p-5 sm:p-6 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-[#fdf5f5] text-[#b85b6b] flex items-center justify-center">
-                        <Heart className="w-4 h-4 fill-current" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-serif uppercase tracking-[0.2em] text-[#c8a96b] font-bold block">
-                          Dedicatoria Impresa para el Ramo
-                        </span>
-                        <h4 className="font-serif text-base font-bold text-[#4a3933]">
-                          Tarjeta de Mensaje Personal
-                        </h4>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      {item.phraseFont && (
-                        <span className="text-[11px] font-mono font-semibold bg-[#faf7f2] border border-[#c8a96b]/30 text-[#4a3933] px-3 py-1 rounded-full">
-                          Fuente: {item.phraseFont}
-                        </span>
-                      )}
-
-                      {/* Botón Descargar Tarjeta PNG */}
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => handleDownloadDedicationCard(item, idx)}
-                          disabled={downloadingIndex === idx}
-                          className="bg-[#4a3933] hover:bg-[#382b26] text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-xs flex items-center gap-1.5"
-                        >
-                          <Download className="w-3.5 h-3.5 text-[#c8a96b]" />
-                          {downloadingIndex === idx ? 'Generando...' : 'Descargar Tarjeta (PNG)'}
-                        </Button>
-                        <NewFeatureBadge label="NUEVO" size="sm" />
-                      </div>
-
-                      {/* Botón Imprimir Tarjeta */}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePrintCard(item)}
-                        className="border-[#c8a96b]/40 text-[#4a3933] hover:bg-[#faf7f2] text-xs font-bold rounded-full flex items-center gap-1.5"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-[#c8a96b]" />
-                        Imprimir
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Vista Previa de la Dedicatoria tipo Postal */}
-                  <div className="bg-[#fcf9f2] p-4 sm:p-5 rounded-xl border border-[#c8a96b]/30 relative text-center">
-                    <span className="text-[10px] text-[#c8a96b] uppercase tracking-widest font-bold block mb-1">
-                      ✦ Mensaje a Imprimir ✦
-                    </span>
-                    <p className="font-serif italic text-lg sm:text-xl text-[#3d2e28] leading-relaxed max-w-2xl mx-auto px-4">
-                      &ldquo;{item.phraseText}&rdquo;
-                    </p>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          );
-        })}
-
-        {/* Sección de Pedido Especial / Personalizado (Foto de Referencia y Notas) */}
-        {isCustomOrder && (
-          <div className="bg-[#faf7f2] rounded-2xl border border-[#c8a96b]/30 p-5 sm:p-6 space-y-4">
-            <div className="flex items-center gap-2 text-[#4a3933] font-serif font-bold text-base">
-              <ImageIcon className="w-5 h-5 text-[#c8a96b]" />
-              <span>Pedido Personalizado Especial del Cliente</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              {/* Notas del Cliente */}
-              <div className="space-y-2">
-                <span className="text-xs uppercase font-bold tracking-wider text-[#887870] block">
-                  Descripción e Instrucciones del Cliente:
-                </span>
-                <div className="bg-white p-4 rounded-xl border border-[#c8a96b]/20 text-sm text-[#4a3933] whitespace-pre-wrap leading-relaxed">
-                  {customizationNotes || 'Sin instrucciones adicionales.'}
-                </div>
-              </div>
-
-              {/* Fotos, enlaces y datos del encargo */}
-              <CustomOrderBriefPanel
-                brief={{ orderCode, referenceImageUrl, referenceImages, referenceLinks, desiredDate, occasion, budgetRange }}
-              />
-            </div>
+      <div className="space-y-5 p-5 sm:p-7">
+        {order.isCustomOrder && (
+          <div className="space-y-4">
+            {order.customizationNotes && (
+              <blockquote className="rounded-2xl border-l-4 border-[#c8a96b] bg-[#faf7f2] px-4 py-3 text-sm italic leading-relaxed text-[#5e4a42]">
+                “{order.customizationNotes}”
+              </blockquote>
+            )}
+            <CustomOrderBriefPanel
+              brief={{
+                orderCode,
+                referenceImageUrl: order.referenceImageUrl,
+                referenceImages: order.referenceImages,
+                referenceLinks: order.referenceLinks,
+                desiredDate: order.desiredDate,
+                occasion: order.occasion,
+                budgetRange: order.budgetRange,
+              }}
+            />
           </div>
         )}
 
+        {items.map((item, index) => {
+          const colors = itemColors(item);
+          const flowers = itemFlowers(item);
+          return (
+            <article key={`${item.productId}-${index}`} className="rounded-2xl border border-[#e8dcdc] bg-[#fffdfa] p-4">
+              <div className="flex gap-4">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[#e8dcdc] bg-[#faf7f2] sm:h-24 sm:w-24">
+                  {item.imageUrl ? (
+                    <Image src={getImageUrl(item.imageUrl)} alt={item.productName} fill sizes="96px" className="object-cover" />
+                  ) : (
+                    <Package className="absolute inset-0 m-auto h-6 w-6 text-[#d38b8b]/40" />
+                  )}
+                  <span className="absolute left-1 top-1 rounded-md bg-[#4a3933] px-1.5 py-0.5 font-mono text-[11px] font-bold text-white">
+                    {item.quantity}×
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-serif text-base font-bold leading-tight text-[#4a3933] sm:text-lg">{item.productName}</h3>
+                      <p className="text-xs text-[#887870]">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                    </div>
+                    <span className="font-bold text-[#4a3933]">{formatCurrency(item.subtotal)}</span>
+                  </div>
+
+                  {item.appliedCampaignName && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#8f2d3b]/10 px-2 py-0.5 text-[10px] font-bold text-[#8f2d3b]">
+                      <Megaphone size={10} /> {item.appliedCampaignName}{item.appliedCampaignStageName ? ` · ${item.appliedCampaignStageName}` : ''}
+                    </span>
+                  )}
+
+                  <ItemOptions
+                    className="mt-2.5"
+                    size="md"
+                    colors={colors}
+                    flowers={flowers}
+                    hasLights={item.hasLights}
+                    hasButterfly={item.hasButterfly}
+                  />
+                  {colors.length === 0 && flowers.length === 0 && !item.hasLights && !item.hasButterfly && !item.hasPhraseCard && (
+                    <p className="mt-2 text-xs text-[#887870]">Tal como en el catálogo (sin personalización).</p>
+                  )}
+                </div>
+              </div>
+
+              {(item.hasPhraseCard || item.phraseText) && (
+                <div className="mt-4 rounded-2xl border-2 border-dashed border-[#c8a96b]/40 bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8a96b]">
+                      Tarjeta dedicatoria{item.phraseFont ? ` · ${item.phraseFont.split('/')[0]}` : ''}
+                    </span>
+                    {item.phraseText && (
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadDedicationCard(item, index)}
+                          disabled={downloadingIndex === index}
+                          className="flex h-8 items-center gap-1.5 rounded-full border-[#c8a96b]/40 text-xs text-[#4a3933]"
+                        >
+                          <Download className="h-3.5 w-3.5 text-[#c8a96b]" /> {downloadingIndex === index ? 'Generando…' : 'PNG'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handlePrintCard(item)}
+                          className="flex h-8 items-center gap-1.5 rounded-full border-[#c8a96b]/40 text-xs text-[#4a3933]"
+                        >
+                          <Printer className="h-3.5 w-3.5 text-[#c8a96b]" /> Imprimir
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-2 font-serif text-lg italic leading-relaxed text-[#4a3933]">
+                    {item.phraseText ? `“${item.phraseText}”` : <span className="text-sm not-italic text-[#c06b6b]">Pidió tarjeta pero no escribió mensaje: confirmar con el cliente.</span>}
+                  </p>
+                </div>
+              )}
+            </article>
+          );
+        })}
+
+        <dl className="ml-auto max-w-xs space-y-1.5 border-t border-[#e8dcdc] pt-4 text-sm">
+          {order.subtotal > 0 && (
+            <div className="flex justify-between text-[#887870]"><dt>Productos</dt><dd className="font-medium text-[#4a3933]">{formatCurrency(order.subtotal)}</dd></div>
+          )}
+          {order.customizationCost > 0 && (
+            <div className="flex justify-between text-[#887870]"><dt>{order.isCustomOrder ? 'Precio del diseño' : 'Personalización'}</dt><dd className="font-medium text-[#4a3933]">{formatCurrency(order.customizationCost)}</dd></div>
+          )}
+          <div className="flex justify-between text-[#887870]">
+            <dt>Entrega</dt>
+            <dd className="font-medium text-[#4a3933]">
+              {isNational && !order.deliveryCost ? 'Paga en destino' : order.deliveryCost ? formatCurrency(order.deliveryCost) : 'Gratis'}
+            </dd>
+          </div>
+          <div className="flex justify-between border-t border-[#e8dcdc] pt-2 font-serif text-lg font-bold text-[#4a3933]">
+            <dt>Total</dt>
+            <dd className={order.total != null ? 'text-[#b08a4e]' : 'text-sm font-sans font-semibold text-amber-600'}>
+              {order.total != null ? formatCurrency(order.total) : 'Falta poner precio'}
+            </dd>
+          </div>
+        </dl>
       </div>
-    </div>
+    </section>
   );
 }

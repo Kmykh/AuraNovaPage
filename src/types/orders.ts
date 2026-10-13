@@ -9,10 +9,8 @@ export interface CreateOrderCustomerRequest {
 export interface CreateOrderItemRequest {
   productId: string;
   quantity: number;
-  selectedPrimaryColor?: string;
-  selectedSecondaryColor?: string;
-  selectedFlowerType?: string;
-  selectedFlowerColor?: string;
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
@@ -60,22 +58,89 @@ export interface CreateCustomOrderRequest {
   budgetRange?: string | null;
 }
 
+export interface AdminOrderListProduct {
+  productName: string;
+  quantity: number;
+  imageUrl?: string | null;
+  colors: string[];
+  hasExtras: boolean;
+}
+
 export interface AdminOrderListItemResponse {
   id: string;
   orderCode: string;
   customerName: string;
-  status: OrderStatus;
+  customerPhone?: string;
+  deliveryType?: DeliveryType | string;
+  trackingToken?: string;
+  status: OrderStatus | string;
+  subtotal?: number;
+  deliveryCost?: number | null;
+  customizationCost?: number;
   total: number | null;
   createdAt: string;
+  updatedAt?: string | null;
   isCustomOrder?: boolean;
+  itemCount?: number;
+  items?: AdminOrderListProduct[];
+  referenceImageCount?: number;
+  paymentStatus?: string | null;
+  desiredDate?: string | null;
+  occasion?: string | null;
+  deliveryPlace?: string | null;
+}
+
+export interface AdminOrderCountsResponse {
+  byStatus: Record<string, number>;
+  total: number;
+}
+
+/** Resumen que lee la página de pago, siempre desde el backend. */
+export interface OrderPaymentSummary {
+  orderId: string;
+  orderCode: string;
+  status: string;
+  statusLabel: string;
+  deliveryType: string;
+  deliveryPlace?: string | null;
+  isCustomOrder: boolean;
+  subtotal: number;
+  deliveryCost: number | null;
+  customizationCost: number;
+  total: number | null;
+  quoteNotes?: string | null;
+  quotedAt?: string | null;
+  paymentStatus?: string | null;
+  paymentAmount?: number | null;
+  paymentRejectionReason?: string | null;
+  createdAt: string;
+  items: OrderSummaryItem[];
+}
+
+export interface OrderSummaryItem {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  imageUrl?: string | null;
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
+  hasLights?: boolean;
+  hasButterfly?: boolean;
+  hasPhraseCard?: boolean;
+  phraseText?: string | null;
 }
 
 export interface AdminOrderDetailItem {
   productId: string;
   productName: string;
+  imageUrl?: string | null;
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
+  appliedCampaignName?: string | null;
+  appliedCampaignStageName?: string | null;
   selectedPrimaryColor?: string;
   selectedSecondaryColor?: string;
   selectedFlowerType?: string;
@@ -103,6 +168,7 @@ export interface AdminOrderDetailDelivery {
 }
 
 export interface AdminOrderQuote {
+  quoteId?: string;
   quoteStatus: string;
   shippingCost: number;
   customizationCost: number;

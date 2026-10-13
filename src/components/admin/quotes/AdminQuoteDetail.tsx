@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAdminQuote, useUpdateQuote } from '@/hooks/use-admin-quotes';
-import { useAdminOrder, useOrderNotifications, useChangeOrderStatus } from '@/hooks/use-admin-orders';
+import { useAdminOrder, useOrderNotifications } from '@/hooks/use-admin-orders';
 import { getQuoteStatusInfo } from '@/lib/quote-helpers';
 import { formatDate } from '@/lib/order-helpers';
 import { formatCurrency } from '@/lib/formatters';
@@ -23,7 +23,6 @@ export function AdminQuoteDetail({ id }: { id: string }) {
   const actualOrderId = quote?.orderId || quote?.orderCode || '';
   const { data: order, isLoading: isOrderLoading } = useAdminOrder(actualOrderId);
   const { data: notifications } = useOrderNotifications(actualOrderId);
-  const { mutate: changeStatus } = useChangeOrderStatus(actualOrderId);
   
   const [shippingCost, setShippingCost] = useState('');
   const [customizationCost, setCustomizationCost] = useState('');
@@ -99,32 +98,29 @@ export function AdminQuoteDetail({ id }: { id: string }) {
         notes: notes.trim() || undefined
       },
       {
-        onSuccess: () => {
-          changeStatus({ status: 2 }, {
-            onSettled: async () => {
-              // Send the receipt email
-              if (order?.customer?.email) {
-                try {
-                  await fetch('/api/send-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      order: order,
-                      customer: order.customer,
-                      items: order.items || [],
-                      subtotal: order.subtotal || 0,
-                      deliveryType: quote.deliveryType === 'NationalShipping' ? 2 : (quote.deliveryType === 'MeetingPoint' ? 1 : 0),
-                      estimatedDeliveryCost: numericShippingCost,
-                      emailType: quote.isCustomOrder ? 'quote_received' : 'receipt'
-                    })
-                  });
-                } catch (error) {
-                  console.error('Error enviando correo de boleta', error);
-                }
-              }
-              setShowSuccessModal(true);
+        // El pedido queda en "Cotización lista": el cliente la ve con el total y la acepta antes de pagar
+        // (al aceptar se genera su pago). Antes se saltaba ese paso y el pago nunca se creaba.
+        onSuccess: async () => {
+          if (order?.customer?.email) {
+            try {
+              await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  order: order,
+                  customer: order.customer,
+                  items: order.items || [],
+                  subtotal: order.subtotal || 0,
+                  deliveryType: quote.deliveryType === 'NationalShipping' ? 2 : (quote.deliveryType === 'MeetingPoint' ? 1 : 0),
+                  estimatedDeliveryCost: numericShippingCost,
+                  emailType: quote.isCustomOrder ? 'quote_received' : 'receipt'
+                })
+              });
+            } catch (error) {
+              console.error('Error enviando correo de cotización', error);
             }
-          });
+          }
+          setShowSuccessModal(true);
         },
         onError: (err) => {
           if (err instanceof ApiProblemDetails) {
@@ -357,7 +353,7 @@ export function AdminQuoteDetail({ id }: { id: string }) {
             </div>
             {isPendingQuote && (
               <p className="text-xs text-center text-sage mt-2">
-                Al guardar exitosamente, el backend transicionará automáticamente el pedido al estado &quot;Cotización Lista&quot;.
+                Al guardar, el pedido pasa a &quot;Cotización lista&quot; y el cliente puede aceptarla y pagar.
               </p>
             )}
           </form>
@@ -370,16 +366,16 @@ export function AdminQuoteDetail({ id }: { id: string }) {
           setShowSuccessModal(false);
           router.push('/admin/cotizaciones');
         }}
-        title="Cotización Finalizada"
+        title="Cotización enviada"
       >
         <div className="flex flex-col items-center text-center py-4">
           <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
             <CheckCircle size={32} />
           </div>
-          <p className="text-brown font-serif text-lg font-medium mb-3">¡Lista para pago!</p>
+          <p className="text-brown font-serif text-lg font-medium mb-3">¡Precio enviado!</p>
           <p className="text-sage text-sm mb-8 leading-relaxed px-4">
-            La cotización se ha guardado y el sistema ha enviado el correo. 
-            El pedido está ahora esperando el pago del cliente.
+            El cliente verá el total en su seguimiento y podrá aceptarlo y pagar desde ahí.
+            Envíale el aviso por WhatsApp desde las notificaciones del pedido.
           </p>
           
           <div className="w-full space-y-3">

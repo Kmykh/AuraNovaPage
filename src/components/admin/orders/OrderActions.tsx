@@ -1,246 +1,347 @@
 "use client";
 
 import React, { useState } from 'react';
-import { OrderStatus, DeliveryType, PaymentStatus } from '@/types/enums';
-import { formatDate } from '@/lib/order-helpers';
+import {
+  Calendar, Play, CheckCircle2, Truck, Send, Copy, MessageCircle, ZoomIn, X, Check, Hourglass, Store, PartyPopper, Ban,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { OrderStatus, DeliveryType } from '@/types/enums';
 import { AdminOrderDetailResponse } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { useStartPreparation, useSetEstimatedReadyDate, useMarkAsReady, useDeliverToAgency, useChangeOrderStatus } from '@/hooks/use-admin-orders';
-import { AlertCircle, Calendar, Play, CheckCircle2, Truck, XCircle, DollarSign, ExternalLink, Mail, Eye } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  useStartPreparation, useSetEstimatedReadyDate, useMarkAsReady, useDeliverToAgency, useChangeOrderStatus,
+} from '@/hooks/use-admin-orders';
+import { useUpdateQuote } from '@/hooks/use-admin-quotes';
+import { formatCurrency, getImageUrl } from '@/lib/formatters';
+import { formatDate } from '@/lib/order-helpers';
+import { ApiProblemDetails } from '@/lib/api-errors';
+import { SITE_URL } from '@/lib/site';
 
 interface OrderActionsProps {
   order: AdminOrderDetailResponse;
+  onReviewPayment: () => void;
+  onRejectPayment: () => void;
 }
 
-export function OrderActions({ order }: OrderActionsProps) {
-  const [isConfirmPaymentModalOpen, setIsConfirmPaymentModalOpen] = useState(false);
+export function whatsappLink(phone: string | undefined, text: string) {
+  const digits = (phone ?? '').replace(/\D/g, '');
+  const number = digits.length === 9 ? `51${digits}` : digits;
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+}
+
+const primaryButton = 'flex items-center gap-2 rounded-full bg-[#4a3933] text-white hover:bg-[#3a2d28]';
+const successButton = 'flex items-center gap-2 rounded-full bg-[#71a37c] text-white hover:bg-[#588562]';
+
+/** Tarjeta "Siguiente paso": lo que toca hacer ahora con el pedido y el botón para hacerlo. */
+export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderActionsProps) {
   const [isEstimatedDateModalOpen, setIsEstimatedDateModalOpen] = useState(false);
   const [isDeliverAgencyModalOpen, setIsDeliverAgencyModalOpen] = useState(false);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-
-  // States for modals
   const [estimatedDate, setEstimatedDate] = useState('');
   const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({ provider: '', trackingCode: '', proofFile: null });
-  const [emailPreviewHtml, setEmailPreviewHtml] = useState<string | null>(null);
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  
-  // Mutations
+
+  // Cotización: parte del precio ya guardado (cuando es una corrección)
+  const [quotePrice, setQuotePrice] = useState<string>(order.customizationCost ? String(order.customizationCost) : '');
+  const [quoteNotes, setQuoteNotes] = useState<string>(order.quote?.notes ?? '');
+
   const { mutate: startPreparation, isPending: isStartingPrep } = useStartPreparation(order.id);
   const { mutate: setEstimated, isPending: isSettingEstimated } = useSetEstimatedReadyDate(order.id);
   const { mutate: markReady, isPending: isMarkingReady } = useMarkAsReady(order.id);
   const { mutate: deliverAgency, isPending: isDeliveringAgency } = useDeliverToAgency(order.id);
   const { mutate: changeStatus, isPending: isChangingStatus } = useChangeOrderStatus(order.id);
+  const { mutate: updateQuote, isPending: isQuoting } = useUpdateQuote(order.quote?.quoteId ?? '', order.id);
 
-  const handleConfirmPayment = (status: number) => {
-    // If order.payment is missing, we can't confirm payment this way easily unless we fetch paymentId
-    // But paymentId wasn't exposed. Wait, backend didn't expose paymentId directly in order detail, but maybe the mutation for payment confirmation takes paymentId?
-    // Let's fallback to changeStatus if paymentId is missing
-    if (status === PaymentStatus.Confirmed) {
-        changeStatus({ status: OrderStatus.PaymentConfirmed, comment: 'Pago verificado y confirmado.' }, {
-            onSuccess: () => setIsConfirmPaymentModalOpen(false)
-        });
-    } else {
-        changeStatus({ status: OrderStatus.WaitingPayment, comment: 'Pago rechazado. Evidencia no válida.' }, {
-            onSuccess: () => setIsConfirmPaymentModalOpen(false)
-        });
+  const status = order.status;
+  const isNational = order.deliveryType === DeliveryType.NationalShipping;
+  const deliveryCost = order.deliveryCost ?? 0;
+  const priceValue = parseFloat(quotePrice || '0');
+  const safePrice = isNaN(priceValue) ? 0 : priceValue;
+  const quoteTotal = order.subtotal + deliveryCost + safePrice;
+  const paymentLink = `${SITE_URL}/pago/${order.id}`;
+  const firstName = order.customer?.name?.split(' ')[0] ?? '';
+
+  const handleQuote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order.quote?.quoteId) {
+      toast.error('Este pedido no tiene una cotización asociada.');
+      return;
     }
+    if (!(quoteTotal > 0)) {
+      toast.error('Ingresa el precio del pedido.');
+      return;
+    }
+    updateQuote(
+      { shippingCost: deliveryCost, customizationCost: safePrice, notes: quoteNotes.trim() || undefined },
+      {
+        onError: (error) => {
+          toast.error(error instanceof ApiProblemDetails && error.detail ? error.detail : 'No se pudo enviar la cotización.');
+        },
+      },
+    );
   };
 
-  const handleStartPrep = () => {
-    if (confirm('¿Estás seguro de iniciar la elaboración de este pedido?')) {
-      startPreparation();
+  const copyPaymentLink = async () => {
+    try {
+      await navigator.clipboard.writeText(paymentLink);
+      toast.success('Enlace de pago copiado.');
+    } catch {
+      toast.info(paymentLink);
     }
   };
 
   const handleSetEstimatedDate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!estimatedDate) return;
-    // Convierte a ISO
-    const isoDate = new Date(estimatedDate).toISOString();
-    setEstimated({ estimatedDate: isoDate }, {
-      onSuccess: () => setIsEstimatedDateModalOpen(false)
+    setEstimated({ estimatedDate: new Date(estimatedDate).toISOString() }, {
+      onSuccess: () => setIsEstimatedDateModalOpen(false),
     });
   };
 
   const handleDeliverAgency = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agencyData.provider || !agencyData.trackingCode) {
-      toast.error('Proveedor y código de seguimiento son requeridos');
+      toast.error('Agencia y código de seguimiento son obligatorios.');
       return;
     }
-    deliverAgency(agencyData, {
-      onSuccess: () => setIsDeliverAgencyModalOpen(false)
-    });
+    deliverAgency(agencyData, { onSuccess: () => setIsDeliverAgencyModalOpen(false) });
   };
 
-  const loadEmailPreview = async () => {
-    setIsGeneratingPreview(true);
-    setEmailPreviewHtml(null);
-    setIsEmailModalOpen(true);
-    try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order: order,
-          customer: order.customer,
-          items: order.items || [],
-          subtotal: order.subtotal || 0,
-          deliveryType: order.deliveryType,
-          estimatedDeliveryCost: order.deliveryCost || 0,
-          emailType: (order.isCustomOrder || order.status === 0) ? 'quote_received' : 'receipt',
-          preview: true
-        })
-      });
-      if (!res.ok) throw new Error('Error al generar preview');
-      const data = await res.json();
-      if (data.html) {
-        setEmailPreviewHtml(data.html);
-      } else {
-        toast.error('No se pudo generar la previsualización');
-      }
-    } catch (error) {
-      toast.error('Error de conexión al generar preview');
-    } finally {
-      setIsGeneratingPreview(false);
-    }
-  };
+  let title = 'Siguiente paso';
+  let body: React.ReactNode = null;
 
-  const handleSendEmail = async () => {
-    if (!order.customer?.email) {
-      toast.error('El cliente no tiene un correo electrónico registrado.');
-      return;
-    }
-    setIsSendingEmail(true);
-    try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order: order,
-          customer: order.customer,
-          items: order.items || [],
-          subtotal: order.subtotal || 0,
-          deliveryType: order.deliveryType,
-          estimatedDeliveryCost: order.deliveryCost || 0,
-          emailType: (order.isCustomOrder || order.status === 0) ? 'quote_received' : 'receipt',
-          preview: false
-        })
-      });
-      if (res.ok) {
-        toast.success('Correo enviado exitosamente.');
-        setIsEmailModalOpen(false);
-      } else {
-        toast.error('Hubo un error al enviar el correo.');
-      }
-    } catch (error) {
-      toast.error('Error de red al enviar correo.');
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  // Rendering logic based on status
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10 mb-6">
-      <h3 className="font-serif text-lg text-brown font-semibold mb-4">Acciones Operativas</h3>
-      
-      <div className="flex flex-wrap gap-3">
-        {order.status === OrderStatus.PaymentConfirmed && (
-          <Button onClick={() => startPreparation()} disabled={isStartingPrep} className="bg-sage text-white hover:bg-sage/90">
-            <Play className="w-4 h-4 mr-2" />
-            {isStartingPrep ? 'Iniciando...' : 'Iniciar Elaboración'}
-          </Button>
+  if (status === OrderStatus.WaitingQuote || status === OrderStatus.QuoteReady) {
+    const isRequote = status === OrderStatus.QuoteReady;
+    title = isRequote ? 'Cotización enviada' : 'Pon el precio y envía la cotización';
+    body = (
+      <form onSubmit={handleQuote} className="space-y-4">
+        {isRequote && (
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            El cliente aún no la acepta. Puedes corregir el precio o, si ya te confirmó por WhatsApp, pasar el pedido a pago.
+          </p>
         )}
-
-        {order.status === OrderStatus.Preparing && (
-          <>
-            <Button onClick={() => setIsEstimatedDateModalOpen(true)} variant="outline" className="border-sage text-sage hover:bg-sage/10">
-              <Calendar className="w-4 h-4 mr-2" />
-              Fijar Fecha Estimada
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="quote-price" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-sage">
+              {order.isCustomOrder ? 'Precio del diseño' : 'Personalización extra'}
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-brown">S/</span>
+              <input
+                id="quote-price"
+                type="number"
+                min="0"
+                step="0.10"
+                value={quotePrice}
+                onChange={e => setQuotePrice(e.target.value)}
+                className="w-full rounded-xl border border-sage/20 bg-[#FAF9F6] py-2.5 pl-9 pr-3 text-lg font-bold text-brown outline-none focus:border-gold focus:bg-white"
+                placeholder="0.00"
+                required={order.isCustomOrder}
+              />
+            </div>
+          </div>
+          <div className="rounded-xl bg-[#faf7f2] p-3 text-sm">
+            {order.subtotal > 0 && (
+              <div className="flex justify-between text-sage"><span>Productos</span><span>{formatCurrency(order.subtotal)}</span></div>
+            )}
+            <div className="flex justify-between text-sage">
+              <span>Entrega</span>
+              <span>{isNational && !order.deliveryCost ? 'Paga en destino' : formatCurrency(deliveryCost)}</span>
+            </div>
+            <div className="mt-1 flex justify-between border-t border-sage/15 pt-1 font-bold text-brown">
+              <span>Total a cobrar</span><span>{formatCurrency(quoteTotal)}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="quote-notes" className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-sage">Nota para el cliente (opcional)</label>
+          <textarea
+            id="quote-notes"
+            rows={2}
+            maxLength={2000}
+            value={quoteNotes}
+            onChange={e => setQuoteNotes(e.target.value)}
+            className="w-full resize-none rounded-xl border border-sage/20 bg-[#FAF9F6] px-3 py-2 text-sm text-brown outline-none focus:border-gold focus:bg-white"
+            placeholder="Ej. Incluye caja de lujo y 12 rosas eternas. Listo en 3 días."
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={isQuoting} className="flex items-center gap-2 rounded-full bg-[#c8a96b] px-5 text-white hover:bg-[#b09355]">
+            <Send className="h-4 w-4" /> {isQuoting ? 'Enviando…' : isRequote ? 'Actualizar precio' : 'Enviar cotización'}
+          </Button>
+          {isRequote && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isChangingStatus}
+              onClick={() => changeStatus({ status: OrderStatus.WaitingPayment, comment: 'Cotización aceptada (confirmada por el equipo).' })}
+              className="rounded-full"
+            >
+              Aceptó por WhatsApp → pasar a pago
             </Button>
-            <Button onClick={() => markReady()} disabled={isMarkingReady} className="bg-sage text-white hover:bg-sage/90">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              {isMarkingReady ? 'Actualizando...' : 'Marcar como Listo'}
-            </Button>
-          </>
-        )}
-
-        {order.status === OrderStatus.Ready && order.deliveryType === DeliveryType.NationalShipping && (
-          <Button onClick={() => setIsDeliverAgencyModalOpen(true)} className="bg-brown text-white hover:bg-brown/90">
-            <Truck className="w-4 h-4 mr-2" />
-            Entregar a Agencia
+          )}
+        </div>
+      </form>
+    );
+  } else if (status === OrderStatus.WaitingPayment) {
+    title = 'Esperando el pago';
+    body = (
+      <div className="space-y-3">
+        <p className="flex items-center gap-2 text-sm text-brown">
+          <Hourglass className="h-4 w-4 shrink-0 text-amber-600" />
+          <span>El cliente debe pagar <strong>{formatCurrency(order.total)}</strong> y subir su comprobante.</span>
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={copyPaymentLink} className="flex items-center gap-2 rounded-full text-xs">
+            <Copy className="h-3.5 w-3.5" /> Copiar enlace de pago
           </Button>
-        )}
-
-        {order.status === OrderStatus.Ready && order.deliveryType !== DeliveryType.NationalShipping && (
-          <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            {isChangingStatus ? 'Actualizando...' : 'Marcar Entregado'}
-          </Button>
-        )}
-
-        {order.status === OrderStatus.DeliveredToAgency && (
-          <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className="bg-brown text-white hover:bg-brown/90">
-            <CheckCircle2 className="w-4 h-4 mr-2" />
-            {isChangingStatus ? 'Actualizando...' : 'Marcar Recibido por Cliente'}
-          </Button>
-        )}
-
-        {order.status === OrderStatus.WaitingPayment && (
-          <span className="text-xs text-[#887870] italic">
-            Esperando que el cliente adjunte el comprobante de pago.
-          </span>
-        )}
-
-        {order.status === OrderStatus.PaymentReported && (
-          <span className="text-xs font-semibold text-[#b58129] bg-[#fdf6e7] px-3 py-1.5 rounded-full border border-[#c8a96b]/30 flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Comprobante recibido: revísalo en la sección de Comprobante
-          </span>
-        )}
-
-        <div className="w-full h-px bg-sage/10 my-2"></div>
-        <Button onClick={loadEmailPreview} variant="outline" className="border-brown text-brown hover:bg-brown/5">
-          <Mail className="w-4 h-4 mr-2" />
-          Previsualizar y Reenviar Correo
-        </Button>
+          {order.customer?.phone && (
+            <a
+              href={whatsappLink(order.customer.phone, `Hola ${firstName} 🌸 Tu pedido ${order.orderCode} está listo para pago (${formatCurrency(order.total)}). Puedes pagar y subir tu comprobante aquí: ${paymentLink}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white hover:bg-[#1ebe5b]"
+            >
+              <MessageCircle className="h-3.5 w-3.5" /> Recordar por WhatsApp
+            </a>
+          )}
+        </div>
       </div>
+    );
+  } else if (status === OrderStatus.PaymentReported) {
+    title = 'Revisa el comprobante';
+    const evidence = order.payment?.evidenceUrl;
+    body = (
+      <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[170px_1fr]">
+        {evidence ? (
+          <button
+            type="button"
+            onClick={onReviewPayment}
+            className="group relative h-52 overflow-hidden rounded-2xl border border-[#c8a96b]/30 bg-stone-50"
+            title="Ampliar comprobante"
+          >
+            {/* URL firmada y temporal: se muestra tal cual */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={getImageUrl(evidence)} alt="Comprobante" className="h-full w-full object-contain p-1.5 transition group-hover:scale-105" />
+            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-brown shadow">
+              <ZoomIn className="h-3 w-3" /> Ampliar
+            </span>
+          </button>
+        ) : (
+          <div className="flex h-52 items-center justify-center rounded-2xl bg-stone-50 text-xs text-sage">Sin imagen</div>
+        )}
+        <div className="space-y-3">
+          <dl className="space-y-1.5 rounded-xl bg-[#faf7f2] p-3 text-sm">
+            <div className="flex justify-between"><dt className="text-sage">Debe pagar</dt><dd className="font-bold text-brown">{formatCurrency(order.total)}</dd></div>
+            {order.total != null && (
+              <div className="flex justify-between"><dt className="text-sage">Adelanto 50%</dt><dd className="text-brown">{formatCurrency(order.total * 0.5)}</dd></div>
+            )}
+            {order.payment?.createdAt && (
+              <div className="flex justify-between"><dt className="text-sage">Pago generado</dt><dd className="text-brown">{formatDate(order.payment.createdAt)}</dd></div>
+            )}
+          </dl>
+          <p className="text-xs text-sage">Compara en tu Yape el monto, la fecha y el nombre antes de confirmar.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={onReviewPayment} className={successButton}>
+              <Check className="h-4 w-4" /> Confirmar pago
+            </Button>
+            <Button onClick={onRejectPayment} variant="outline" className="flex items-center gap-1.5 rounded-full border-red-200 text-red-500 hover:bg-red-50">
+              <X className="h-4 w-4" /> Rechazar
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  } else if (status === OrderStatus.PaymentConfirmed) {
+    title = 'Pago confirmado: a preparar';
+    body = (
+      <Button onClick={() => startPreparation()} disabled={isStartingPrep} className={primaryButton}>
+        <Play className="h-4 w-4" /> {isStartingPrep ? 'Iniciando…' : 'Empezar a preparar'}
+      </Button>
+    );
+  } else if (status === OrderStatus.Preparing) {
+    title = 'En el taller';
+    body = (
+      <div className="space-y-3">
+        {order.estimatedReadyAt && (
+          <p className="text-sm text-sage">Fecha estimada: <strong className="text-brown">{formatDate(order.estimatedReadyAt)}</strong></p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => markReady()} disabled={isMarkingReady} className={successButton}>
+            <CheckCircle2 className="h-4 w-4" /> {isMarkingReady ? 'Actualizando…' : 'Marcar como listo'}
+          </Button>
+          <Button onClick={() => setIsEstimatedDateModalOpen(true)} variant="outline" className="flex items-center gap-2 rounded-full">
+            <Calendar className="h-4 w-4" /> {order.estimatedReadyAt ? 'Cambiar fecha estimada' : 'Fijar fecha estimada'}
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (status === OrderStatus.Ready) {
+    title = 'Listo para entregar';
+    body = isNational ? (
+      <Button onClick={() => setIsDeliverAgencyModalOpen(true)} className={primaryButton}>
+        <Truck className="h-4 w-4" /> Registrar entrega a la agencia
+      </Button>
+    ) : order.deliveryType === DeliveryType.Delivery ? (
+      <Button onClick={() => changeStatus({ status: OrderStatus.Shipped })} disabled={isChangingStatus} className={primaryButton}>
+        <Truck className="h-4 w-4" /> {isChangingStatus ? 'Actualizando…' : 'Salió a reparto'}
+      </Button>
+    ) : (
+      <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className={primaryButton}>
+        <Store className="h-4 w-4" /> {isChangingStatus ? 'Actualizando…' : 'Entregado en el punto'}
+      </Button>
+    );
+  } else if (status === OrderStatus.Shipped || status === OrderStatus.DeliveredToAgency) {
+    title = status === OrderStatus.Shipped ? 'En camino' : 'En la agencia';
+    body = (
+      <Button onClick={() => changeStatus({ status: OrderStatus.Delivered })} disabled={isChangingStatus} className={successButton}>
+        <CheckCircle2 className="h-4 w-4" /> {isChangingStatus ? 'Actualizando…' : status === OrderStatus.Shipped ? 'Marcar entregado' : 'El cliente lo recibió'}
+      </Button>
+    );
+  } else if (status === OrderStatus.Delivered) {
+    title = 'Pedido entregado';
+    body = <p className="flex items-center gap-2 text-sm text-emerald-700"><PartyPopper className="h-4 w-4" /> Todo listo. ¡Buen trabajo!</p>;
+  } else if (status === OrderStatus.Cancelled) {
+    title = 'Pedido cancelado';
+    body = <p className="flex items-center gap-2 text-sm text-stone-500"><Ban className="h-4 w-4" /> No requiere más acciones.</p>;
+  }
 
-      {/* Modal Fecha Estimada */}
-      <Modal isOpen={isEstimatedDateModalOpen} onClose={() => setIsEstimatedDateModalOpen(false)} title="Fecha Estimada de Disponibilidad">
+  return (
+    <section className="rounded-[24px] border-2 border-[#c8a96b]/40 bg-gradient-to-br from-white to-[#fffaf0] p-5 shadow-sm sm:p-6">
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b08a4e]">Siguiente paso</p>
+      <h2 className="mb-4 mt-0.5 font-serif text-xl font-bold text-brown">{title}</h2>
+      {body}
+
+      <Modal isOpen={isEstimatedDateModalOpen} onClose={() => setIsEstimatedDateModalOpen(false)} title="Fecha estimada">
         <form onSubmit={handleSetEstimatedDate} className="space-y-4">
           <div>
-            <label className="block text-sm text-sage mb-1">Fecha y Hora</label>
-            <input 
-              type="datetime-local" 
+            <label className="mb-1 block text-sm text-sage" htmlFor="estimated-date">Fecha y hora</label>
+            <input
+              id="estimated-date"
+              type="datetime-local"
               required
               value={estimatedDate}
               onChange={(e) => setEstimatedDate(e.target.value)}
-              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold"
+              className="w-full rounded-xl border border-sage/20 px-4 py-2 outline-none focus:border-gold"
             />
-            <p className="text-xs text-sage mt-2">Esta fecha será visible para el cliente y los notificará (si aplica).</p>
+            <p className="mt-2 text-xs text-sage">El cliente la verá en su seguimiento.</p>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setIsEstimatedDateModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isSettingEstimated}>Guardar Fecha</Button>
+            <Button type="submit" disabled={isSettingEstimated}>Guardar fecha</Button>
           </div>
         </form>
       </Modal>
 
-      {/* Modal Entregar a Agencia */}
-      <Modal isOpen={isDeliverAgencyModalOpen} onClose={() => setIsDeliverAgencyModalOpen(false)} title="Registrar Entrega a Agencia">
+      <Modal isOpen={isDeliverAgencyModalOpen} onClose={() => setIsDeliverAgencyModalOpen(false)} title="Entrega a la agencia">
         <form onSubmit={handleDeliverAgency} className="space-y-4">
           <div>
-            <label className="block text-sm text-sage mb-1">Proveedor (Courier)</label>
-            <select 
+            <label className="mb-1 block text-sm text-sage" htmlFor="agency-provider">Agencia</label>
+            <select
+              id="agency-provider"
               required
               value={agencyData.provider}
-              onChange={(e) => setAgencyData({...agencyData, provider: e.target.value})}
-              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold bg-white"
+              onChange={(e) => setAgencyData({ ...agencyData, provider: e.target.value })}
+              className="w-full rounded-xl border border-sage/20 bg-white px-4 py-2 outline-none focus:border-gold"
             >
               <option value="">Selecciona una agencia</option>
               <option value="Olva">Olva</option>
@@ -249,72 +350,33 @@ export function OrderActions({ order }: OrderActionsProps) {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-sage mb-1">Código de Seguimiento</label>
-            <input 
-              type="text" 
+            <label className="mb-1 block text-sm text-sage" htmlFor="agency-code">Código de seguimiento de la agencia</label>
+            <input
+              id="agency-code"
+              type="text"
               required
               placeholder="Ej. 123456789"
               value={agencyData.trackingCode}
-              onChange={(e) => setAgencyData({...agencyData, trackingCode: e.target.value})}
-              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold"
+              onChange={(e) => setAgencyData({ ...agencyData, trackingCode: e.target.value })}
+              className="w-full rounded-xl border border-sage/20 px-4 py-2 outline-none focus:border-gold"
             />
           </div>
           <div>
-            <label className="block text-sm text-sage mb-1">Constancia de entrega a agencia</label>
-            <input 
-              type="file" 
+            <label className="mb-1 block text-sm text-sage" htmlFor="agency-proof">Foto de la constancia (opcional)</label>
+            <input
+              id="agency-proof"
+              type="file"
               accept="image/*,.pdf"
-              onChange={(e) => {
-                const file = e.target.files ? e.target.files[0] : null;
-                setAgencyData({...agencyData, proofFile: file});
-              }}
-              className="w-full px-4 py-2 border border-sage/20 rounded-xl outline-none focus:border-gold"
+              onChange={(e) => setAgencyData({ ...agencyData, proofFile: e.target.files?.[0] ?? null })}
+              className="w-full rounded-xl border border-sage/20 px-4 py-2 outline-none focus:border-gold"
             />
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsDeliverAgencyModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isDeliveringAgency}>
-              {isDeliveringAgency ? 'Subiendo constancia...' : 'Registrar Entrega'}
-            </Button>
+            <Button type="submit" disabled={isDeliveringAgency}>{isDeliveringAgency ? 'Guardando…' : 'Registrar entrega'}</Button>
           </div>
         </form>
       </Modal>
-
-      {/* Modal Previsualizar y Enviar Correo */}
-      <Modal isOpen={isEmailModalOpen} onClose={() => !isSendingEmail && setIsEmailModalOpen(false)} title="Previsualizar y Reenviar Correo">
-        <div className="space-y-4">
-          <div className="bg-[#fcf9f2] p-3 rounded-lg border border-[#c8a96b]/20 text-xs text-brown">
-            <p><strong>Destinatario:</strong> {order.customer?.email || <span className="text-red-500 font-bold">No hay correo registrado</span>}</p>
-            <p><strong>Asunto:</strong> Confirmación de Pedido {order.orderCode} - Aura Nova</p>
-          </div>
-          
-          <div className="border border-sage/20 rounded-xl overflow-hidden bg-white h-[400px] flex items-center justify-center relative">
-            {isGeneratingPreview ? (
-              <div className="flex flex-col items-center text-sage">
-                <div className="w-8 h-8 border-4 border-sage/20 border-t-gold rounded-full animate-spin mb-3"></div>
-                <p className="text-sm font-medium">Generando preview...</p>
-              </div>
-            ) : emailPreviewHtml ? (
-              <iframe 
-                srcDoc={emailPreviewHtml} 
-                className="w-full h-full border-none"
-                title="Email Preview"
-              />
-            ) : (
-              <p className="text-sage text-sm">No se pudo cargar la vista previa.</p>
-            )}
-          </div>
-          
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => setIsEmailModalOpen(false)} disabled={isSendingEmail}>Cancelar</Button>
-            <Button onClick={handleSendEmail} disabled={isGeneratingPreview || isSendingEmail || !order.customer?.email || !emailPreviewHtml} className="bg-gold text-white hover:bg-gold/90">
-              <Mail className="w-4 h-4 mr-2" />
-              {isSendingEmail ? 'Enviando...' : 'Reenviar Correo Ahora'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-    </div>
+    </section>
   );
 }

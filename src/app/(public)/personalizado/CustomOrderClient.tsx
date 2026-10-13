@@ -19,6 +19,7 @@ import { DeliveryType, CreateOrderResponse } from '@/types/checkout';
 import { CreateCustomOrderRequest } from '@/types/orders';
 import { OrdersService } from '@/services/orders.service';
 import { useMounted } from '@/hooks/use-mounted';
+import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
 
 import flo1 from '../images/flo1.png';
 
@@ -70,7 +71,7 @@ export function CustomOrderClient() {
   const [step, setStep] = useState<1 | 2>(1);
 
   // Form State
-  const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
+  const [customer, setCustomer] = useState(readSavedCustomer);
   const [customizationNotes, setCustomizationNotes] = useState('');
   
   // Delivery State
@@ -189,6 +190,11 @@ export function CustomOrderClient() {
       return;
     }
 
+    if (!isValidPeruPhone(customer.phone)) {
+      toast.error('Revisa tu número de WhatsApp', { description: 'Debe tener 9 dígitos y empezar con 9 (ej. 987654321).' });
+      return;
+    }
+
     if (!customizationNotes.trim()) {
       toast.error('Faltan detalles', { description: 'Por favor descríbenos qué diseño deseas.' });
       setStep(1);
@@ -272,6 +278,7 @@ export function CustomOrderClient() {
       }
 
       const response = await OrdersService.createCustomOrderWithImages(request, images.map((image) => image.file));
+      saveCustomer({ name: customer.name.trim(), phone: customer.phone.trim(), email: customer.email.trim() });
       setCreatedOrder(response);
       window.scrollTo(0, 0);
       

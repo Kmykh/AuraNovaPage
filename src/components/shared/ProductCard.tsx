@@ -7,6 +7,9 @@ import { PackageOpen, ShoppingBag, Paintbrush, X, Sparkles } from 'lucide-react'
 import { useCartStore } from '../../store/cart.store';
 import { toast } from 'sonner';
 import estatuo from '../../app/(public)/images/estatuo.png';
+import { productImages } from '../../lib/product-options';
+import { useNow } from '../../hooks/use-now';
+import { formatRemaining } from '../product/CampaignBanner';
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -17,6 +20,18 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
   const { id, name, price, imageUrl, isAvailable, stock } = product;
   const addItem = useCartStore(state => state.addItem);
   const [showMobileActions, setShowMobileActions] = useState(false);
+  // La segunda foto se pide solo al pasar el mouse (no duplica la descarga del catálogo)
+  const [hovered, setHovered] = useState(false);
+  const now = useNow();
+  const secondImage = productImages(product)[1];
+  const discount = product.isCampaignActive && price > product.effectivePrice
+    ? Math.round(((price - product.effectivePrice) / price) * 100)
+    : 0;
+  const campaignEndsIn = product.isCampaignActive && product.campaignStageEndsAt && now
+    ? new Date(product.campaignStageEndsAt).getTime() - now
+    : null;
+  // Cuenta regresiva solo cuando falta poco (menos de 3 días)
+  const showCountdown = campaignEndsIn !== null && campaignEndsIn > 0 && campaignEndsIn < 3 * 86_400_000;
 
   // Derive visual stock availability
   const isOutOfStock = !isAvailable || stock <= 0;
@@ -44,6 +59,7 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
 
     if (isOutOfStock) return;
 
+    // Compra rápida: las mismas opciones que vienen marcadas por defecto en el detalle
     addItem({
       productId: id,
       name,
@@ -51,7 +67,9 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
       quantity: 1,
       imageUrl: getImageUrl(imageUrl),
       stock,
-      isAvailable
+      isAvailable,
+      selectedColors: product.availableColors?.length ? [product.availableColors[0]] : [],
+      selectedFlowerTypes: product.availableFlowerTypes?.length ? [product.availableFlowerTypes[0]] : [],
     });
 
     toast.success('Detalle agregado al carrito', {
@@ -61,7 +79,10 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
   };
 
   return (
-    <div className="group relative flex flex-col h-full animate-in fade-in duration-700">
+    <div
+      className="group relative flex flex-col h-full animate-in fade-in duration-700"
+      onMouseEnter={() => { if (secondImage && !hovered) setHovered(true); }}
+    >
 
       {/* ── Image Box with Badges ── */}
       {/* ── Image Box with Badges & Mobile Tap Action ── */}
@@ -84,13 +105,30 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
           </div>
         )}
 
+        {/* Segunda foto de la galería al pasar el mouse (computadora) */}
+        {secondImage && hovered && (
+          <Image
+            src={getImageUrl(secondImage)}
+            alt=""
+            fill
+            className="hidden object-cover object-center opacity-0 transition-opacity duration-700 group-hover:opacity-100 md:block"
+            sizes="(max-width: 1200px) 50vw, 33vw"
+          />
+        )}
+
         {/* ── Campaign Stage Badge (Warm Brown Pill) ── */}
         {product.isCampaignActive && product.campaignStageName && (
-          <div className="absolute top-3.5 left-3.5 z-10">
+          <div className="absolute top-3.5 left-3.5 z-10 flex flex-col items-start gap-1.5">
             <span className="bg-[#4A3933]/90 backdrop-blur-md text-[#FDFCFB] text-[10px] font-sans uppercase tracking-[0.16em] font-semibold px-3 py-1 rounded-full shadow-sm border border-white/20 inline-flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96B]" />
               {formatStageName(product.campaignStageName)}
+              {discount > 0 && <span className="text-[#E8C98A]">−{discount}%</span>}
             </span>
+            {showCountdown && (
+              <span className="bg-[#8f2d3b]/90 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
+                Termina en {formatRemaining(campaignEndsIn!)}
+              </span>
+            )}
           </div>
         )}
 

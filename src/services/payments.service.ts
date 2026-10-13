@@ -21,11 +21,16 @@ export const paymentsService = {
     return response.data;
   },
 
-  uploadPaymentEvidence: async (orderId: string, file: File): Promise<PaymentResponse> => {
+  uploadPaymentEvidence: async (orderId: string, file: File, onProgress?: (percent: number) => void): Promise<PaymentResponse> => {
     const formData = new FormData();
     formData.append('evidence', file);
 
-    const response = await apiClient.post<PaymentResponse>(`/api/orders/${orderId}/payment-evidence`, formData);
+    const response = await apiClient.post<PaymentResponse>(`/api/orders/${orderId}/payment-evidence`, formData, {
+      timeout: 120000,
+      onUploadProgress: (event) => {
+        if (onProgress && event.total) onProgress(Math.round((event.loaded / event.total) * 100));
+      },
+    });
     return response.data;
   }
 };

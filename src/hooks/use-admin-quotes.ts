@@ -35,8 +35,10 @@ export function useUpdateQuote(id: string, orderId: string) {
       toast.success('Cotización actualizada.');
       queryClient.invalidateQueries({ queryKey: adminQuoteKeys.all });
       queryClient.invalidateQueries({ queryKey: adminQuoteKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
       if (orderId) {
         queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(orderId) });
+        queryClient.invalidateQueries({ queryKey: adminOrderKeys.history(orderId) });
         queryClient.invalidateQueries({ queryKey: adminOrderKeys.notifications(orderId) });
       }
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });

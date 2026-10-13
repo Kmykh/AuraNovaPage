@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export const adminOrderKeys = {
   all: ['admin-orders'] as const,
   list: (filters: Record<string, string | number>) => ['admin-orders', 'list', filters] as const,
+  counts: ['admin-orders', 'counts'] as const,
   detail: (id: string) => ['admin-order', id] as const,
   history: (id: string) => ['admin-order-status-history', id] as const,
   notifications: (id: string) => ['admin-order-notifications', id] as const,
@@ -17,6 +18,22 @@ export function useAdminOrders(filters: Record<string, string | number>) {
     queryFn: () => AdminOrdersService.getOrders(filters),
     staleTime: 30000,
   });
+}
+
+/** Pedidos por estado (pestañas y aviso del menú). Se refresca solo cada minuto. */
+export function useAdminOrderCounts() {
+  return useQuery({
+    queryKey: adminOrderKeys.counts,
+    queryFn: () => AdminOrdersService.getCounts(),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+/** Pedidos que esperan una acción del equipo: cotizar, revisar pago o empezar a preparar. */
+export function needsActionCount(byStatus?: Record<string, number>): number {
+  if (!byStatus) return 0;
+  return (byStatus.WaitingQuote ?? 0) + (byStatus.PaymentReported ?? 0) + (byStatus.PaymentConfirmed ?? 0);
 }
 
 export function useAdminOrder(id: string) {

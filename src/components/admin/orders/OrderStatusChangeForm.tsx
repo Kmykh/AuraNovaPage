@@ -117,13 +117,9 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
     const statusKeyNum = statusKey as number;
 
     switch (statusKeyNum) {
-      case OrderStatus.WaitingQuote: options.push({ value: OrderStatus.QuoteReady, label: 'Cotización Lista' }); break;
-      case OrderStatus.QuoteReady: options.push({ value: OrderStatus.WaitingPayment, label: 'Esperando Pago' }); break;
-      case OrderStatus.WaitingPayment:
-        options.push({ value: OrderStatus.PaymentReported, label: 'Pago Reportado' });
-        options.push({ value: OrderStatus.PaymentConfirmed, label: 'Pago Confirmado' });
-        break;
-      case OrderStatus.PaymentReported: options.push({ value: OrderStatus.PaymentConfirmed, label: 'Pago Confirmado' }); break;
+      // La cotización (precio) y la revisión del comprobante se hacen en "Siguiente paso":
+      // así el total y el pago quedan registrados. Aquí solo quedan los cambios manuales seguros.
+      case OrderStatus.QuoteReady: options.push({ value: OrderStatus.WaitingPayment, label: 'Esperando Pago (aceptó la cotización)' }); break;
       case OrderStatus.PaymentConfirmed: options.push({ value: OrderStatus.Preparing, label: 'Preparando' }); break;
       case OrderStatus.Preparing: options.push({ value: OrderStatus.Ready, label: 'Listo' }); break;
       case OrderStatus.Ready: 

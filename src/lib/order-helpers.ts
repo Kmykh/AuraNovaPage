@@ -83,3 +83,37 @@ export function getNotificationTypeLabel(type: number | string) {
   const key = typeof type === 'string' ? (NotificationType as Record<string, string | number>)[type] ?? type : type;
   return NOTIFICATION_TYPE_MAP[key as number] || 'Desconocido';
 }
+
+export type AdminActionTone = 'urgent' | 'waiting' | 'progress' | 'done';
+
+/** Lo siguiente que hay que hacer con el pedido, en palabras del equipo. */
+export function nextAdminAction(status: string, deliveryType?: string): { label: string; tone: AdminActionTone } {
+  switch (status) {
+    case 'WaitingQuote': return { label: 'Poner precio', tone: 'urgent' };
+    case 'QuoteReady': return { label: 'Esperando que acepte', tone: 'waiting' };
+    case 'WaitingPayment': return { label: 'Esperando el pago', tone: 'waiting' };
+    case 'PaymentReported': return { label: 'Revisar comprobante', tone: 'urgent' };
+    case 'PaymentConfirmed': return { label: 'Empezar a preparar', tone: 'urgent' };
+    case 'Preparing': return { label: 'Marcar como listo', tone: 'progress' };
+    case 'Ready':
+      return {
+        label: deliveryType === 'NationalShipping' ? 'Llevar a la agencia' : deliveryType === 'MeetingPoint' ? 'Entregar en el punto' : 'Enviar delivery',
+        tone: 'progress',
+      };
+    case 'Shipped':
+    case 'DeliveredToAgency': return { label: 'Confirmar entrega', tone: 'progress' };
+    case 'Delivered': return { label: 'Entregado', tone: 'done' };
+    case 'Cancelled': return { label: 'Cancelado', tone: 'done' };
+    default: return { label: '', tone: 'done' };
+  }
+}
+
+/** Días que faltan para una fecha "YYYY-MM-DD", contando desde hoy en Perú. */
+export function daysUntilDate(isoDate: string): number {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date());
+  const toUtc = (value: string) => {
+    const [y, m, d] = value.slice(0, 10).split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((toUtc(isoDate) - toUtc(today)) / 86_400_000);
+}

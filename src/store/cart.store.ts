@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { itemColors, itemFlowers } from '@/lib/product-options';
 
 export interface CartItem {
   cartItemId?: string; // ID único que combina productId y personalizaciones
@@ -10,9 +11,16 @@ export interface CartItem {
   imageUrl?: string | null;
   stock: number;
   isAvailable: boolean;
+  /** Un color por elemento (antes se guardaban unidos con comas) */
+  selectedColors?: string[];
+  selectedFlowerTypes?: string[];
+  /** @deprecated carritos guardados con la versión anterior */
   selectedPrimaryColor?: string;
+  /** @deprecated */
   selectedSecondaryColor?: string;
+  /** @deprecated */
   selectedFlowerType?: string;
+  /** @deprecated */
   selectedFlowerColor?: string;
   hasLights?: boolean;
   hasButterfly?: boolean;
@@ -35,10 +43,8 @@ interface CartState {
 const generateCartItemId = (item: CartItem): string => {
   const parts = [
     item.productId,
-    item.selectedPrimaryColor || '',
-    item.selectedSecondaryColor || '',
-    item.selectedFlowerType || '',
-    item.selectedFlowerColor || '',
+    itemColors(item).join('+'),
+    itemFlowers(item).join('+'),
     item.hasLights ? 'lights' : '',
     item.hasButterfly ? 'butterfly' : '',
     item.hasPhraseCard ? 'card' : '',
@@ -102,6 +108,25 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'auranova-cart-storage',
+      version: 2,
+      // v1 guardaba los colores y flores como texto con comas: se convierten a listas
+      migrate: (persisted, version) => {
+        const state = persisted as { items?: CartItem[] } | undefined;
+        if (!state?.items || version >= 2) return state as CartState;
+        const items = state.items.map(item => {
+          const migrated: CartItem = {
+            ...item,
+            selectedColors: itemColors(item),
+            selectedFlowerTypes: itemFlowers(item),
+            selectedPrimaryColor: undefined,
+            selectedSecondaryColor: undefined,
+            selectedFlowerType: undefined,
+            selectedFlowerColor: undefined,
+          };
+          return { ...migrated, cartItemId: generateCartItemId(migrated) };
+        });
+        return { ...state, items } as CartState;
+      },
     }
   )
 );

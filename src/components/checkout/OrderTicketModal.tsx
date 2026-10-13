@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
+import { TicketOptionLines } from './TicketOptionLines';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Printer, Receipt, Check, Copy, Sparkles, MapPin, User, Package, Heart } from 'lucide-react';
@@ -260,10 +261,7 @@ export function OrderTicketModal({
                       
                       {/* Atributos y personalización */}
                       <div className="text-[10px] text-[#555] space-y-0.5 pl-2 border-l border-stone-300">
-                        {item.selectedPrimaryColor && <div>• Base: <span className="font-semibold">{item.selectedPrimaryColor}</span></div>}
-                        {item.selectedSecondaryColor && <div>• Secundario: <span className="font-semibold">{item.selectedSecondaryColor}</span></div>}
-                        {item.selectedFlowerType && <div>• Flor: <span className="font-semibold">{item.selectedFlowerType}</span></div>}
-                        {item.selectedFlowerColor && <div>• Color flor: <span className="font-semibold">{item.selectedFlowerColor}</span></div>}
+                        <TicketOptionLines item={item} />
                         {item.hasLights && <div className="text-[#b58129] font-medium">• Luces LED incluidas ✨</div>}
                         {item.hasButterfly && <div className="text-[#71a37c] font-medium">• Mariposa decorativa 🦋</div>}
                         {(item.hasPhraseCard || item.phraseText) && (
