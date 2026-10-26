@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
-  AlertTriangle, Ban, CheckCircle2, Clock, FileSearch, Gift, Hourglass, Package, PackageCheck, RefreshCw, Sparkles,
+  AlertTriangle, Ban, CheckCircle2, Clock, FileSearch, Gift, Hourglass, Package, PackageCheck, RefreshCw,
 } from 'lucide-react';
 import { OrderPaymentSummary } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
@@ -213,24 +213,65 @@ export function PaymentReportedState({ orderCode, trackingCode }: { orderCode: s
   );
 }
 
-export function PaymentDoneState({ summary, trackingCode }: { summary: OrderPaymentSummary; trackingCode?: string | null }) {
-  const cancelled = summary.status === 'Cancelled';
+/** Pagó el adelanto: no se vuelve a mostrar el formulario; el saldo se paga cuando el pedido esté listo (o antes, si quiere). */
+export function DepositPaidState({ summary, trackingCode, onPayNow }: { summary: OrderPaymentSummary; trackingCode?: string | null; onPayNow: () => void }) {
+  const code = trackingCode ?? summary.trackingCode;
   return (
     <div className={shellClass}>
-      <span className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full ${cancelled ? 'bg-stone-100 text-stone-500' : 'bg-[#fdf8ee] text-[#c8a96b]'}`}>
-        {cancelled ? <Ban className="h-9 w-9" /> : summary.status === 'Delivered' ? <Gift className="h-9 w-9" /> : <Sparkles className="h-9 w-9" />}
+      <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+        <CheckCircle2 className="h-8 w-8" />
+      </span>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#b08a4e]">Pedido {summary.orderCode}</p>
+      <h1 className="mt-1 font-serif text-3xl font-bold text-[#4a3933]">Adelanto recibido</h1>
+
+      <dl className="mx-auto mt-6 grid max-w-sm grid-cols-2 overflow-hidden rounded-2xl border border-[#efe6dd] text-left">
+        <div className="bg-emerald-50/60 p-4">
+          <dt className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Pagaste</dt>
+          <dd className="mt-1 font-serif text-2xl font-bold text-emerald-800">{formatCurrency(summary.amountPaid)}</dd>
+        </div>
+        <div className="border-l border-[#efe6dd] bg-[#fffbf3] p-4">
+          <dt className="text-[11px] font-bold uppercase tracking-wider text-[#8f6d28]">Falta pagar</dt>
+          <dd className="mt-1 font-serif text-2xl font-bold text-[#4a3933]">{formatCurrency(summary.balanceDue)}</dd>
+        </div>
+      </dl>
+
+      <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-[#887870]">
+        Ya estamos preparando tu pedido. Te avisamos por correo y WhatsApp cuando esté listo para que pagues el saldo antes de la entrega.
+      </p>
+
+      <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <TrackingButton trackingCode={code} />
+        <button
+          type="button"
+          onClick={onPayNow}
+          className="rounded-full border border-[#e8dcdc] px-6 py-2.5 text-sm font-bold text-[#4a3933] transition hover:border-[#c8a96b]"
+        >
+          Pagar el saldo ahora
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function PaymentDoneState({ summary, trackingCode }: { summary: OrderPaymentSummary; trackingCode?: string | null }) {
+  const cancelled = summary.status === 'Cancelled';
+  const code = trackingCode ?? summary.trackingCode;
+  return (
+    <div className={shellClass}>
+      <span className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full ${cancelled ? 'bg-stone-100 text-stone-500' : 'bg-emerald-50 text-emerald-600'}`}>
+        {cancelled ? <Ban className="h-8 w-8" /> : summary.status === 'Delivered' ? <Gift className="h-8 w-8" /> : <CheckCircle2 className="h-8 w-8" />}
       </span>
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#b08a4e]">Pedido {summary.orderCode}</p>
       <h1 className="mt-1 font-serif text-3xl font-bold text-[#4a3933]">
-        {cancelled ? 'Este pedido fue cancelado' : 'Tu pago ya está confirmado'}
+        {cancelled ? 'Este pedido fue cancelado' : 'Tu pedido está pagado'}
       </h1>
       <p className="mx-auto mt-3 max-w-md text-[#887870]">
         {cancelled
           ? 'Si crees que es un error, escríbenos por WhatsApp y lo revisamos.'
-          : `Estado actual: ${summary.statusLabel}. Puedes seguir cada paso en tu seguimiento.`}
+          : `Pagaste ${formatCurrency(summary.amountPaid)}. Estado actual: ${summary.statusLabel}. Sigue cada paso en tu seguimiento.`}
       </p>
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <TrackingButton trackingCode={trackingCode} />
+        <TrackingButton trackingCode={code} />
       </div>
     </div>
   );

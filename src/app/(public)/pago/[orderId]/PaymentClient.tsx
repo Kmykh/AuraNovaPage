@@ -2,17 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, Loader2, MessageCircle, PartyPopper, Receipt, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, MessageCircle, PartyPopper, Receipt, ShieldCheck } from 'lucide-react';
 import { useMounted } from '@/hooks/use-mounted';
 import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
 import { useBusinessSettings } from '@/hooks/use-info';
 import { MercadoPagoCheckout, PaymentMethodChoice } from '@/components/checkout/MercadoPagoCheckout';
-import { PaymentSuccess, PaymentSuccessDialog } from '@/components/checkout/PaymentSuccessDialog';
+import { PaymentOverlay, PaymentOverlayState } from '@/components/checkout/PaymentSuccessDialog';
 import { PurchaseSteps } from '@/app/(public)/carrito/CartClient';
 import { OrderTicketModal } from '@/components/checkout/OrderTicketModal';
 import {
-  AmountBreakdown, OrderNotFoundState, PaymentDoneState, PaymentReportedState, QuotePendingState, QuoteReadyState, SummaryItems,
+  AmountBreakdown, DepositPaidState, OrderNotFoundState, PaymentDoneState, PaymentReportedState, QuotePendingState, QuoteReadyState, SummaryItems,
 } from '@/components/checkout/PaymentStates';
 import { OrderDetailsSnapshot } from '@/app/(public)/checkout/OrderSuccess';
 import { formatCurrency } from '@/lib/formatters';
@@ -58,14 +59,26 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
   const { data: onlinePayments, isLoading: isCheckingPayments } = useMercadoPagoAvailable();
 
-  // Confirmación visible apenas se aprueba el pago (al instante o cuando Mercado Pago termina de confirmarlo)
-  const [success, setSuccess] = useState<PaymentSuccess | null>(null);
+  const router = useRouter();
+  // Desde que toca "Pagar": la página se cubre con "Procesando…" y en la misma ventana sale la confirmación
+  const [overlay, setOverlay] = useState<PaymentOverlayState | null>(null);
+  const [payBalanceNow, setPayBalanceNow] = useState(false);
+  const [reviewTimedOut, setReviewTimedOut] = useState(false);
 
   // Pago en revisión: se consulta solo cada pocos segundos hasta que Mercado Pago lo confirme (máx. 5 min)
   const [confirming, setConfirming] = useState<{ since: number; paid: number; method: PaymentMethodChoice } | null>(null);
+  const handleProcessing = (active: boolean, method: PaymentMethodChoice) => {
+    setReviewTimedOut(false);
+    setOverlay(active ? { phase: 'processing', method } : null);
+  };
   const handlePaid = (result: OnlinePaymentResult, method: PaymentMethodChoice) => {
-    if (result.status === 'approved') setSuccess({ amount: result.amountCharged, balanceDue: result.balanceDue, method });
-    else if (result.status === 'pending') setConfirming({ since: Date.now(), paid: summary?.amountPaid ?? 0, method });
+    if (result.status === 'approved') {
+      setOverlay({ phase: 'success', success: { amount: result.amountCharged, balanceDue: result.balanceDue, method } });
+    } else {
+      setOverlay({ phase: 'processing', method, slow: true });
+      setConfirming({ since: Date.now(), paid: summary?.amountPaid ?? 0, method });
+    }
+    setPayBalanceNow(false);
     refresh();
   };
   useEffect(() => {
@@ -74,9 +87,11 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
       const latest = await refetch();
       const paid = latest.data?.amountPaid ?? 0;
       if (paid > confirming.paid) {
-        setSuccess({ amount: paid - confirming.paid, balanceDue: latest.data?.balanceDue ?? 0, method: confirming.method });
+        setOverlay({ phase: 'success', success: { amount: paid - confirming.paid, balanceDue: latest.data?.balanceDue ?? 0, method: confirming.method } });
         setConfirming(null);
       } else if (Date.now() - confirming.since > 5 * 60_000) {
+        setOverlay(null);
+        setReviewTimedOut(true);
         setConfirming(null);
       }
     }, 4000);
@@ -111,8 +126,15 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const trackingCode = sameOrder ? stored.context.trackingCode : undefined;
   const snapshot = sameOrder ? stored.snapshot : null;
 
-  const successDialog = success && (
-    <PaymentSuccessDialog {...success} orderCode={summary.orderCode} trackingCode={trackingCode} onClose={() => setSuccess(null)} />
+  const trackingHref = (trackingCode ?? summary.trackingCode) ? `/seguimiento/${trackingCode ?? summary.trackingCode}` : '/seguimiento';
+  const closeOverlay = () => {
+    const paidInFull = overlay?.phase === 'success' && overlay.success.balanceDue <= 0;
+    setOverlay(null);
+    // Pagado por completo: el siguiente paso es su seguimiento, no otra pantalla de "pagado"
+    if (paidInFull) router.push(trackingHref);
+  };
+  const overlayView = overlay && (
+    <PaymentOverlay state={overlay} orderCode={summary.orderCode} trackingCode={trackingCode ?? summary.trackingCode} onClose={closeOverlay} />
   );
 
   // Con el adelanto del 50% el pedido avanza, y el saldo se paga aquí mismo
@@ -129,7 +151,11 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
       break;
     default:
       // Pagado por completo: la confirmación se muestra encima del estado final
-      if (!hasBalance) return <>{successDialog}<PaymentDoneState summary={summary} trackingCode={trackingCode} /></>;
+      if (!hasBalance) return <>{overlayView}<PaymentDoneState summary={summary} trackingCode={trackingCode} /></>;
+      // Con el adelanto pagado no se vuelve al formulario: el saldo se paga cuando el pedido esté listo (o antes si quiere)
+      if (summary.status !== 'Ready' && !payBalanceNow) {
+        return <>{overlayView}<DepositPaidState summary={summary} trackingCode={trackingCode} onPayNow={() => setPayBalanceNow(true)} /></>;
+      }
   }
 
   const total = summary.total;
@@ -175,10 +201,10 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
             </div>
           </div>
         )}
-        {confirming && (
-          <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            <p>Estamos confirmando tu pago con Mercado Pago. Esta página se actualiza sola; no hace falta que pagues de nuevo.</p>
+        {reviewTimedOut && (
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>Mercado Pago sigue revisando tu pago. Te avisaremos por correo apenas se confirme; no hace falta que pagues de nuevo.</p>
           </div>
         )}
       </div>
@@ -189,7 +215,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
             <Skeleton variant="rect" className="h-96 w-full rounded-[2rem]" />
           ) : onlinePayments ? (
             // La clave reinicia el formulario después de cada pago (sin mensajes viejos)
-            <MercadoPagoCheckout key={summary.amountPaid} summary={summary} onPaid={handlePaid} />
+            <MercadoPagoCheckout key={summary.amountPaid} summary={summary} onPaid={handlePaid} onProcessing={handleProcessing} />
           ) : (
             <div className="rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-8 text-center">
               <p className="font-serif text-xl font-bold text-[#4a3933]">Los pagos en línea se están activando</p>
@@ -256,7 +282,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
           snapshot={snapshot}
         />
       )}
-      {successDialog}
+      {overlayView}
     </div>
   );
 }

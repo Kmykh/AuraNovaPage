@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  ChevronLeft, Share2, Copy, Check, CreditCard, BadgeCheck, MessageCircle, CalendarDays, Sparkles,
+  ChevronLeft, Share2, Copy, Check, BadgeCheck, MessageCircle, CalendarDays, Sparkles,
 } from 'lucide-react';
 import { useTracking } from '@/hooks/use-tracking';
 import { useBusinessSettings } from '@/hooks/use-info';
@@ -241,38 +241,7 @@ function NextStepCard({ tracking, trackingCode, whatsappNumber }: { tracking: Pu
     );
   }
 
-  if (status === 'WaitingPayment' && tracking.orderId) {
-    return (
-      <ActionCard
-        title={total != null ? `Paga tu pedido de ${formatCurrency(total)}` : 'Realiza tu pago'}
-        message="Con tarjeta o Yape, el 50% de adelanto o el total. Se confirma al instante."
-        primary={
-          <button onClick={goToPayment} className={primaryButton}>
-            <CreditCard className="h-4 w-4" /> Pagar ahora
-          </button>
-        }
-      />
-    );
-  }
-
-  // Pagó el adelanto del 50%: el saldo se paga en la misma página de pago
-  const balance = tracking.costs?.balanceDue ?? 0;
-  if (balance > 0 && tracking.orderId && status !== 'Cancelled') {
-    return (
-      <ActionCard
-        title={status === 'Ready' ? `¡Está listo! Paga el saldo de ${formatCurrency(balance)}` : `Te falta pagar ${formatCurrency(balance)}`}
-        message={status === 'Ready'
-          ? 'Tu pedido está terminado. En cuanto pagues el saldo con tarjeta o Yape, lo entregamos.'
-          : 'Ya recibimos tu adelanto y tu pedido está en marcha. Lo entregamos cuando el saldo esté pagado.'}
-        primary={
-          <button onClick={goToPayment} className={primaryButton}>
-            <CreditCard className="h-4 w-4" /> Pagar saldo
-          </button>
-        }
-      />
-    );
-  }
-
+  // Lo que falta pagar (y el botón para pagarlo) se muestra arriba, en el estado del pedido
   if (eta && ['PaymentConfirmed', 'Preparing', 'Ready'].includes(status)) {
     return (
       <div className="flex items-center gap-3 rounded-[1.5rem] border border-[#c8a96b]/30 bg-white px-5 py-4 shadow-xs">

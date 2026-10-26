@@ -8,7 +8,7 @@ import flo1 from '@/app/(public)/images/flo1.png';
 import flo2 from '@/app/(public)/images/flo2.png';
 import flo4 from '@/app/(public)/images/flo4.png';
 import { Button } from '@/components/ui/Button';
-import { ArrowRight, Home, CheckCircle2, Info } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Check, Copy, MapPin } from 'lucide-react';
 import { trackingPath } from '@/lib/tracking-code';
 import { TicketOptionLines } from '@/components/checkout/TicketOptionLines';
 
@@ -96,6 +96,18 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
   const orderId = order.id;
   const orderTotal = order.total ?? null;
 
+  const [copied, setCopied] = useState(false);
+  const copyTrackingCode = () => {
+    // Sin portapapeles (navegador antiguo o sin permiso) el código igual queda visible
+    if (!trackingToken || !navigator.clipboard) return;
+    navigator.clipboard.writeText(trackingToken)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {});
+  };
+
   // La página de pago lee el estado real del backend: aquí solo se recuerda el código de seguimiento
   const handleProceed = () => {
     sessionStorage.setItem('tempPaymentContext', JSON.stringify({ orderCode, trackingCode: trackingToken }));
@@ -166,16 +178,18 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                     <CheckCircle2 className="text-[#34d399] w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="font-medium text-sm text-white/90">Pedido Confirmado</h2>
-                    <p className="font-semibold text-xl">{formatCurrency(order.total || (order as any).Total || 0)}</p>
+                    <h2 className="font-medium text-sm text-white/90">{isPaymentRequired ? 'Pedido reservado' : isQuote ? 'Idea recibida' : 'Pedido confirmado'}</h2>
+                    <p className="font-semibold text-xl">{isQuote && !order.total ? 'Por cotizar' : formatCurrency(order.total || (order as any).Total || 0)}</p>
                   </div>
                 </div>
               </div>
               
               <div className="flex justify-between items-center relative z-10">
-                <div className="flex items-center gap-2 text-[#34d399] text-xs font-medium bg-[#34d399]/10 px-4 py-1.5 rounded-full border border-[#34d399]/20">
-                  <CheckCircle2 size={14} /> Listo
-                </div>
+                {/* Pantalla de la máquina: acompaña la impresión del ticket */}
+                <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">
+                  <span className={`h-1.5 w-1.5 rounded-full ${showInfo ? 'bg-[#34d399]' : 'animate-pulse bg-[#c8a96b]'}`} />
+                  {showInfo ? 'Ticket impreso' : 'Imprimiendo…'}
+                </p>
                 <div className="text-[#c8a96b]/50">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 </div>
@@ -412,37 +426,45 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                   : 'Gracias por tu compra. Tu pedido ha sido recibido y pronto llegará para crear sonrisas.'}
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-12 w-full justify-center md:justify-start">
-              <div className="flex items-center gap-2 text-[#34d399] text-sm font-semibold bg-[#34d399]/10 px-5 py-2 rounded-full border border-[#34d399]/20 w-fit">
-                <CheckCircle2 size={16} /> Listo
+            {/* Número de pedido y código de seguimiento, bien visibles y fáciles de copiar */}
+            <div className="mb-6 w-full max-w-md overflow-hidden rounded-2xl border border-[#ece3da] bg-white text-left shadow-[0_18px_40px_-30px_rgba(74,57,51,0.5)]">
+              <div className="grid grid-cols-2 divide-x divide-[#f1e9e4]">
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#887870]">N.° de pedido</p>
+                  <p className="mt-1 font-mono text-lg font-bold text-[#4a3933] sm:text-xl">{orderCode}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyTrackingCode}
+                  className="group p-4 text-left transition hover:bg-[#fffbf3]"
+                  aria-label="Copiar código de seguimiento"
+                >
+                  <p className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-[#887870]">
+                    Seguimiento
+                    <span className="flex items-center gap-1 normal-case tracking-normal text-[#b08a4e]">
+                      {copied ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+                    </span>
+                  </p>
+                  <p className="mt-1 font-mono text-lg font-bold tracking-wider text-[#4a3933] sm:text-xl">{trackingToken}</p>
+                </button>
               </div>
-              
-              <Button 
-                onClick={handleProceed}
-                className={`h-10 text-xs tracking-widest uppercase flex items-center justify-center gap-2 rounded-full font-sans font-bold transition-all hover:scale-[1.02] shadow-lg px-8 ${isPaymentRequired ? 'bg-[#4a3933] hover:bg-[#3d2e29] text-white shadow-[#4a3933]/20' : 'bg-[#71a37c] hover:bg-[#5b8764] text-white shadow-[#71a37c]/30'}`}
-              >
-                {isPaymentRequired ? 'IR A PAGAR AHORA' : isQuote ? 'VER MI COTIZACIÓN' : 'VER ESTADO'} <ArrowRight size={16} />
-              </Button>
+              <p className="border-t border-[#f1e9e4] bg-[#fdfbf8] px-4 py-2.5 text-xs leading-relaxed text-[#887870]">
+                Con el código de seguimiento ves tu pedido cuando quieras. También te lo enviamos por correo.
+              </p>
             </div>
 
-            {/* Info Text (Replacing Cards) */}
-            <div className={`space-y-6 w-full text-[#887870] text-sm max-w-md transition-all duration-700 ${showInfo ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-[#fdf5f5] text-[#d38b8b] flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                </div>
-                <p className="leading-relaxed">
-                  Guarda tu <strong>código de seguimiento</strong> (<span className="font-mono font-bold text-[#4a3933]">{trackingToken}</span>): es lo único que necesitas para ver tu pedido. Te lo enviamos también por correo y WhatsApp.
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-[#e8efe9] text-[#71a37c] flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                </div>
-                <p className="leading-relaxed">
-                  En la sección de seguimiento verás cada paso de tu pedido en tiempo real, desde el taller hasta tus manos.
-                </p>
-              </div>
+            <Button
+              onClick={handleProceed}
+              className={`mb-10 flex h-12 w-full max-w-md items-center justify-center gap-2 rounded-full font-sans text-xs font-bold uppercase tracking-widest shadow-lg transition-all hover:scale-[1.01] ${isPaymentRequired ? 'bg-[#4a3933] text-white shadow-[#4a3933]/20 hover:bg-[#3d2e29]' : 'bg-[#71a37c] text-white shadow-[#71a37c]/30 hover:bg-[#5b8764]'}`}
+            >
+              {isPaymentRequired ? 'Ir a pagar ahora' : isQuote ? 'Ver mi cotización' : 'Ver estado'} <ArrowRight size={16} />
+            </Button>
+
+            <div className={`flex w-full max-w-md items-start gap-3 text-sm text-[#887870] transition-all duration-700 ${showInfo ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8efe9] text-[#71a37c]">
+                <MapPin size={15} />
+              </span>
+              <p className="leading-relaxed">En tu seguimiento verás cada paso de tu pedido, desde el taller hasta tus manos.</p>
             </div>
 
           </div>
