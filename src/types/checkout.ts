@@ -68,6 +68,14 @@ export interface CreateOrderDeliveryRequest {
   department?: string;
   province?: string;
   district?: string;
+  /** Quién recibe (regalos) y datos para la agencia en envíos nacionales */
+  recipientName?: string;
+  recipientPhone?: string;
+  /** DNI u otro documento de quien recoge en la agencia */
+  recipientDocument?: string;
+  deliveryReference?: string;
+  /** Shalom u Olva */
+  preferredAgency?: string;
 }
 
 export interface CreateOrderRequest {

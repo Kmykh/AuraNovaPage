@@ -38,7 +38,10 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
   const [isEstimatedDateModalOpen, setIsEstimatedDateModalOpen] = useState(false);
   const [isDeliverAgencyModalOpen, setIsDeliverAgencyModalOpen] = useState(false);
   const [estimatedDate, setEstimatedDate] = useState('');
-  const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({ provider: '', trackingCode: '', proofFile: null });
+  // La agencia que eligió el cliente al comprar viene marcada
+  const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({
+    provider: order.delivery?.preferredAgency ?? '', trackingCode: '', proofFile: null,
+  });
 
   // Cotización: parte del precio ya guardado (cuando es una corrección)
   const [quotePrice, setQuotePrice] = useState<string>(order.customizationCost ? String(order.customizationCost) : '');

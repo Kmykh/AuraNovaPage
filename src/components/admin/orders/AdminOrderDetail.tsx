@@ -21,7 +21,6 @@ import { OrderStatusHistory } from './OrderStatusHistory';
 import { OrderNotifications } from './OrderNotifications';
 import { OrderTimeline } from './OrderTimeline';
 import { OrderActions, whatsappLink } from './OrderActions';
-import { OrderEmailCard } from './OrderEmailCard';
 import { ConfirmPaymentModal, RejectPaymentModal } from './PaymentReviewModals';
 import { WorkshopPreparationCard } from './WorkshopPreparationCard';
 import { OrderPaymentsCard } from './OrderPaymentsCard';
@@ -229,7 +228,15 @@ export function AdminOrderDetail({ id }: { id: string }) {
                   <MessageCircle size={16} /> Escribir por WhatsApp
                 </a>
               )}
-              <OrderEmailCard order={order} />
+              {order.customer?.email && (
+                <a
+                  href={`mailto:${order.customer.email}?subject=${encodeURIComponent(`Tu pedido ${order.orderCode} — Aura Nova`)}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-brown/30 py-2.5 text-sm font-bold text-brown hover:bg-brown/5"
+                >
+                  <Mail size={16} /> Escribir por correo
+                </a>
+              )}
+              <p className="text-center text-[11px] text-sage">Los correos automáticos y su reenvío están en Notificaciones.</p>
             </div>
           </section>
 
@@ -242,8 +249,31 @@ export function AdminOrderDetail({ id }: { id: string }) {
               {order.delivery?.meetingPoint && <p className="flex gap-2"><MapPin size={14} className="mt-0.5 shrink-0" /> {order.delivery.meetingPoint}</p>}
               {order.delivery?.deliveryZone && <p className="flex gap-2"><MapPin size={14} className="mt-0.5 shrink-0" /> Zona {order.delivery.deliveryZone}</p>}
               {order.delivery?.deliveryAddress && <p className="pl-6 text-brown">{order.delivery.deliveryAddress}</p>}
+              {order.delivery?.deliveryReference && <p className="pl-6 text-xs italic">Ref.: {order.delivery.deliveryReference}</p>}
               {(order.delivery?.district || order.delivery?.province) && (
                 <p className="pl-6">{[order.delivery?.district, order.delivery?.province, order.delivery?.department].filter(Boolean).join(', ')}</p>
+              )}
+              {order.delivery?.preferredAgency && (
+                <p className="flex gap-2"><Package size={14} className="mt-0.5 shrink-0" /> Prefiere enviar por <strong className="text-brown">{order.delivery.preferredAgency}</strong></p>
+              )}
+              {(order.delivery?.recipientName || order.delivery?.recipientDocument) && (
+                <div className="mt-3 rounded-xl border border-rose/20 bg-rose-50/40 p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-rose-500">
+                    {order.delivery?.recipientName ? 'Lo recibe otra persona' : 'Recoge el cliente'}
+                  </p>
+                  {order.delivery?.recipientName && <p className="mt-1 font-semibold text-brown">{order.delivery.recipientName}</p>}
+                  {order.delivery?.recipientPhone && (
+                    <a
+                      href={whatsappLink(order.delivery.recipientPhone, `Hola ${order.delivery.recipientName?.split(' ')[0] ?? ''} 🌸 Te escribimos de Aura Nova para coordinar una entrega para ti.`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 flex items-center gap-2 text-[#1a9e4b] hover:underline"
+                    >
+                      <Phone size={13} /> {order.delivery.recipientPhone}
+                    </a>
+                  )}
+                  {order.delivery?.recipientDocument && <p className="mt-0.5 text-xs">DNI: <span className="font-mono text-brown">{order.delivery.recipientDocument}</span></p>}
+                </div>
               )}
               {order.deliveryType === DeliveryType.NationalShipping && !order.deliveryCost && (
                 <p className="rounded-lg bg-[#fdf8ee] px-3 py-2 text-xs text-[#8c6d36]">El envío lo paga el cliente en destino.</p>

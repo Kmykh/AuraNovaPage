@@ -4,17 +4,16 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAdminQuote, useUpdateQuote } from '@/hooks/use-admin-quotes';
-import { useAdminOrder, useOrderNotifications } from '@/hooks/use-admin-orders';
+import { useAdminOrder, useOrderNotifications, usePrepareWhatsapp } from '@/hooks/use-admin-orders';
 import { getQuoteStatusInfo } from '@/lib/quote-helpers';
 import { formatDate } from '@/lib/order-helpers';
 import { formatCurrency } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import { WhatsAppFallbackButton } from '@/components/shared/WhatsAppFallbackButton';
-import { ArrowLeft, AlertCircle, Calculator, CheckCircle, Package, MapPin } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Calculator, CheckCircle, Package, MapPin, MessageCircle } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
-import { DeliveryType } from '@/types/enums';
+import { NotificationChannel, NotificationStatus, NotificationType } from '@/types/enums';
 import { CustomOrderBriefPanel } from '@/components/admin/orders/CustomOrderBriefPanel';
 
 export function AdminQuoteDetail({ id }: { id: string }) {
@@ -23,7 +22,12 @@ export function AdminQuoteDetail({ id }: { id: string }) {
   const actualOrderId = quote?.orderId || quote?.orderCode || '';
   const { data: order, isLoading: isOrderLoading } = useAdminOrder(actualOrderId);
   const { data: notifications } = useOrderNotifications(actualOrderId);
-  
+  const { mutate: prepareWhatsapp, isPending: isPreparingWhatsapp } = usePrepareWhatsapp(actualOrderId);
+  // El aviso de WhatsApp con el precio que generó el backend al guardar la cotización
+  const quoteWhatsApp = notifications
+    ?.filter(n => n.channel === NotificationChannel.WhatsApp && n.type === NotificationType.QuoteReady)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
   const [shippingCost, setShippingCost] = useState('');
   const [customizationCost, setCustomizationCost] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,8 +35,7 @@ export function AdminQuoteDetail({ id }: { id: string }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const orderId = quote?.orderCode || ''; // En un DTO más avanzado podría ser quote.orderId si existe. Asumimos fallback si no está explícito en el response original.
-  const { mutate: updateQuote, isPending } = useUpdateQuote(id, orderId);
+  const { mutate: updateQuote, isPending } = useUpdateQuote(id, actualOrderId);
 
   if (quote && !initialized) {
     setShippingCost(quote.shippingCost !== null ? quote.shippingCost.toString() : '');
@@ -99,29 +102,8 @@ export function AdminQuoteDetail({ id }: { id: string }) {
       },
       {
         // El pedido queda en "Cotización lista": el cliente la ve con el total y la acepta antes de pagar
-        // (al aceptar se genera su pago). Antes se saltaba ese paso y el pago nunca se creaba.
-        onSuccess: async () => {
-          if (order?.customer?.email) {
-            try {
-              await fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  order: order,
-                  customer: order.customer,
-                  items: order.items || [],
-                  subtotal: order.subtotal || 0,
-                  deliveryType: quote.deliveryType === 'NationalShipping' ? 2 : (quote.deliveryType === 'MeetingPoint' ? 1 : 0),
-                  estimatedDeliveryCost: numericShippingCost,
-                  emailType: quote.isCustomOrder ? 'quote_received' : 'receipt'
-                })
-              });
-            } catch (error) {
-              console.error('Error enviando correo de cotización', error);
-            }
-          }
-          setShowSuccessModal(true);
-        },
+        // (al aceptar se genera su pago). El correo con la cotización lo envía el backend.
+        onSuccess: () => setShowSuccessModal(true),
         onError: (err) => {
           if (err instanceof ApiProblemDetails) {
             if (err.status === 400) setErrorMsg('Revisa el costo y los datos de la cotización.');
@@ -374,12 +356,40 @@ export function AdminQuoteDetail({ id }: { id: string }) {
           </div>
           <p className="text-brown font-serif text-lg font-medium mb-3">¡Precio enviado!</p>
           <p className="text-sage text-sm mb-8 leading-relaxed px-4">
-            El cliente verá el total en su seguimiento y podrá aceptarlo y pagar desde ahí.
-            Envíale el aviso por WhatsApp desde las notificaciones del pedido.
+            {order?.customer?.email
+              ? <>Le enviamos el precio por correo a <strong className="text-brown">{order.customer.email}</strong>. </>
+              : 'El cliente verá el total en su seguimiento. '}
+            Mándale también el WhatsApp para que lo vea al instante y pague desde el enlace.
           </p>
-          
+
           <div className="w-full space-y-3">
-            <Button 
+            {quoteWhatsApp && quoteWhatsApp.status !== NotificationStatus.Opened && quoteWhatsApp.status !== NotificationStatus.Sent && (
+              <Button
+                className="w-full h-12 bg-[#25D366] text-white hover:bg-[#1ebe5b] border-none"
+                disabled={isPreparingWhatsapp}
+                onClick={() => prepareWhatsapp(quoteWhatsApp.id, {
+                  onSuccess: (data) => {
+                    if (data.whatsappUrl && !window.open(data.whatsappUrl, '_blank', 'noopener,noreferrer')) {
+                      window.location.href = data.whatsappUrl;
+                    }
+                  },
+                })}
+              >
+                <MessageCircle size={16} className="mr-2" /> Enviar el precio por WhatsApp
+              </Button>
+            )}
+            {quoteWhatsApp?.status === NotificationStatus.Opened && quoteWhatsApp.channelUrl && (
+              <a
+                href={quoteWhatsApp.channelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#25D366] text-sm font-bold text-[#1a9e4b] hover:bg-[#25D366]/5"
+              >
+                <MessageCircle size={16} /> Reabrir WhatsApp
+              </a>
+            )}
+            <Button
+              variant={quoteWhatsApp ? 'outline' : undefined}
               className="w-full h-12" 
               onClick={() => {
                 setShowSuccessModal(false);

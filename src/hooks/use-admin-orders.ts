@@ -16,6 +16,7 @@ export const adminOrderKeys = {
   detail: (id: string) => ['admin-order', id] as const,
   history: (id: string) => ['admin-order-status-history', id] as const,
   notifications: (id: string) => ['admin-order-notifications', id] as const,
+  pendingWhatsApp: ['admin-notifications', 'pending-whatsapp'] as const,
 };
 
 export function useAdminOrders(filters: Record<string, string | number>) {
@@ -92,7 +93,31 @@ export function usePrepareWhatsapp(orderId: string) {
     onSuccess: () => {
       toast.success('WhatsApp preparado.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.notifications(orderId) });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.pendingWhatsApp });
     },
+  });
+}
+
+export function useResendEmail(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notificationId: string) => AdminOrdersService.resendEmail(orderId, notificationId),
+    onError: showError,
+    onSuccess: () => {
+      toast.success('Correo en camino.');
+      // El envío va en segundo plano: se refresca cuando ya tuvo tiempo de salir
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: adminOrderKeys.notifications(orderId) }), 4000);
+    },
+  });
+}
+
+/** Bandeja de WhatsApp por enviar (todos los pedidos). */
+export function usePendingWhatsApp() {
+  return useQuery({
+    queryKey: adminOrderKeys.pendingWhatsApp,
+    queryFn: () => AdminOrdersService.getPendingWhatsApp(),
+    staleTime: 60_000,
+    refetchInterval: 120_000,
   });
 }
 
