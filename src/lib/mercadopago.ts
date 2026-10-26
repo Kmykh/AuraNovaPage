@@ -1,10 +1,26 @@
 import { loadMercadoPago } from '@mercadopago/sdk-js';
+import { apiClient } from './api-client';
 
 /**
- * Public Key de Mercado Pago. No es secreta (va en el navegador): en desarrollo la de prueba y en producción
- * la de producción (ambas empiezan con "APP_USR-"). El Access Token nunca va aquí: solo en el backend.
+ * Public Key de Mercado Pago. No es secreta (va en el navegador). El Access Token nunca va aquí: solo en el backend.
+ * Se toma de NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY (Vercel, al compilar) o, si no está, del backend
+ * (MercadoPago__PublicKey en Render), donde vive junto al Access Token de la misma aplicación.
  */
-export const MERCADOPAGO_PUBLIC_KEY = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? '';
+const BUILD_PUBLIC_KEY = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? '';
+
+let publicKeyPromise: Promise<string> | null = null;
+
+export function getPublicKey(): Promise<string> {
+  if (BUILD_PUBLIC_KEY) return Promise.resolve(BUILD_PUBLIC_KEY);
+  publicKeyPromise ??= apiClient
+    .get<{ publicKey?: string | null }>('/api/payments/mercadopago/config')
+    .then(response => response.data?.publicKey?.trim() ?? '')
+    .catch(() => {
+      publicKeyPromise = null;
+      return '';
+    });
+  return publicKeyPromise;
+}
 
 /** Datos que entrega el Card Payment Brick al enviar (la tarjeta ya viene convertida en token). */
 export interface CardPaymentFormData {
@@ -57,7 +73,6 @@ export const YAPE_MAX_AMOUNT = 2000;
 
 type MercadoPagoConstructor = new (publicKey: string, options?: { locale?: string }) => MercadoPagoInstance;
 
-export const isMercadoPagoConfigured = () => MERCADOPAGO_PUBLIC_KEY.length > 0;
 
 const SECURITY_SCRIPT_URL = 'https://www.mercadopago.com/v2/security.js';
 
@@ -81,20 +96,32 @@ export function getDeviceId(): string | undefined {
   return typeof value === 'string' && /^[A-Za-z0-9._:-]{1,500}$/.test(value) ? value : undefined;
 }
 
+/** Si el cliente paga muy rápido, security.js puede no haber terminado: se espera un momento (máx. 3 s). */
+export async function waitForDeviceId(timeoutMs = 3000): Promise<string | undefined> {
+  const started = Date.now();
+  let deviceId = getDeviceId();
+  while (!deviceId && Date.now() - started < timeoutMs) {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    deviceId = getDeviceId();
+  }
+  return deviceId;
+}
+
 let instancePromise: Promise<MercadoPagoInstance> | null = null;
 
 /** Carga MercadoPago.js una sola vez y devuelve la instancia inicializada con la Public Key. */
 export function getMercadoPago(): Promise<MercadoPagoInstance> {
   if (!instancePromise) {
     instancePromise = (async () => {
-      if (!MERCADOPAGO_PUBLIC_KEY) throw new Error('Falta configurar NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY.');
+      const publicKey = await getPublicKey();
+      if (!publicKey) throw new Error('Falta la Public Key de Mercado Pago (Vercel o MercadoPago__PublicKey en Render).');
 
       loadDeviceFingerprint();
       await loadMercadoPago();
       const MercadoPago = (window as unknown as { MercadoPago?: MercadoPagoConstructor }).MercadoPago;
       if (!MercadoPago) throw new Error('No se pudo cargar MercadoPago.js.');
 
-      return new MercadoPago(MERCADOPAGO_PUBLIC_KEY, { locale: 'es-PE' });
+      return new MercadoPago(publicKey, { locale: 'es-PE' });
     })();
 
     // Si falla (sin conexión o un bloqueador), el siguiente intento vuelve a cargarla

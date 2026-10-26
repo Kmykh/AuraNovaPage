@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ApiProblemDetails } from '@/lib/api-errors';
-import { isMercadoPagoConfigured } from '@/lib/mercadopago';
+import { useMercadoPagoAvailable } from '@/hooks/use-mercadopago';
 import { OnlinePaymentResult } from '@/types/orders';
 
 interface PaymentClientProps {
@@ -55,6 +55,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const [isTicketOpen, setIsTicketOpen] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
+  const { data: onlinePayments, isLoading: isCheckingPayments } = useMercadoPagoAvailable();
 
   // Pago en revisión: se consulta solo cada pocos segundos hasta que Mercado Pago lo confirme (máx. 5 min)
   const [confirming, setConfirming] = useState<{ since: number; paid: number } | null>(null);
@@ -182,7 +183,9 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
         </div>
       </div>
 
-      {isMercadoPagoConfigured() ? (
+      {isCheckingPayments ? (
+        <Skeleton variant="rect" className="h-80 w-full rounded-[2rem]" />
+      ) : onlinePayments ? (
         <>
           {confirming && (
             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">

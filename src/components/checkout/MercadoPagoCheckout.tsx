@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle2, CreditCard, Info, Loader2, Lock, Smartphone 
 import { OrderPaymentSummary, OnlinePaymentResult } from '@/types/orders';
 import { OnlinePaymentsService } from '@/services/online-payments.service';
 import { useMercadoPago } from '@/hooks/use-mercadopago';
-import { BrickController, YAPE_MAX_AMOUNT, getDeviceId } from '@/lib/mercadopago';
+import { BrickController, YAPE_MAX_AMOUNT, waitForDeviceId } from '@/lib/mercadopago';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
@@ -104,7 +104,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
                 payerEmail: formData.payer?.email,
                 identificationType: formData.payer?.identification?.type,
                 identificationNumber: formData.payer?.identification?.number,
-                deviceId: getDeviceId(),
+                deviceId: await waitForDeviceId(),
               });
               handleResult(result);
               if (result.status === 'rejected') setCardAttempt(a => a + 1);
@@ -162,7 +162,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
         token: yapeToken.id,
         phone: phoneNumber,
         payFull,
-        deviceId: getDeviceId(),
+        deviceId: await waitForDeviceId(),
       });
       handleResult(result);
       if (result.status !== 'approved') setOtp('');
