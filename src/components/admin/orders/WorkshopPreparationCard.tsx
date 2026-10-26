@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Download, Printer, Package, ClipboardList, Megaphone } from 'lucide-react';
+import { Download, Printer, Package, ClipboardList, Megaphone, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOrderDetailItem, AdminOrderDetailResponse } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,8 @@ import { formatCurrency, getImageUrl } from '@/lib/formatters';
 import { itemColors, itemFlowers } from '@/lib/product-options';
 import { deliveryTypeName } from '@/lib/tracking-progress';
 import { CustomOrderBriefPanel } from './CustomOrderBriefPanel';
+import { CardArt } from '@/components/card/CardArt';
+import { cardTheme, designFromOrder, downloadCard, renderCard } from '@/lib/card-design';
 
 interface WorkshopPreparationCardProps {
   order: AdminOrderDetailResponse;
@@ -19,239 +21,48 @@ interface WorkshopPreparationCardProps {
 /** "Qué pidió": productos con su foto y personalización, dedicatorias listas para imprimir y el total. */
 export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps) {
   const { items, orderCode } = order;
-  const customerName = order.customer?.name;
   const [downloadingIndex, setDownloadingIndex] = useState<number | null>(null);
   const units = items.reduce((sum, item) => sum + item.quantity, 0);
   const isNational = deliveryTypeName(order.deliveryType) === 'NationalShipping';
 
-  // Generador de Tarjeta Dedicatoria en Alta Resolución (1600x1000 PNG)
+  const footer = `Pedido ${orderCode} • Aura Nova`;
+
+  // PNG en alta resolución (1600×1000), igual a lo que diseñó el cliente
   const handleDownloadDedicationCard = async (item: AdminOrderDetailItem, index: number) => {
-    if (!item.phraseText) {
-      toast.error('Este artículo no cuenta con texto de dedicatoria.');
-      return;
-    }
-
     setDownloadingIndex(index);
-
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1600;
-      canvas.height = 1000;
-      const ctx = canvas.getContext('2d');
-
-      if (!ctx) {
-        throw new Error('No se pudo inicializar el lienzo para la tarjeta.');
-      }
-
-      // 1. Fondo Pergamino Floral Suave
-      const grad = ctx.createLinearGradient(0, 0, 1600, 1000);
-      grad.addColorStop(0, '#fffdfa');
-      grad.addColorStop(0.5, '#faf5ec');
-      grad.addColorStop(1, '#f3ebd9');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 1600, 1000);
-
-      // 2. Marco Doble Dorado de Lujo
-      const accent = '#c8a96b';
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(40, 40, 1600 - 80, 1000 - 80);
-
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(55, 55, 1600 - 110, 1000 - 110);
-
-      // Ornamentos en Esquinas
-      const cornerSize = 40;
-      ctx.fillStyle = accent;
-      ctx.fillRect(50, 50, cornerSize, 3);
-      ctx.fillRect(50, 50, 3, cornerSize);
-      ctx.fillRect(1600 - 50 - cornerSize, 50, cornerSize, 3);
-      ctx.fillRect(1600 - 50, 50, 3, cornerSize);
-      ctx.fillRect(50, 1000 - 50, cornerSize, 3);
-      ctx.fillRect(50, 1000 - 50 - cornerSize, 3, cornerSize);
-      ctx.fillRect(1600 - 50 - cornerSize, 1000 - 50, cornerSize, 3);
-      ctx.fillRect(1600 - 50, 1000 - 50 - cornerSize, 3, cornerSize);
-
-      // 3. Encabezado Oficial Aura Nova
-      ctx.textAlign = 'center';
-      ctx.fillStyle = accent;
-      ctx.font = '600 24px "Playfair Display", Georgia, serif';
-      ctx.fillText('✦   A U R A   N O V A   ✦', 800, 130);
-
-      ctx.font = 'italic 17px "Playfair Display", Georgia, serif';
-      ctx.fillStyle = '#887870';
-      ctx.fillText('Atelier de Detalles Florales • Huancayo', 800, 165);
-
-      ctx.beginPath();
-      ctx.moveTo(620, 195);
-      ctx.lineTo(980, 195);
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // 4. Código de Pedido / Cliente
-      ctx.font = 'bold 16px monospace';
-      ctx.fillStyle = '#b58129';
-      ctx.fillText(`PEDIDO: ${orderCode}${customerName ? ` • CLIENTE: ${customerName}` : ''}`, 800, 240);
-
-      // 5. Texto de la Dedicatoria Centrado
-      const fontName = item.phraseFont || 'Elegante/Cursiva';
-      const fontStyle = fontName.toLowerCase().includes('cursiva') || fontName.toLowerCase().includes('elegante')
-        ? 'italic 40px "Playfair Display", Georgia, serif'
-        : fontName.toLowerCase().includes('clásica')
-        ? '36px "Playfair Display", Georgia, serif'
-        : '34px system-ui, -apple-system, sans-serif';
-
-      ctx.font = fontStyle;
-      ctx.fillStyle = '#3d2e28';
-
-      const maxWidth = 1250;
-      const words = item.phraseText.trim().split(' ');
-      const lines: string[] = [];
-      let currentLine = words[0] || '';
-
-      for (let i = 1; i < words.length; i++) {
-        const testLine = currentLine + ' ' + words[i];
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width < maxWidth) {
-          currentLine = testLine;
-        } else {
-          lines.push(currentLine);
-          currentLine = words[i];
-        }
-      }
-      lines.push(currentLine);
-
-      const lineHeight = 58;
-      const totalTextHeight = lines.length * lineHeight;
-      const startY = Math.max(340, 520 - totalTextHeight / 2);
-
-      // Comillas decorativas superiores
-      ctx.fillStyle = accent;
-      ctx.font = 'italic 50px "Playfair Display", Georgia, serif';
-      ctx.fillText('“', 800, startY - 25);
-
-      ctx.font = fontStyle;
-      ctx.fillStyle = '#3d2e28';
-      lines.forEach((line, i) => {
-        ctx.fillText(line, 800, startY + (i * lineHeight));
+      await downloadCard(designFromOrder(item), `Tarjeta_${orderCode}_${item.productName}`, footer);
+      toast.success('Tarjeta descargada (1600×1000 PNG)');
+    } catch {
+      toast.error('No se pudo generar la tarjeta.', {
+        description: item.cardBackgroundUrl ? 'La foto del cliente no se pudo leer. Abre la foto y vuelve a intentarlo.' : undefined,
       });
-
-      // Comillas inferiores
-      ctx.fillStyle = accent;
-      ctx.font = 'italic 50px "Playfair Display", Georgia, serif';
-      ctx.fillText('”', 800, startY + (lines.length * lineHeight) + 20);
-
-      // 6. Pie de Tarjeta
-      ctx.font = '13px monospace';
-      ctx.fillStyle = '#9e8c80';
-      ctx.fillText(`TIPOGRAFÍA: ${fontName.toUpperCase()} • PRODUCTO: ${item.productName.toUpperCase()}`, 800, 930);
-
-      // Convertir a Blob y descargar
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error('Error al generar el archivo de imagen.');
-          return;
-        }
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `Dedicatoria_${orderCode}_${item.productName.replace(/\s+/g, '_')}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-        toast.success('Tarjeta dedicatoria descargada en alta resolución (1600x1000 PNG)');
-      }, 'image/png');
-
-    } catch (err) {
-      console.error(err);
-      toast.error('Ocurrió un error al preparar la tarjeta dedicatoria.');
     } finally {
       setDownloadingIndex(null);
     }
   };
 
-  const handlePrintCard = (item: AdminOrderDetailItem) => {
-    if (!item.phraseText) return;
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+  const handlePrintCard = async (item: AdminOrderDetailItem, index: number) => {
+    // La ventana se abre antes de generar la imagen para que el navegador no la bloquee
+    const printWindow = window.open('', '_blank', 'width=900,height=650');
     if (!printWindow) {
       toast.error('Permite ventanas emergentes para imprimir la tarjeta.');
       return;
     }
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Tarjeta Dedicatoria - ${orderCode}</title>
-          <style>
-            @page { size: landscape; margin: 15mm; }
-            body {
-              margin: 0;
-              padding: 40px;
-              font-family: 'Playfair Display', Georgia, serif;
-              background-color: #faf7f2;
-              color: #3d2e28;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 80vh;
-            }
-            .card-box {
-              border: 3px double #c8a96b;
-              padding: 40px;
-              max-width: 650px;
-              text-align: center;
-              background: #fffdfa;
-              border-radius: 12px;
-              box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            }
-            .header {
-              letter-spacing: 4px;
-              font-size: 14px;
-              color: #c8a96b;
-              font-weight: bold;
-              margin-bottom: 20px;
-            }
-            .order {
-              font-family: monospace;
-              font-size: 11px;
-              color: #887870;
-              margin-bottom: 25px;
-            }
-            .text {
-              font-size: 24px;
-              font-style: italic;
-              line-height: 1.5;
-              margin: 25px 0;
-            }
-            .meta {
-              font-size: 10px;
-              color: #a09085;
-              letter-spacing: 1px;
-              text-transform: uppercase;
-              margin-top: 30px;
-              font-family: monospace;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="card-box">
-            <div class="header">✦ AURA NOVA ATELIER ✦</div>
-            <div class="order">PEDIDO: ${orderCode}</div>
-            <div class="text">“${item.phraseText}”</div>
-            <div class="meta">TIPOGRAFÍA: ${item.phraseFont || 'Elegante'} • ${item.productName}</div>
-          </div>
-          <script>
-            window.onload = () => {
-              window.print();
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    setDownloadingIndex(index);
+    try {
+      const canvas = await renderCard(designFromOrder(item), footer);
+      printWindow.document.write(`<!DOCTYPE html><html><head><title>Tarjeta ${orderCode}</title>
+        <style>@page{size:landscape;margin:10mm}html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;background:#fff}
+        img{max-width:100%;max-height:100%}</style></head>
+        <body><img src="${canvas.toDataURL('image/png')}" onload="window.print()" /></body></html>`);
+      printWindow.document.close();
+    } catch {
+      printWindow.close();
+      toast.error('No se pudo preparar la tarjeta para imprimir.');
+    } finally {
+      setDownloadingIndex(null);
+    }
   };
 
   return (
@@ -344,10 +155,15 @@ export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps)
                 <div className="mt-4 rounded-2xl border-2 border-dashed border-[#c8a96b]/40 bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8a96b]">
-                      Tarjeta dedicatoria{item.phraseFont ? ` · ${item.phraseFont.split('/')[0]}` : ''}
+                      Tarjeta · {cardTheme(designFromOrder(item).theme).name}{item.phraseFont ? ` · ${item.phraseFont.split('/')[0]}` : ''}
                     </span>
                     {item.phraseText && (
                       <div className="flex gap-2">
+                        {item.cardBackgroundUrl && (
+                          <a href={item.cardBackgroundUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#c8a96b]/40 px-3 text-xs text-[#4a3933] hover:bg-[#faf7f2]">
+                            <ImageIcon className="h-3.5 w-3.5 text-[#c8a96b]" /> Foto
+                          </a>
+                        )}
                         <Button
                           type="button"
                           size="sm"
@@ -362,7 +178,8 @@ export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps)
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => handlePrintCard(item)}
+                          onClick={() => handlePrintCard(item, index)}
+                          disabled={downloadingIndex === index}
                           className="flex h-8 items-center gap-1.5 rounded-full border-[#c8a96b]/40 text-xs text-[#4a3933]"
                         >
                           <Printer className="h-3.5 w-3.5 text-[#c8a96b]" /> Imprimir
@@ -370,9 +187,13 @@ export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps)
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 font-serif text-lg italic leading-relaxed text-[#4a3933]">
-                    {item.phraseText ? `“${item.phraseText}”` : <span className="text-sm not-italic text-[#c06b6b]">Pidió tarjeta pero no escribió mensaje: confirmar con el cliente.</span>}
-                  </p>
+                  {item.phraseText ? (
+                    <div className="mt-3 max-w-md">
+                      <CardArt design={designFromOrder(item)} />
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-[#c06b6b]">Pidió tarjeta pero no escribió mensaje: confirmar con el cliente.</p>
+                  )}
                 </div>
               )}
             </article>

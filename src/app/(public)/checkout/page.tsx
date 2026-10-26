@@ -1,7 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Image from 'next/image';
-import { Sparkles } from 'lucide-react';
 import { CheckoutClient } from './CheckoutClient';
 
 import flo1 from '../images/flo1.png';
@@ -16,10 +15,11 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full bg-[#faf7f2] overflow-hidden pt-28 pb-24">
+    <div className="relative min-h-[calc(100vh-4rem)] w-full bg-[#faf7f2] overflow-x-clip pt-28 pb-24">
       
       {/* Background Flowers */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {/* Flores solo en los bordes de pantallas grandes: no tapan el formulario */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 hidden xl:block opacity-60">
         <div className="absolute top-[5%] -left-16 w-[200px] md:w-[300px] opacity-80 animate-float-gentle mix-blend-multiply">
           <Image src={flo6} alt="" width={300} height={300} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
         </div>

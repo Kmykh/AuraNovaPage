@@ -55,11 +55,8 @@ export function validateDelivery(value: DeliveryFormValue): string | null {
   }
   if (value.type === DeliveryType.MeetingPoint && !value.meetingPointId) return 'Elige el punto de encuentro.';
   if (value.type === DeliveryType.NationalShipping) {
-    if (!value.department) return 'Elige el departamento de destino.';
-    if (!value.province.trim()) return 'Escribe la provincia de destino.';
-    if (!value.district.trim()) return 'Escribe el distrito de destino.';
     if (!value.agency) return 'Elige la agencia (Shalom u Olva).';
-    if (value.address.trim().length < 4) return 'Indica la agencia/sucursal o la dirección de destino.';
+    if (!value.department || !value.province.trim() || !value.district.trim()) return 'Elige el distrito a donde lo enviamos.';
     if (!isValidDni(value.recipientDocument)) return 'Ingresa el DNI de 8 dígitos de quien recoge en la agencia.';
   }
   if (value.isGift) {
@@ -100,7 +97,8 @@ export function toDeliveryRequest(value: DeliveryFormValue, zones?: DeliveryZone
 
   return {
     type: value.type.toString(),
-    deliveryAddress: value.address.trim(),
+    // Sucursal opcional: sin ella se envía a la agencia más cercana del distrito
+    deliveryAddress: value.address.trim() || undefined,
     deliveryReference: value.reference.trim() || undefined,
     department: value.department,
     province: value.province.trim(),
@@ -121,5 +119,7 @@ export function describeDelivery(value: DeliveryFormValue, zones?: DeliveryZoneR
     const point = points?.find(p => p.id === value.meetingPointId);
     return `Punto de encuentro: ${point?.name ?? 'por elegir'}`;
   }
-  return `Envío por ${value.agency || 'agencia'} a ${[value.district, value.province, value.department].filter(Boolean).join(', ')}: ${value.address}`;
+  const destination = [value.district, value.province, value.department].filter(Boolean).join(', ');
+  const branch = value.address.trim() ? ` — sucursal: ${value.address.trim()}` : ' — agencia más cercana';
+  return `Envío por ${value.agency || 'agencia'} a ${destination}${branch} (el envío se paga al recoger)`;
 }
