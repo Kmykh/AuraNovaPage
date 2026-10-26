@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ChevronLeft, Receipt } from 'lucide-react';
 import { useMounted } from '@/hooks/use-mounted';
 import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
+import { useMercadoPago } from '@/hooks/use-mercadopago';
 import { PaymentInstructions } from '@/components/checkout/PaymentInstructions';
 import { PaymentEvidenceUploader } from '@/components/checkout/PaymentEvidenceUploader';
 import { OrderTicketModal } from '@/components/checkout/OrderTicketModal';
@@ -49,6 +50,8 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const queryClient = useQueryClient();
   const { data: summary, isLoading, error, refetch, isFetching } = useOrderSummary(orderId);
   const [stored] = useState(readStoredContext);
+  // Mercado Pago se inicializa en cuanto el pedido está listo para pagar (aquí irá el formulario de pago)
+  useMercadoPago(summary?.status === 'WaitingPayment');
   const [isTicketOpen, setIsTicketOpen] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
