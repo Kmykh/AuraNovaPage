@@ -317,7 +317,15 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
     body = <p className="flex items-center gap-2 text-sm text-emerald-700"><PartyPopper className="h-4 w-4" /> Todo listo. ¡Buen trabajo!</p>;
   } else if (status === OrderStatus.Cancelled) {
     title = 'Pedido cancelado';
-    body = <p className="flex items-center gap-2 text-sm text-stone-500"><Ban className="h-4 w-4" /> No requiere más acciones.</p>;
+    const paidOnCancelled = order.payment?.amountPaid ?? 0;
+    body = paidOnCancelled > 0 ? (
+      <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <Ban className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>El cliente pagó <strong>{formatCurrency(paidOnCancelled)}</strong>. Devuélvelo desde <strong>Pagos con Mercado Pago</strong> (botón “Devolver”).</span>
+      </p>
+    ) : (
+      <p className="flex items-center gap-2 text-sm text-stone-500"><Ban className="h-4 w-4" /> No requiere más acciones.</p>
+    );
   }
 
   // Pagó solo el adelanto: hay que cobrar el saldo antes de entregar

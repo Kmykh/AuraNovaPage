@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, MessageCircle, Receipt } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, Loader2, MessageCircle, Receipt } from 'lucide-react';
 import { useMounted } from '@/hooks/use-mounted';
 import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
 import { useBusinessSettings } from '@/hooks/use-info';
@@ -18,6 +18,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { isMercadoPagoConfigured } from '@/lib/mercadopago';
+import { OnlinePaymentResult } from '@/types/orders';
 
 interface PaymentClientProps {
   orderId: string;
@@ -53,6 +54,21 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const [isTicketOpen, setIsTicketOpen] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
+
+  // Pago en revisión: se consulta solo cada pocos segundos hasta que Mercado Pago lo confirme (máx. 5 min)
+  const [confirming, setConfirming] = useState<{ since: number; paid: number } | null>(null);
+  const handlePaid = (result: OnlinePaymentResult) => {
+    if (result.status === 'pending') setConfirming({ since: Date.now(), paid: summary?.amountPaid ?? 0 });
+    refresh();
+  };
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setInterval(async () => {
+      const latest = await refetch();
+      if ((latest.data?.amountPaid ?? 0) > confirming.paid || Date.now() - confirming.since > 5 * 60_000) setConfirming(null);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [confirming, refetch]);
 
   if (!isMounted || isLoading) {
     return (
@@ -166,7 +182,15 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
       </div>
 
       {isMercadoPagoConfigured() ? (
-        <MercadoPagoCheckout summary={summary} onPaid={refresh} />
+        <>
+          {confirming && (
+            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              <p>Estamos confirmando tu pago con Mercado Pago. Esta página se actualizará sola; no hace falta que pagues de nuevo.</p>
+            </div>
+          )}
+          <MercadoPagoCheckout summary={summary} onPaid={handlePaid} />
+        </>
       ) : (
         <div className="rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-6 text-center">
           <p className="font-serif text-lg font-bold text-[#4a3933]">Los pagos en línea se están activando</p>

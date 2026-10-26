@@ -163,7 +163,7 @@ export function AdminOrderDetail({ id }: { id: string }) {
 
           <WorkshopPreparationCard order={order} />
 
-          {order.payment && <OrderPaymentsCard payment={order.payment} />}
+          {order.payment && <OrderPaymentsCard orderId={order.id} payment={order.payment} />}
 
           {/* Comprobante ya revisado (o rechazado): queda a mano para consultarlo */}
           {order.payment?.evidenceUrl && status !== 'PaymentReported' && (

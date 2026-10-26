@@ -197,6 +197,7 @@ export interface AdminOrderQuote {
 }
 
 export interface AdminPaymentTransaction {
+  id: string;
   methodId: string;
   methodType?: string | null;
   amount: number;
@@ -205,7 +206,62 @@ export interface AdminPaymentTransaction {
   statusDetail?: string | null;
   approved: boolean;
   externalOrderId?: string | null;
+  /** Lo devuelto desde el panel (total o parcial) */
+  refundedAmount: number;
+  refundedAt?: string | null;
   createdAt: string;
+}
+
+export interface RefundOnlinePaymentRequest {
+  /** Sin monto se devuelve todo lo que queda de ese cobro */
+  amount?: number;
+  reason?: string;
+}
+
+export interface RefundOnlinePaymentResult {
+  refunded: number;
+  amountPaid: number;
+  balanceDue: number;
+  message: string;
+}
+
+export interface OnlinePaymentReportRow {
+  id: string;
+  orderId: string;
+  orderCode: string;
+  customerName?: string | null;
+  methodId: string;
+  methodType?: string | null;
+  amount: number;
+  refundedAmount: number;
+  isDeposit: boolean;
+  status: string;
+  statusDetail?: string | null;
+  approved: boolean;
+  externalOrderId?: string | null;
+  createdAt: string;
+  approvedAt?: string | null;
+}
+
+export interface OnlinePaymentReport {
+  from: string;
+  to: string;
+  collected: number;
+  refunded: number;
+  net: number;
+  approvedCount: number;
+  rejectedCount: number;
+  pendingCount: number;
+  rows: OnlinePaymentReportRow[];
+}
+
+export interface PaymentWebhookEvent {
+  receivedAt: string;
+  topic?: string | null;
+  resourceId?: string | null;
+  /** processed, ignored, invalid_signature o error */
+  result: string;
+  detail?: string | null;
 }
 
 export interface AdminOrderPayment {

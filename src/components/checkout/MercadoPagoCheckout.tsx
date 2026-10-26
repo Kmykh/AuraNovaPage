@@ -10,6 +10,8 @@ import { BrickController, YAPE_MAX_AMOUNT, getDeviceId } from '@/lib/mercadopago
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
+import { readSavedCustomer } from '@/lib/saved-customer';
+import { MercadoPagoLogo } from './MercadoPagoLogo';
 
 interface MercadoPagoCheckoutProps {
   summary: OrderPaymentSummary;
@@ -48,9 +50,13 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
   const cardKey = `${amount}-${cardAttempt}`;
   const yapeAllowed = amount <= YAPE_MAX_AMOUNT;
 
-  const [phone, setPhone] = useState('');
+  // Lo que el cliente ya escribió al pedir en este dispositivo: no tiene que volver a escribirlo
+  const [savedCustomer] = useState(readSavedCustomer);
+  const [phone, setPhone] = useState(savedCustomer.phone ?? '');
   const [otp, setOtp] = useState('');
   const [isPayingYape, setIsPayingYape] = useState(false);
+
+  const savedEmail = /^\S+@\S+\.\S+$/.test(savedCustomer.email ?? '') ? savedCustomer.email : undefined;
 
   // Mantiene las últimas opciones para el callback del formulario de tarjeta (se crea una vez por monto)
   const latest = useRef({ payFull, onPaid });
@@ -79,7 +85,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
 
     mp.bricks()
       .create('cardPayment', CARD_CONTAINER_ID, {
-        initialization: { amount },
+        initialization: { amount, ...(savedEmail ? { payer: { email: savedEmail } } : {}) },
         customization: { paymentMethods: { maxInstallments: 12 }, visual: { style: { theme: 'default' } } },
         callbacks: {
           onReady: () => {
@@ -130,7 +136,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
       }
     };
     // handleResult usa refs: el formulario solo se vuelve a crear si cambia el monto o tras un rechazo
-  }, [mp, method, cardKey, amount, summary.orderId]);
+  }, [mp, method, cardKey, amount, summary.orderId, savedEmail]);
 
   const payWithYape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -322,9 +328,14 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
         </div>
       </div>
 
-      <p className="flex items-center justify-center gap-1.5 border-t border-[#f1e9e4] pt-4 text-center text-[11px] text-[#887870]">
-        <Lock className="h-3.5 w-3.5" /> Pago procesado por Mercado Pago. Aura Nova no ve ni guarda los datos de tu tarjeta.
-      </p>
+      <div className="flex flex-col items-center gap-1.5 border-t border-[#f1e9e4] pt-4 text-center">
+        <p className="flex items-center gap-2 text-xs font-semibold text-[#4a3933]">
+          <MercadoPagoLogo className="h-5 w-5" /> Pago seguro con Mercado Pago
+        </p>
+        <p className="flex items-center gap-1.5 text-[11px] text-[#887870]">
+          <Lock className="h-3.5 w-3.5" /> Aura Nova no ve ni guarda los datos de tu tarjeta.
+        </p>
+      </div>
       {summary.status !== 'WaitingPayment' && isBalance && (
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-emerald-700">
           <CheckCircle2 className="h-3.5 w-3.5" /> Tu pedido ya está en marcha. Lo entregamos cuando el saldo esté pagado.
