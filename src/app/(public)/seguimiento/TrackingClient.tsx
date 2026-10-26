@@ -244,11 +244,29 @@ function NextStepCard({ tracking, trackingCode, whatsappNumber }: { tracking: Pu
   if (status === 'WaitingPayment' && tracking.orderId) {
     return (
       <ActionCard
-        title={total != null ? `Paga ${formatCurrency(total)} con Yape` : 'Realiza tu pago con Yape'}
-        message="Sube la captura de tu pago y empezamos a prepararlo apenas lo validemos."
+        title={total != null ? `Paga tu pedido de ${formatCurrency(total)}` : 'Realiza tu pago'}
+        message="Con tarjeta o Yape, el 50% de adelanto o el total. Se confirma al instante."
         primary={
           <button onClick={goToPayment} className={primaryButton}>
-            <CreditCard className="h-4 w-4" /> Pagar y subir comprobante
+            <CreditCard className="h-4 w-4" /> Pagar ahora
+          </button>
+        }
+      />
+    );
+  }
+
+  // Pagó el adelanto del 50%: el saldo se paga en la misma página de pago
+  const balance = tracking.costs?.balanceDue ?? 0;
+  if (balance > 0 && tracking.orderId && status !== 'Cancelled') {
+    return (
+      <ActionCard
+        title={status === 'Ready' ? `¡Está listo! Paga el saldo de ${formatCurrency(balance)}` : `Te falta pagar ${formatCurrency(balance)}`}
+        message={status === 'Ready'
+          ? 'Tu pedido está terminado. En cuanto pagues el saldo con tarjeta o Yape, lo entregamos.'
+          : 'Ya recibimos tu adelanto y tu pedido está en marcha. Lo entregamos cuando el saldo esté pagado.'}
+        primary={
+          <button onClick={goToPayment} className={primaryButton}>
+            <CreditCard className="h-4 w-4" /> Pagar saldo
           </button>
         }
       />

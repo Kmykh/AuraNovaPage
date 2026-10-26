@@ -85,7 +85,7 @@ export function OrderStatusChangeForm({ orderId, currentStatus, deliveryType, cu
         },
         onError: (err) => {
           if (err instanceof ApiProblemDetails) {
-            if (err.status === 400) setErrorMsg('No se puede realizar ese cambio de estado. Consulta las reglas del backend.');
+            if (err.status === 400) setErrorMsg(err.detail || 'No se puede realizar ese cambio de estado.');
             else if (err.status === 403) setErrorMsg('No tienes permisos para cambiar el estado.');
             else if (err.status === 409) setErrorMsg('El pedido cambió antes de completar esta acción.');
             else setErrorMsg(err.title || 'Ocurrió un error inesperado.');

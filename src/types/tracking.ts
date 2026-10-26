@@ -66,6 +66,9 @@ export interface PublicTrackingResponse {
     deliveryCost?: number;
     customizationCost: number;
     total?: number;
+    /** Pagado con Mercado Pago y saldo pendiente (solo si se pagó el adelanto) */
+    amountPaid?: number;
+    balanceDue?: number;
   };
 
   estimates?: {

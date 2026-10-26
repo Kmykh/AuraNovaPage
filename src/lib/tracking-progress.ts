@@ -73,7 +73,7 @@ export function statusCopy(status: string, deliveryType: string, isCustomOrder: 
     case 'QuoteReady':
       return { title: '¡Tu cotización está lista!', message: 'Revisa el precio y acéptala para reservar tu pedido.', tone: 'action' };
     case 'WaitingPayment':
-      return { title: 'Falta tu pago para empezar', message: 'Paga con Yape y sube tu comprobante: apenas lo validemos, empezamos.', tone: 'action' };
+      return { title: 'Falta tu pago para empezar', message: 'Paga con tarjeta o Yape aquí en la web (el 50% o el total) y empezamos de inmediato.', tone: 'action' };
     case 'PaymentReported':
       return { title: 'Estamos validando tu pago', message: 'Recibimos tu comprobante. Te avisaremos en cuanto esté confirmado.', tone: 'waiting' };
     case 'PaymentConfirmed':

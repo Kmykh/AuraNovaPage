@@ -128,6 +128,11 @@ function OrderRow({ order }: { order: AdminOrderListItemResponse }) {
               </span>
             )}
             {order.desiredDate && status !== 'Delivered' && status !== 'Cancelled' && <DesiredDateChip date={order.desiredDate} />}
+            {!!order.balanceDue && order.balanceDue > 0 && status !== 'Cancelled' && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                Saldo {formatCurrency(order.balanceDue)}
+              </span>
+            )}
           </div>
 
           {/* Qué pidió */}

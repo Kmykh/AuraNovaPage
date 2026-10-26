@@ -188,7 +188,7 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
       <div className="space-y-3">
         <p className="flex items-center gap-2 text-sm text-brown">
           <Hourglass className="h-4 w-4 shrink-0 text-amber-600" />
-          <span>El cliente debe pagar <strong>{formatCurrency(order.total)}</strong> y subir su comprobante.</span>
+          <span>El cliente debe pagar <strong>{formatCurrency(order.total)}</strong> (o el 50% de adelanto) con tarjeta o Yape desde su enlace de pago.</span>
         </p>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={copyPaymentLink} className="flex items-center gap-2 rounded-full text-xs">
@@ -196,7 +196,7 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
           </Button>
           {order.customer?.phone && (
             <a
-              href={whatsappLink(order.customer.phone, `Hola ${firstName} 🌸 Tu pedido ${order.orderCode} está listo para pago (${formatCurrency(order.total)}). Puedes pagar y subir tu comprobante aquí: ${paymentLink}`)}
+              href={whatsappLink(order.customer.phone, `Hola ${firstName} 🌸 Tu pedido ${order.orderCode} está listo para pago (${formatCurrency(order.total)}). Puedes pagar con tarjeta o Yape (50% o total) aquí: ${paymentLink}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white hover:bg-[#1ebe5b]"
@@ -275,6 +275,18 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
         </div>
       </div>
     );
+  } else if (status === OrderStatus.Ready && (order.payment?.balanceDue ?? 0) > 0 && (order.payment?.amountPaid ?? 0) > 0) {
+    // Regla del negocio: con solo el adelanto, el pedido no sale hasta que pague el saldo
+    title = 'Listo, esperando el saldo';
+    body = (
+      <p className="flex items-start gap-2 rounded-xl bg-[#faf7f2] p-3 text-sm text-brown">
+        <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <span>
+          La entrega se habilita cuando el cliente pague el saldo de <strong>{formatCurrency(order.payment?.balanceDue)}</strong>.
+          Ya le avisamos que su pedido está listo; puedes recordárselo con el botón de arriba.
+        </span>
+      </p>
+    );
   } else if (status === OrderStatus.Ready) {
     title = 'Listo para entregar';
     body = isNational ? (
@@ -305,10 +317,35 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
     body = <p className="flex items-center gap-2 text-sm text-stone-500"><Ban className="h-4 w-4" /> No requiere más acciones.</p>;
   }
 
+  // Pagó solo el adelanto: hay que cobrar el saldo antes de entregar
+  const balanceDue = order.payment?.balanceDue ?? 0;
+  const showBalance = balanceDue > 0 && (order.payment?.amountPaid ?? 0) > 0 && status !== OrderStatus.Cancelled;
+  const balanceNotice = showBalance ? (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+      <span>Pagó el adelanto. <strong>Saldo pendiente: {formatCurrency(balanceDue)}</strong> — cóbralo antes de entregar.</span>
+      <span className="flex gap-2">
+        <Button type="button" variant="outline" onClick={copyPaymentLink} className="flex h-8 items-center gap-1.5 rounded-full bg-white text-xs">
+          <Copy className="h-3.5 w-3.5" /> Enlace de pago
+        </Button>
+        {order.customer?.phone && (
+          <a
+            href={whatsappLink(order.customer.phone, `Hola ${firstName} 🌸 Te falta pagar ${formatCurrency(balanceDue)} de tu pedido ${order.orderCode}. Puedes pagarlo con tarjeta o Yape aquí: ${paymentLink}`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#25D366] px-3 text-xs font-bold text-white hover:bg-[#1ebe5b]"
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> Recordar
+          </a>
+        )}
+      </span>
+    </div>
+  ) : null;
+
   return (
     <section className="rounded-[24px] border-2 border-[#c8a96b]/40 bg-gradient-to-br from-white to-[#fffaf0] p-5 shadow-sm sm:p-6">
       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b08a4e]">Siguiente paso</p>
       <h2 className="mb-4 mt-0.5 font-serif text-xl font-bold text-brown">{title}</h2>
+      {balanceNotice}
       {body}
 
       <Modal isOpen={isEstimatedDateModalOpen} onClose={() => setIsEstimatedDateModalOpen(false)} title="Fecha estimada">

@@ -12,7 +12,7 @@ const steps = [
   {
     icon: <Smartphone size={32} strokeWidth={1.5} />,
     title: "2. Reserva rápida",
-    description: "Asegura tu pedido de forma rápida abonando solo un 50% de adelanto directamente con Yape."
+    description: "Paga en la web con tarjeta o Yape (Mercado Pago): el 50% de adelanto o el total, como prefieras."
   },
   {
     icon: <Gift size={32} strokeWidth={1.5} />,

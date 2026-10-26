@@ -290,7 +290,7 @@ export function CatalogDocument() {
           <ol className="relative z-10 mt-12 space-y-9">
             {[
               ['Elige tu detalle', `Pídelo en ${siteHost} o escríbenos por WhatsApp con el nombre del producto.`],
-              ['Paga con Yape', 'Te enviamos los datos y subes tu comprobante en la web. Lo validamos al instante.'],
+              ['Paga en la web', 'Con tarjeta o Yape a través de Mercado Pago: el 50% de adelanto o el total. Se confirma al instante.'],
               ['Recíbelo con cariño', 'Delivery en Huancayo, recojo en punto de encuentro o envío a todo el Perú.'],
             ].map(([title, text], index) => (
               <li key={title} className="flex gap-6">
