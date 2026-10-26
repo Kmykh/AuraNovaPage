@@ -1,8 +1,8 @@
 import { loadMercadoPago } from '@mercadopago/sdk-js';
 
 /**
- * Public Key de Mercado Pago. No es secreta (va en el navegador): en desarrollo la de prueba ("TEST-…"),
- * en producción la de producción. El Access Token nunca va aquí: solo en el backend.
+ * Public Key de Mercado Pago. No es secreta (va en el navegador): en desarrollo la de prueba y en producción
+ * la de producción (ambas empiezan con "APP_USR-"). El Access Token nunca va aquí: solo en el backend.
  */
 export const MERCADOPAGO_PUBLIC_KEY = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? '';
 
