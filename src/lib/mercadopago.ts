@@ -59,6 +59,28 @@ type MercadoPagoConstructor = new (publicKey: string, options?: { locale?: strin
 
 export const isMercadoPagoConfigured = () => MERCADOPAGO_PUBLIC_KEY.length > 0;
 
+const SECURITY_SCRIPT_URL = 'https://www.mercadopago.com/v2/security.js';
+
+/**
+ * security.js de Mercado Pago: identifica el dispositivo del comprador para su antifraude (aprueba más pagos).
+ * Se carga una sola vez y, si un bloqueador lo impide, el pago sigue funcionando igual.
+ */
+function loadDeviceFingerprint() {
+  if (typeof document === 'undefined' || document.querySelector(`script[src="${SECURITY_SCRIPT_URL}"]`)) return;
+  const script = document.createElement('script');
+  script.src = SECURITY_SCRIPT_URL;
+  script.async = true;
+  script.setAttribute('view', 'checkout');
+  document.head.appendChild(script);
+}
+
+/** Identificador del dispositivo que generó security.js; el backend lo envía como X-meli-session-id. */
+export function getDeviceId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const value = (window as unknown as { MP_DEVICE_SESSION_ID?: unknown }).MP_DEVICE_SESSION_ID;
+  return typeof value === 'string' && /^[A-Za-z0-9._:-]{1,500}$/.test(value) ? value : undefined;
+}
+
 let instancePromise: Promise<MercadoPagoInstance> | null = null;
 
 /** Carga MercadoPago.js una sola vez y devuelve la instancia inicializada con la Public Key. */
@@ -67,6 +89,7 @@ export function getMercadoPago(): Promise<MercadoPagoInstance> {
     instancePromise = (async () => {
       if (!MERCADOPAGO_PUBLIC_KEY) throw new Error('Falta configurar NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY.');
 
+      loadDeviceFingerprint();
       await loadMercadoPago();
       const MercadoPago = (window as unknown as { MercadoPago?: MercadoPagoConstructor }).MercadoPago;
       if (!MercadoPago) throw new Error('No se pudo cargar MercadoPago.js.');
