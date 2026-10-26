@@ -46,11 +46,46 @@ export interface BrickController {
   unmount: () => void;
 }
 
+/** Variables de estilo de los Bricks (lista oficial de @mercadopago/sdk-react). */
+export interface BrickCustomVariables {
+  textPrimaryColor?: string;
+  textSecondaryColor?: string;
+  inputBackgroundColor?: string;
+  formBackgroundColor?: string;
+  baseColor?: string;
+  baseColorFirstVariant?: string;
+  baseColorSecondVariant?: string;
+  errorColor?: string;
+  successColor?: string;
+  outlinePrimaryColor?: string;
+  outlineSecondaryColor?: string;
+  buttonTextColor?: string;
+  fontSizeSmall?: string;
+  fontSizeMedium?: string;
+  fontWeightNormal?: string;
+  fontWeightSemiBold?: string;
+  inputVerticalPadding?: string;
+  inputHorizontalPadding?: string;
+  inputFocusedBoxShadow?: string;
+  inputErrorFocusedBoxShadow?: string;
+  inputBorderWidth?: string;
+  inputFocusedBorderWidth?: string;
+  borderRadiusSmall?: string;
+  borderRadiusMedium?: string;
+  borderRadiusLarge?: string;
+  borderRadiusFull?: string;
+  formPadding?: string;
+}
+
 export interface CardPaymentBrickSettings {
   initialization: { amount: number; payer?: { email?: string } };
   customization?: {
     paymentMethods?: { maxInstallments?: number };
-    visual?: { style?: { theme?: 'default' | 'dark' | 'bootstrap' | 'flat' } };
+    visual?: {
+      hideFormTitle?: boolean;
+      texts?: { formSubmit?: string; formTitle?: string };
+      style?: { theme?: 'default' | 'dark' | 'bootstrap' | 'flat'; customVariables?: BrickCustomVariables };
+    };
   };
   callbacks: {
     onReady?: () => void;

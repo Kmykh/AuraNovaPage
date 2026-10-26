@@ -3,18 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ChevronLeft, Loader2, MessageCircle, Receipt } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, Loader2, MessageCircle, PartyPopper, Receipt, ShieldCheck } from 'lucide-react';
 import { useMounted } from '@/hooks/use-mounted';
 import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
 import { useBusinessSettings } from '@/hooks/use-info';
-import { MercadoPagoCheckout } from '@/components/checkout/MercadoPagoCheckout';
+import { MercadoPagoCheckout, PaymentMethodChoice } from '@/components/checkout/MercadoPagoCheckout';
+import { PaymentSuccess, PaymentSuccessDialog } from '@/components/checkout/PaymentSuccessDialog';
 import { PurchaseSteps } from '@/app/(public)/carrito/CartClient';
 import { OrderTicketModal } from '@/components/checkout/OrderTicketModal';
 import {
   AmountBreakdown, OrderNotFoundState, PaymentDoneState, PaymentReportedState, QuotePendingState, QuoteReadyState, SummaryItems,
 } from '@/components/checkout/PaymentStates';
 import { OrderDetailsSnapshot } from '@/app/(public)/checkout/OrderSuccess';
-import { Button } from '@/components/ui/Button';
+import { formatCurrency } from '@/lib/formatters';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ApiProblemDetails } from '@/lib/api-errors';
@@ -57,18 +58,28 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: orderSummaryKey(orderId) });
   const { data: onlinePayments, isLoading: isCheckingPayments } = useMercadoPagoAvailable();
 
+  // Confirmación visible apenas se aprueba el pago (al instante o cuando Mercado Pago termina de confirmarlo)
+  const [success, setSuccess] = useState<PaymentSuccess | null>(null);
+
   // Pago en revisión: se consulta solo cada pocos segundos hasta que Mercado Pago lo confirme (máx. 5 min)
-  const [confirming, setConfirming] = useState<{ since: number; paid: number } | null>(null);
-  const handlePaid = (result: OnlinePaymentResult) => {
-    if (result.status === 'pending') setConfirming({ since: Date.now(), paid: summary?.amountPaid ?? 0 });
+  const [confirming, setConfirming] = useState<{ since: number; paid: number; method: PaymentMethodChoice } | null>(null);
+  const handlePaid = (result: OnlinePaymentResult, method: PaymentMethodChoice) => {
+    if (result.status === 'approved') setSuccess({ amount: result.amountCharged, balanceDue: result.balanceDue, method });
+    else if (result.status === 'pending') setConfirming({ since: Date.now(), paid: summary?.amountPaid ?? 0, method });
     refresh();
   };
   useEffect(() => {
     if (!confirming) return;
     const timer = setInterval(async () => {
       const latest = await refetch();
-      if ((latest.data?.amountPaid ?? 0) > confirming.paid || Date.now() - confirming.since > 5 * 60_000) setConfirming(null);
-    }, 8000);
+      const paid = latest.data?.amountPaid ?? 0;
+      if (paid > confirming.paid) {
+        setSuccess({ amount: paid - confirming.paid, balanceDue: latest.data?.balanceDue ?? 0, method: confirming.method });
+        setConfirming(null);
+      } else if (Date.now() - confirming.since > 5 * 60_000) {
+        setConfirming(null);
+      }
+    }, 4000);
     return () => clearInterval(timer);
   }, [confirming, refetch]);
 
@@ -100,6 +111,10 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const trackingCode = sameOrder ? stored.context.trackingCode : undefined;
   const snapshot = sameOrder ? stored.snapshot : null;
 
+  const successDialog = success && (
+    <PaymentSuccessDialog {...success} orderCode={summary.orderCode} trackingCode={trackingCode} onClose={() => setSuccess(null)} />
+  );
+
   // Con el adelanto del 50% el pedido avanza, y el saldo se paga aquí mismo
   const hasBalance = summary.amountPaid > 0 && summary.balanceDue > 0 && summary.status !== 'Cancelled';
 
@@ -113,7 +128,8 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
     case 'WaitingPayment':
       break;
     default:
-      if (!hasBalance) return <PaymentDoneState summary={summary} trackingCode={trackingCode} />;
+      // Pagado por completo: la confirmación se muestra encima del estado final
+      if (!hasBalance) return <>{successDialog}<PaymentDoneState summary={summary} trackingCode={trackingCode} /></>;
   }
 
   const total = summary.total;
@@ -122,95 +138,113 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link href="/" className="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-[#887870] transition-colors hover:text-[#4a3933]">
           <ChevronLeft className="mr-0.5 h-4 w-4" /> Volver a la tienda
         </Link>
         <span className="hidden sm:block"><PurchaseSteps current={3} /></span>
       </div>
 
-      {summary.paymentRejectionReason && (
-        <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
-          <div>
-            <p className="font-bold">Tu comprobante anterior no pudo validarse</p>
-            <p className="mt-0.5">Motivo: {summary.paymentRejectionReason}. Sube una nueva captura donde se vea bien el pago.</p>
-          </div>
-        </div>
-      )}
+      <header className="mb-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#c8a96b]">Pedido {summary.orderCode}</p>
+        <h1 className="mt-1 font-serif text-4xl font-bold tracking-tight text-[#4a3933] sm:text-5xl">{hasBalance ? 'Paga tu saldo' : 'Paga tu pedido'}</h1>
+        <p className="mt-2 text-sm text-[#887870]">
+          {hasBalance
+            ? <>Ya pagaste {formatCurrency(summary.amountPaid)}. Te falta <strong className="text-[#4a3933]">{formatCurrency(summary.balanceDue)}</strong> para la entrega.</>
+            : 'Elige cuánto pagar ahora y con qué medio. Es rápido y seguro.'}
+        </p>
+      </header>
 
-      {hasBalance && summary.status === 'Ready' && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
-          <p className="font-bold">¡Tu pedido está listo!</p>
-          <p className="mt-0.5">Paga el saldo y lo {summary.deliveryType === 'MeetingPoint' ? 'entregamos en el punto de encuentro' : 'enviamos'} de inmediato.</p>
-        </div>
-      )}
-
-      {/* Resumen del pedido y monto a pagar */}
-      <div className="grid grid-cols-1 gap-5 rounded-3xl border border-[#c8a96b]/30 bg-white/95 p-5 shadow-[0_10px_30px_-10px_rgba(200,169,107,0.1)] backdrop-blur-md md:grid-cols-[1fr_280px]">
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#887870]">Pedido</span>
-            <span className="rounded-md border border-[#c8a96b]/20 bg-[#faf7f2] px-2 py-0.5 font-mono text-sm font-bold text-[#4a3933]">{summary.orderCode}</span>
-            <span className="flex items-center gap-1 rounded-full border border-[#b58129]/20 bg-[#fdf6e7] px-2.5 py-0.5 text-[11px] font-semibold text-[#b58129]">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#b58129]" /> {hasBalance ? 'Saldo pendiente' : 'Esperando tu pago'}
-            </span>
+      <div className="mb-5 space-y-3">
+        {summary.paymentRejectionReason && (
+          <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
+            <div>
+              <p className="font-bold">Tu pago anterior no se pudo validar</p>
+              <p className="mt-0.5">Motivo: {summary.paymentRejectionReason}. Puedes pagar de nuevo aquí con tarjeta o Yape.</p>
+            </div>
           </div>
-          {summary.items.length > 0 ? (
-            <SummaryItems summary={summary} />
-          ) : (
-            <p className="text-sm text-[#887870]">Diseño personalizado según tus referencias.</p>
-          )}
-        </div>
-        <div className="space-y-3">
-          <AmountBreakdown summary={summary} />
-          {summary.amountPaid > 0 && (
-            <dl className="space-y-1 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3 text-sm">
-              <div className="flex justify-between text-emerald-800"><dt>Ya pagaste</dt><dd className="font-semibold">S/ {summary.amountPaid.toFixed(2)}</dd></div>
-              <div className="flex justify-between font-bold text-[#4a3933]"><dt>Saldo</dt><dd>S/ {summary.balanceDue.toFixed(2)}</dd></div>
-            </dl>
-          )}
-          {snapshot && (
-            <Button
-              type="button"
-              onClick={() => setIsTicketOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#c8a96b]/40 bg-[#faf7f2] text-xs font-bold uppercase tracking-wider text-[#4a3933] hover:bg-[#f3ece2]"
-            >
-              <Receipt className="h-4 w-4 text-[#c8a96b]" /> Ver mi ticket
-            </Button>
-          )}
-        </div>
+        )}
+        {hasBalance && summary.status === 'Ready' && (
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+            <PartyPopper className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <div>
+              <p className="font-bold">¡Tu pedido está listo!</p>
+              <p className="mt-0.5">Paga el saldo y lo {summary.deliveryType === 'MeetingPoint' ? 'entregamos en el punto de encuentro' : 'enviamos'} de inmediato.</p>
+            </div>
+          </div>
+        )}
+        {confirming && (
+          <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            <p>Estamos confirmando tu pago con Mercado Pago. Esta página se actualiza sola; no hace falta que pagues de nuevo.</p>
+          </div>
+        )}
       </div>
 
-      {isCheckingPayments ? (
-        <Skeleton variant="rect" className="h-80 w-full rounded-[2rem]" />
-      ) : onlinePayments ? (
-        <>
-          {confirming && (
-            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="status">
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-              <p>Estamos confirmando tu pago con Mercado Pago. Esta página se actualizará sola; no hace falta que pagues de nuevo.</p>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
+        <div>
+          {isCheckingPayments ? (
+            <Skeleton variant="rect" className="h-96 w-full rounded-[2rem]" />
+          ) : onlinePayments ? (
+            // La clave reinicia el formulario después de cada pago (sin mensajes viejos)
+            <MercadoPagoCheckout key={summary.amountPaid} summary={summary} onPaid={handlePaid} />
+          ) : (
+            <div className="rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-8 text-center">
+              <p className="font-serif text-xl font-bold text-[#4a3933]">Los pagos en línea se están activando</p>
+              <p className="mt-1 text-sm text-[#887870]">Escríbenos y te ayudamos a completar el pago de tu pedido.</p>
+              {whatsappHref && (
+                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1fb959]">
+                  <MessageCircle className="h-4 w-4" /> Escribir por WhatsApp
+                </a>
+              )}
             </div>
           )}
-          <MercadoPagoCheckout summary={summary} onPaid={handlePaid} />
-        </>
-      ) : (
-        <div className="rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-6 text-center">
-          <p className="font-serif text-lg font-bold text-[#4a3933]">Los pagos en línea se están activando</p>
-          <p className="mt-1 text-sm text-[#887870]">Escríbenos y te ayudamos a completar el pago de tu pedido.</p>
-          {whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1fb959]"
-            >
-              <MessageCircle className="h-4 w-4" /> Escribir por WhatsApp
-            </a>
-          )}
         </div>
-      )}
+
+        {/* Resumen siempre a la vista */}
+        <aside className="order-first space-y-4 lg:sticky lg:top-28 lg:order-last">
+          <section className="rounded-[2rem] border border-[#c8a96b]/30 bg-white p-5 shadow-[0_18px_40px_-28px_rgba(74,57,51,0.45)]">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="font-serif text-xl font-bold text-[#4a3933]">Tu pedido</h2>
+              <span className="flex items-center gap-1.5 rounded-full bg-[#fdf6e7] px-2.5 py-1 text-[11px] font-semibold text-[#b58129]">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#b58129]" /> {hasBalance ? 'Saldo pendiente' : 'Esperando tu pago'}
+              </span>
+            </div>
+            {summary.items.length > 0 ? (
+              <SummaryItems summary={summary} />
+            ) : (
+              <p className="text-sm text-[#887870]">Diseño personalizado según tus referencias.</p>
+            )}
+            <div className="mt-4">
+              <AmountBreakdown summary={summary} />
+            </div>
+            {summary.amountPaid > 0 && (
+              <dl className="mt-3 space-y-1.5 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-3.5 text-sm">
+                <div className="flex justify-between text-emerald-800"><dt>Ya pagaste</dt><dd className="font-semibold">{formatCurrency(summary.amountPaid)}</dd></div>
+                <div className="flex justify-between font-bold text-[#4a3933]"><dt>Saldo</dt><dd>{formatCurrency(summary.balanceDue)}</dd></div>
+              </dl>
+            )}
+            {snapshot && (
+              <button
+                type="button"
+                onClick={() => setIsTicketOpen(true)}
+                className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[#c8a96b]/40 bg-[#faf7f2] text-xs font-bold uppercase tracking-wider text-[#4a3933] hover:bg-[#f3ece2]"
+              >
+                <Receipt className="h-4 w-4 text-[#c8a96b]" /> Ver mi ticket
+              </button>
+            )}
+          </section>
+          <div className="flex items-start gap-3 rounded-2xl bg-white/70 p-4 text-xs leading-relaxed text-[#6b5a50]">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#4f755b]" />
+            <p>
+              Tu pago lo procesa Mercado Pago. Apenas se apruebe te enviamos la confirmación a tu correo.
+              {whatsappHref && <> ¿Algún problema? <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#8f6d28] underline-offset-2 hover:underline">Escríbenos</a>.</>}
+            </p>
+          </div>
+        </aside>
+      </div>
 
       {snapshot && (
         <OrderTicketModal
@@ -222,6 +256,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
           snapshot={snapshot}
         />
       )}
+      {successDialog}
     </div>
   );
 }

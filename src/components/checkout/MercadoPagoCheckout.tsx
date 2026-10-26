@@ -1,33 +1,68 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { AlertCircle, CheckCircle2, CreditCard, Info, Loader2, Lock, Smartphone } from 'lucide-react';
+import { AlertCircle, Check, CreditCard, Info, Loader2, Lock, Smartphone } from 'lucide-react';
 import { OrderPaymentSummary, OnlinePaymentResult } from '@/types/orders';
 import { OnlinePaymentsService } from '@/services/online-payments.service';
 import { useMercadoPago } from '@/hooks/use-mercadopago';
-import { BrickController, YAPE_MAX_AMOUNT, waitForDeviceId } from '@/lib/mercadopago';
+import { BrickController, BrickCustomVariables, YAPE_MAX_AMOUNT, waitForDeviceId } from '@/lib/mercadopago';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
 import { readSavedCustomer } from '@/lib/saved-customer';
 import { MercadoPagoLogo } from './MercadoPagoLogo';
 
+export type PaymentMethodChoice = 'card' | 'yape';
+
 interface MercadoPagoCheckoutProps {
   summary: OrderPaymentSummary;
   /** Se llama cuando un pago se aprueba (o queda en proceso) para recargar el estado del pedido */
-  onPaid: (result: OnlinePaymentResult) => void;
+  onPaid: (result: OnlinePaymentResult, method: PaymentMethodChoice) => void;
 }
 
-type Method = 'card' | 'yape';
 type Notice = { tone: 'error' | 'info'; text: string } | null;
 
 const CARD_CONTAINER_ID = 'auranova-card-payment-brick';
+
+/** El formulario de Mercado Pago con los colores de Aura Nova. */
+const BRICK_STYLE: BrickCustomVariables = {
+  baseColor: '#4a3933',
+  baseColorFirstVariant: '#5e4a42',
+  baseColorSecondVariant: '#3a2d28',
+  buttonTextColor: '#ffffff',
+  textPrimaryColor: '#4a3933',
+  textSecondaryColor: '#887870',
+  inputBackgroundColor: '#ffffff',
+  formBackgroundColor: '#ffffff',
+  outlinePrimaryColor: '#dccbb0',
+  outlineSecondaryColor: '#e8dcdc',
+  successColor: '#4f755b',
+  errorColor: '#c0504d',
+  inputFocusedBoxShadow: '0 0 0 4px rgba(200, 169, 107, 0.18)',
+  inputErrorFocusedBoxShadow: '0 0 0 4px rgba(192, 80, 77, 0.15)',
+  inputVerticalPadding: '12px',
+  inputHorizontalPadding: '14px',
+  borderRadiusSmall: '10px',
+  borderRadiusMedium: '14px',
+  borderRadiusLarge: '18px',
+  borderRadiusFull: '999px',
+  fontWeightSemiBold: '600',
+  formPadding: '0px',
+};
 
 const errorText = (error: unknown) =>
   error instanceof ApiProblemDetails && error.detail && error.status && error.status < 500
     ? error.detail
     : 'No pudimos procesar el pago. Revisa tu conexión e inténtalo de nuevo.';
+
+function StepTitle({ number, children }: { number: number; children: React.ReactNode }) {
+  return (
+    <h3 className="mb-3 flex items-center gap-2.5 text-sm font-bold text-[#4a3933]">
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#4a3933] text-[11px] text-white">{number}</span>
+      {children}
+    </h3>
+  );
+}
 
 /**
  * Pago dentro de la página con Mercado Pago: tarjeta (Card Payment Brick) o Yape (celular + código de aprobación).
@@ -40,13 +75,14 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
   const total = summary.total ?? 0;
   const deposit = summary.depositAmount ?? null;
   const [payFull, setPayFull] = useState(true);
-  const [method, setMethod] = useState<Method>('card');
+  const [method, setMethod] = useState<PaymentMethodChoice>('card');
   const [notice, setNotice] = useState<Notice>(null);
   // Cambia para volver a montar el formulario de tarjeta (cada token sirve una sola vez)
   const [cardAttempt, setCardAttempt] = useState(0);
   const [readyKey, setReadyKey] = useState<string | null>(null);
 
-  const amount = isBalance ? summary.balanceDue : payFull || deposit == null ? total : deposit;
+  const offersDeposit = !isBalance && deposit != null && deposit < total;
+  const amount = isBalance ? summary.balanceDue : payFull || !offersDeposit ? total : deposit!;
   const cardKey = `${amount}-${cardAttempt}`;
   const yapeAllowed = amount <= YAPE_MAX_AMOUNT;
 
@@ -55,7 +91,6 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
   const [phone, setPhone] = useState(savedCustomer.phone ?? '');
   const [otp, setOtp] = useState('');
   const [isPayingYape, setIsPayingYape] = useState(false);
-
   const savedEmail = /^\S+@\S+\.\S+$/.test(savedCustomer.email ?? '') ? savedCustomer.email : undefined;
 
   // Mantiene las últimas opciones para el callback del formulario de tarjeta (se crea una vez por monto)
@@ -64,16 +99,13 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
     latest.current = { payFull, onPaid };
   }, [payFull, onPaid]);
 
-  const handleResult = (result: OnlinePaymentResult) => {
-    if (result.status === 'approved') {
-      toast.success('¡Pago aprobado!', { description: result.message });
-      latest.current.onPaid(result);
-    } else if (result.status === 'pending') {
-      setNotice({ tone: 'info', text: result.message });
-      latest.current.onPaid(result);
-    } else {
+  const handleResult = (result: OnlinePaymentResult, paidWith: PaymentMethodChoice) => {
+    if (result.status === 'rejected') {
       setNotice({ tone: 'error', text: result.message });
+      return;
     }
+    if (result.status === 'pending') setNotice({ tone: 'info', text: 'Mercado Pago está confirmando tu pago. No hace falta que pagues de nuevo.' });
+    latest.current.onPaid(result, paidWith);
   };
 
   // Formulario de tarjeta de Mercado Pago (los datos de la tarjeta nunca pasan por nuestro servidor)
@@ -86,7 +118,13 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
     mp.bricks()
       .create('cardPayment', CARD_CONTAINER_ID, {
         initialization: { amount, ...(savedEmail ? { payer: { email: savedEmail } } : {}) },
-        customization: { paymentMethods: { maxInstallments: 12 }, visual: { style: { theme: 'default' } } },
+        customization: {
+          paymentMethods: { maxInstallments: 12 },
+          visual: {
+            texts: { formSubmit: `Pagar ${formatCurrency(amount)}` },
+            style: { theme: 'default', customVariables: BRICK_STYLE },
+          },
+        },
         callbacks: {
           onReady: () => {
             if (!cancelled) setReadyKey(key);
@@ -106,7 +144,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
                 identificationNumber: formData.payer?.identification?.number,
                 deviceId: await waitForDeviceId(),
               });
-              handleResult(result);
+              handleResult(result, 'card');
               if (result.status === 'rejected') setCardAttempt(a => a + 1);
             } catch (error) {
               setNotice({ tone: 'error', text: errorText(error) });
@@ -164,7 +202,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
         payFull,
         deviceId: await waitForDeviceId(),
       });
-      handleResult(result);
+      handleResult(result, 'yape');
       if (result.status !== 'approved') setOtp('');
     } catch (error) {
       setOtp('');
@@ -187,160 +225,175 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
     );
   }
 
+  const methods = [
+    { key: 'card' as const, label: 'Tarjeta', hint: 'Crédito o débito', icon: CreditCard, accent: 'bg-[#4a3933]' },
+    { key: 'yape' as const, label: 'Yape', hint: 'Con tu código de aprobación', icon: Smartphone, accent: 'bg-[#742284]' },
+  ];
+
   return (
-    <section className="space-y-5 rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-5 shadow-[0_15px_35px_-12px_rgba(200,169,107,0.18)] sm:p-7">
-      {/* 1. Cuánto paga */}
-      <div>
-        <h2 className="font-serif text-xl font-bold text-[#4a3933]">{isBalance ? 'Paga tu saldo' : '¿Cuánto quieres pagar ahora?'}</h2>
+    <section className="overflow-hidden rounded-[2rem] border border-[#e8dcdc] bg-white shadow-[0_24px_50px_-30px_rgba(74,57,51,0.45)]">
+      <div className="space-y-7 p-5 sm:p-8">
+        {/* 1. Cuánto paga */}
         {isBalance ? (
-          <p className="mt-1 text-sm text-[#887870]">
-            Ya pagaste {formatCurrency(summary.amountPaid)}. Te falta <strong className="text-[#4a3933]">{formatCurrency(summary.balanceDue)}</strong>.
-          </p>
-        ) : deposit != null && deposit < total ? (
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Monto a pagar">
-            {[
-              { full: false, title: 'Adelanto del 50%', value: deposit, hint: `Empezamos tu pedido y pagas ${formatCurrency(total - deposit)} después` },
-              { full: true, title: 'Pago total', value: total, hint: 'Pagas todo y no te queda saldo' },
-            ].map(option => {
-              const active = payFull === option.full;
+          <div className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#fdf8ee] to-[#fffdf8] p-4 sm:p-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[#8f6d28]">Saldo a pagar</p>
+              <p className="text-xs text-[#887870]">Ya pagaste {formatCurrency(summary.amountPaid)}</p>
+            </div>
+            <p className="font-serif text-3xl font-bold text-[#4a3933]">{formatCurrency(summary.balanceDue)}</p>
+          </div>
+        ) : offersDeposit ? (
+          <div>
+            <StepTitle number={1}>¿Cuánto pagas ahora?</StepTitle>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Monto a pagar">
+              {[
+                { full: false, title: 'Adelanto del 50%', value: deposit!, hint: `Empezamos tu pedido y pagas ${formatCurrency(total - deposit!)} antes de la entrega` },
+                { full: true, title: 'Pago total', value: total, hint: 'Pagas todo ahora y no te queda saldo' },
+              ].map(option => {
+                const active = payFull === option.full;
+                return (
+                  <button
+                    key={option.title}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => { setPayFull(option.full); setNotice(null); }}
+                    className={`rounded-2xl border-2 p-4 text-left transition ${
+                      active ? 'border-[#c8a96b] bg-[#fffbf3] shadow-[0_10px_24px_-14px_rgba(200,169,107,0.8)]' : 'border-[#efe6dd] bg-white hover:border-[#c8a96b]/50'
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-bold text-[#4a3933]">{option.title}</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${active ? 'border-[#c8a96b] bg-[#c8a96b] text-white' : 'border-[#d9cfc8]'}`}>
+                        {active && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                    </span>
+                    <span className="mt-2 block font-serif text-3xl font-bold text-[#4a3933]">{formatCurrency(option.value)}</span>
+                    <span className="mt-1 block text-xs leading-snug text-[#887870]">{option.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4 rounded-2xl bg-[#faf7f2] p-4">
+            <p className="text-sm font-semibold text-[#4a3933]">Total a pagar</p>
+            <p className="font-serif text-2xl font-bold text-[#4a3933]">{formatCurrency(total)}</p>
+          </div>
+        )}
+
+        {/* 2. Cómo paga */}
+        <div>
+          <StepTitle number={isBalance || !offersDeposit ? 1 : 2}>¿Cómo quieres pagar?</StepTitle>
+          <div className="grid grid-cols-2 gap-2.5" role="tablist" aria-label="Medio de pago">
+            {methods.map(item => {
+              const active = method === item.key;
               return (
                 <button
-                  key={option.title}
+                  key={item.key}
                   type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => { setPayFull(option.full); setNotice(null); }}
-                  className={`rounded-2xl border p-4 text-left transition ${
-                    active ? 'border-[#c8a96b] bg-[#fdf8ee] ring-2 ring-[#c8a96b]/25' : 'border-[#e8dcdc] bg-white hover:border-[#c8a96b]/50'
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => { setMethod(item.key); setNotice(null); }}
+                  className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left transition sm:p-3.5 ${
+                    active ? 'border-[#4a3933] bg-white shadow-sm' : 'border-[#efe6dd] bg-[#fdfbf8] hover:border-[#4a3933]/30'
                   }`}
                 >
-                  <span className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-[#4a3933]">{option.title}</span>
-                    <span className={`h-4 w-4 rounded-full border-2 ${active ? 'border-[#c8a96b] bg-[#c8a96b]' : 'border-[#d9cfc8]'}`} />
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white ${active ? item.accent : 'bg-[#d9cfc8]'}`}>
+                    <item.icon className="h-5 w-5" />
                   </span>
-                  <span className="mt-1 block font-serif text-2xl font-bold text-[#4a3933]">{formatCurrency(option.value)}</span>
-                  <span className="mt-0.5 block text-xs text-[#887870]">{option.hint}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-[#4a3933]">{item.label}</span>
+                    <span className="block truncate text-[11px] text-[#887870]">{item.hint}</span>
+                  </span>
                 </button>
               );
             })}
           </div>
-        ) : (
-          <p className="mt-1 text-sm text-[#887870]">Total a pagar: <strong className="text-[#4a3933]">{formatCurrency(total)}</strong></p>
-        )}
-      </div>
 
-      {/* 2. Cómo paga */}
-      <div>
-        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#faf7f2] p-1.5" role="tablist" aria-label="Medio de pago">
-          {[
-            { key: 'card' as const, label: 'Tarjeta', icon: CreditCard },
-            { key: 'yape' as const, label: 'Yape', icon: Smartphone },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={method === tab.key}
-              onClick={() => { setMethod(tab.key); setNotice(null); }}
-              className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition ${
-                method === tab.key ? 'bg-white text-[#4a3933] shadow-sm' : 'text-[#887870] hover:text-[#4a3933]'
+          {notice && (
+            <div
+              className={`mt-4 flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm ${
+                notice.tone === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-800'
               }`}
+              role="alert"
             >
-              <tab.icon className="h-4 w-4" /> {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {notice && (
-          <div
-            className={`mt-4 flex items-start gap-2 rounded-xl border p-3 text-sm ${
-              notice.tone === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-amber-200 bg-amber-50 text-amber-800'
-            }`}
-            role="alert"
-          >
-            {notice.tone === 'error' ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <Info className="mt-0.5 h-4 w-4 shrink-0" />}
-            <p>{notice.text}</p>
-          </div>
-        )}
-
-        <div className="mt-4">
-          {method === 'card' ? (
-            <div>
-              {(!mp || readyKey !== cardKey) && (
-                <div className="flex items-center justify-center gap-2 py-10 text-sm text-[#887870]">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Cargando formulario seguro…
-                </div>
-              )}
-              {/* Mercado Pago dibuja aquí el formulario de tarjeta */}
-              <div id={CARD_CONTAINER_ID} />
+              {notice.tone === 'error' ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />}
+              <p>{notice.text}</p>
             </div>
-          ) : !yapeAllowed ? (
-            <p className="rounded-xl bg-[#faf7f2] p-4 text-sm text-[#6b5a50]">
-              Yape permite pagos de hasta {formatCurrency(YAPE_MAX_AMOUNT)}. Paga con tarjeta{!isBalance && deposit != null ? ' o elige el adelanto del 50%' : ''}.
-            </p>
-          ) : (
-            <form onSubmit={payWithYape} className="space-y-4">
-              <div>
-                <label htmlFor="yape-phone" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#887870]">Celular de tu Yape</label>
-                <input
-                  id="yape-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel-national"
-                  maxLength={11}
-                  value={phone}
-                  onChange={e => setPhone(e.target.value.replace(/[^\d ]/g, ''))}
-                  placeholder="987 654 321"
-                  className="w-full rounded-xl border border-[#e8dcdc] bg-[#faf7f2] px-4 py-3 text-base text-[#4a3933] outline-none focus:border-[#c8a96b] focus:bg-white"
-                  disabled={isPayingYape}
-                />
-              </div>
-              <div>
-                <label htmlFor="yape-otp" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#887870]">Código de aprobación</label>
-                <input
-                  id="yape-otp"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={otp}
-                  onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="6 dígitos"
-                  className="w-full rounded-xl border border-[#e8dcdc] bg-[#faf7f2] px-4 py-3 text-center font-mono text-xl tracking-[0.4em] text-[#4a3933] outline-none focus:border-[#c8a96b] focus:bg-white"
-                  disabled={isPayingYape}
-                />
-                <p className="mt-1.5 text-xs text-[#887870]">
-                  Ábrelo en tu app Yape → menú → <strong>Código de aprobación</strong>. Cambia cada pocos minutos.
-                </p>
-              </div>
-              <Button
-                type="submit"
-                disabled={!mp || isPayingYape}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#742284] text-white hover:bg-[#5e1b6b]"
-              >
-                {isPayingYape ? <><Loader2 className="h-4 w-4 animate-spin" /> Procesando…</> : <>Pagar {formatCurrency(amount)} con Yape</>}
-              </Button>
-              <p className="text-center text-[11px] text-[#887870]">
-                Revisa que tu límite de Yape (S/ 500, 900 o 2,000) cubra el monto.
-              </p>
-            </form>
           )}
+
+          <div className="mt-5">
+            {method === 'card' ? (
+              <div>
+                {(!mp || readyKey !== cardKey) && (
+                  <div className="space-y-3 py-2" aria-label="Cargando formulario seguro">
+                    {[...Array(4)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-2xl bg-[#faf7f2]" />)}
+                  </div>
+                )}
+                {/* Mercado Pago dibuja aquí el formulario de tarjeta */}
+                <div id={CARD_CONTAINER_ID} />
+              </div>
+            ) : !yapeAllowed ? (
+              <p className="flex items-start gap-2.5 rounded-2xl bg-[#faf7f2] p-4 text-sm text-[#6b5a50]">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#c8a96b]" />
+                Yape permite pagos de hasta {formatCurrency(YAPE_MAX_AMOUNT)}. Paga con tarjeta{offersDeposit ? ' o elige el adelanto del 50%' : ''}.
+              </p>
+            ) : (
+              <form onSubmit={payWithYape} className="space-y-4">
+                <ol className="grid grid-cols-1 gap-2 rounded-2xl bg-[#f7f0f9] p-4 text-xs text-[#5b2a67] sm:grid-cols-3">
+                  <li><strong className="block text-[#742284]">1. Abre Yape</strong>En tu celular.</li>
+                  <li><strong className="block text-[#742284]">2. Menú → Código de aprobación</strong>Cambia cada pocos minutos.</li>
+                  <li><strong className="block text-[#742284]">3. Escríbelo aquí</strong>Junto a tu número.</li>
+                </ol>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-[#887870]">Celular de tu Yape</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={11}
+                      value={phone}
+                      onChange={e => setPhone(e.target.value.replace(/[^\d ]/g, ''))}
+                      placeholder="987 654 321"
+                      className="h-12 w-full rounded-2xl border border-[#e8dcdc] bg-white px-4 text-base text-[#4a3933] outline-none transition focus:border-[#742284] focus:ring-4 focus:ring-[#742284]/10"
+                      disabled={isPayingYape}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-[#887870]">Código de aprobación</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={otp}
+                      onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="• • • • • •"
+                      className="h-12 w-full rounded-2xl border border-[#e8dcdc] bg-white px-4 text-center font-mono text-xl tracking-[0.5em] text-[#4a3933] outline-none transition focus:border-[#742284] focus:ring-4 focus:ring-[#742284]/10"
+                      disabled={isPayingYape}
+                    />
+                  </label>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!mp || isPayingYape}
+                  className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-[#742284] text-sm font-bold text-white shadow-lg shadow-[#742284]/25 transition hover:bg-[#5e1b6b] disabled:opacity-50"
+                >
+                  {isPayingYape ? <><Loader2 className="h-4 w-4 animate-spin" /> Procesando…</> : <>Pagar {formatCurrency(amount)} con Yape</>}
+                </button>
+                <p className="text-center text-[11px] text-[#887870]">Revisa que tu límite de Yape (S/ 500, 900 o 2,000) cubra el monto.</p>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-1.5 border-t border-[#f1e9e4] pt-4 text-center">
-        <p className="flex items-center gap-2 text-xs font-semibold text-[#4a3933]">
-          <MercadoPagoLogo className="h-5 w-5" /> Pago seguro con Mercado Pago
-        </p>
-        <p className="flex items-center gap-1.5 text-[11px] text-[#887870]">
-          <Lock className="h-3.5 w-3.5" /> Aura Nova no ve ni guarda los datos de tu tarjeta.
-        </p>
-      </div>
-      {summary.status !== 'WaitingPayment' && isBalance && (
-        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-emerald-700">
-          <CheckCircle2 className="h-3.5 w-3.5" /> Tu pedido ya está en marcha. Lo entregamos cuando el saldo esté pagado.
-        </p>
-      )}
+      <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-[#f1e9e4] bg-[#fdfbf8] px-5 py-3.5 text-[11px] text-[#887870]">
+        <span className="flex items-center gap-1.5 font-semibold text-[#4a3933]"><MercadoPagoLogo className="h-4 w-4" /> Pago seguro con Mercado Pago</span>
+        <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Aura Nova no ve ni guarda los datos de tu tarjeta</span>
+      </footer>
     </section>
   );
 }
