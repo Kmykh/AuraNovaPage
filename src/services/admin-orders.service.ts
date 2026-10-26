@@ -9,7 +9,7 @@ import {
   OrderStatusHistoryResponse 
 } from '../types/orders';
 import { NotificationResponse, WhatsAppPreparationResponse } from '../types/notifications';
-import { DeliveryType, OrderStatus } from '../types/enums';
+import { DeliveryType, NotificationChannel, NotificationStatus, NotificationType, OrderStatus } from '../types/enums';
 
 /**
  * La API envía estado y tipo de entrega como texto ("PaymentReported", "NationalShipping");
@@ -27,6 +27,15 @@ function normalizeOrder(order: AdminOrderDetailResponse): AdminOrderDetailRespon
     ...order,
     status: toEnum(OrderStatus, order.status) as OrderStatus,
     deliveryType: toEnum(DeliveryType, order.deliveryType) as DeliveryType,
+  };
+}
+
+function normalizeNotification(notification: NotificationResponse): NotificationResponse {
+  return {
+    ...notification,
+    type: toEnum(NotificationType, notification.type) as NotificationType,
+    channel: toEnum(NotificationChannel, notification.channel) as NotificationChannel,
+    status: toEnum(NotificationStatus, notification.status) as NotificationStatus,
   };
 }
 
@@ -58,12 +67,23 @@ export const AdminOrdersService = {
 
   getNotifications: async (orderId: string): Promise<NotificationResponse[]> => {
     const { data } = await apiClient.get<NotificationResponse[]>(`/api/admin/orders/${orderId}/notifications`);
-    return data;
+    return data.map(normalizeNotification);
   },
 
   prepareWhatsapp: async (orderId: string, notificationId: string): Promise<WhatsAppPreparationResponse> => {
     const { data } = await apiClient.post<WhatsAppPreparationResponse>(`/api/admin/orders/${orderId}/notifications/${notificationId}/prepare-whatsapp`);
     return data;
+  },
+
+  resendEmail: async (orderId: string, notificationId: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(`/api/admin/orders/${orderId}/notifications/${notificationId}/resend-email`);
+    return data;
+  },
+
+  /** WhatsApp listos que el equipo aún no abrió para enviar (de todos los pedidos). */
+  getPendingWhatsApp: async (): Promise<NotificationResponse[]> => {
+    const { data } = await apiClient.get<NotificationResponse[]>('/api/admin/notifications/pending-whatsapp');
+    return data.map(normalizeNotification);
   },
 
   startPreparation: async (id: string): Promise<{ message: string }> => {
