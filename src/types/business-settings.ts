@@ -20,6 +20,7 @@ export interface AdminBusinessSettingsResponse {
 export interface UpdateBusinessSettingsRequest {
   businessName: string;
   whatsappNumber: string;
-  yapeHolderName: string;
+  /** Solo del cobro antiguo por QR de Yape; si no se envía, el backend mantiene el actual */
+  yapeHolderName?: string;
   tikTokUsername: string | null;
 }

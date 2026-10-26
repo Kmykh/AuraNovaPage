@@ -7,17 +7,17 @@ import { toast } from 'sonner';
 
 export const adminPaymentKeys = {
   all: ['admin-payments'] as const,
-  list: (filters?: Record<string, string | number>) => ['admin-payments', 'list', filters] as const,
+  pendingProofs: ['admin-payments', 'pending-proofs'] as const,
   detail: (id: string) => ['admin-payment', id] as const,
   online: (from: string, to: string) => ['admin-payments', 'online', from, to] as const,
   webhooks: ['admin-payments', 'webhooks'] as const,
 };
 
-export function useAdminPayments(filters?: Record<string, string | number>) {
+export function usePendingProofs() {
   return useQuery({
-    queryKey: adminPaymentKeys.list(filters),
-    queryFn: () => AdminPaymentsService.getPayments(filters),
-    staleTime: 30000,
+    queryKey: adminPaymentKeys.pendingProofs,
+    queryFn: AdminPaymentsService.getPendingProofs,
+    staleTime: 60_000,
   });
 }
 

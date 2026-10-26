@@ -1,5 +1,4 @@
 import { apiClient } from '../lib/api-client';
-import { PagedResponse } from '../types/common';
 import { 
   AdminPaymentResponse, 
   AdminPaymentDetailResponse, 
@@ -8,8 +7,9 @@ import {
 import { OnlinePaymentReport, PaymentWebhookEvent, RefundOnlinePaymentRequest, RefundOnlinePaymentResult } from '../types/orders';
 
 export const AdminPaymentsService = {
-  getPayments: async (params?: Record<string, string | number>): Promise<AdminPaymentResponse[]> => {
-    const { data } = await apiClient.get<AdminPaymentResponse[]>('/api/admin/payments', { params });
+  /** Comprobantes de Yape (sistema anterior de captura) que esperan revisión. */
+  getPendingProofs: async (): Promise<AdminPaymentResponse[]> => {
+    const { data } = await apiClient.get<AdminPaymentResponse[]>('/api/admin/payments/pending');
     return data;
   },
 
