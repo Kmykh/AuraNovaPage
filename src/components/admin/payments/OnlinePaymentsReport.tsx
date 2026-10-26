@@ -102,8 +102,6 @@ export function OnlinePaymentsReport() {
 
   return (
     <div className="space-y-6">
-      <WebhookHealth />
-
       <section className="rounded-[24px] border border-sage/10 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-1.5 rounded-2xl bg-[#faf7f2] p-1" role="tablist" aria-label="Periodo">
@@ -142,7 +140,12 @@ export function OnlinePaymentsReport() {
               <Kpi label="Cobrado" value={formatCurrency(report.collected)} tone="emerald" />
               <Kpi label="Devuelto" value={formatCurrency(report.refunded)} tone="sky" />
               <Kpi label="Neto" value={formatCurrency(report.net)} tone="brown" />
-              <Kpi label="Intentos" value={`${report.approvedCount} ✓ · ${report.rejectedCount} ✗ · ${report.pendingCount} ⏳`} tone="stone" small />
+              <Kpi
+                label="Pagos aprobados"
+                value={String(report.approvedCount)}
+                hint={`${report.rejectedCount} rechazados · ${report.pendingCount} en proceso`}
+                tone="stone"
+              />
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -246,11 +249,13 @@ export function OnlinePaymentsReport() {
           </>
         )}
       </section>
+
+      <WebhookHealth />
     </div>
   );
 }
 
-function Kpi({ label, value, tone, small }: { label: string; value: string; tone: 'emerald' | 'sky' | 'brown' | 'stone'; small?: boolean }) {
+function Kpi({ label, value, tone, hint }: { label: string; value: string; tone: 'emerald' | 'sky' | 'brown' | 'stone'; hint?: string }) {
   const tones = {
     emerald: 'bg-emerald-50 text-emerald-800',
     sky: 'bg-sky-50 text-sky-800',
@@ -260,7 +265,8 @@ function Kpi({ label, value, tone, small }: { label: string; value: string; tone
   return (
     <div className={`rounded-2xl p-4 ${tones[tone]}`}>
       <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{label}</p>
-      <p className={`mt-1 font-serif font-bold ${small ? 'text-sm' : 'text-xl'}`}>{value}</p>
+      <p className="mt-1 font-serif text-xl font-bold">{value}</p>
+      {hint && <p className="mt-0.5 text-[11px] opacity-70">{hint}</p>}
     </div>
   );
 }
@@ -289,12 +295,12 @@ function WebhookHealth() {
             {failing ? <AlertTriangle size={16} /> : last ? <CheckCircle2 size={16} /> : <Radio size={16} />}
           </span>
           <div>
-            <p className="font-semibold text-brown">Avisos de Mercado Pago (webhooks)</p>
+            <p className="font-semibold text-brown">Conexión con Mercado Pago (avisos de pago)</p>
             <p className="text-xs text-sage">
               {!last
                 ? 'Todavía no llega ningún aviso. Revisa en Mercado Pago → Webhooks la URL y el evento "Order", en modo prueba y producción.'
                 : failing
-                  ? 'El último aviso llegó con la firma inválida: la clave secreta de Render no coincide con la de Mercado Pago.'
+                  ? 'El último aviso llegó con la firma inválida: MercadoPago__WebhookSecret en Render debe ser la clave secreta de Mercado Pago → Webhooks.'
                   : `Último aviso: ${formatDate(last.receivedAt)} · ${WEBHOOK_RESULTS[last.result]?.label ?? last.result}`}
             </p>
           </div>

@@ -29,29 +29,3 @@ export function useUpdateBusinessSettings() {
     },
   });
 }
-
-export function useUploadYapeQr() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (file: File) => BusinessSettingsService.uploadYapeQr(file),
-    onSuccess: () => {
-      toast.success('Código QR subido correctamente.');
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.admin });
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.public });
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.paymentInfo });
-    },
-  });
-}
-
-export function useDeleteYapeQr() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => BusinessSettingsService.deleteYapeQr(),
-    onSuccess: () => {
-      toast.success('QR eliminado.');
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.admin });
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.public });
-      queryClient.invalidateQueries({ queryKey: businessSettingsKeys.paymentInfo });
-    },
-  });
-}
