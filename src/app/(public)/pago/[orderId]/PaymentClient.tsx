@@ -8,6 +8,7 @@ import { useMounted } from '@/hooks/use-mounted';
 import { useOrderSummary, orderSummaryKey } from '@/hooks/use-order-summary';
 import { useBusinessSettings } from '@/hooks/use-info';
 import { MercadoPagoCheckout } from '@/components/checkout/MercadoPagoCheckout';
+import { PurchaseSteps } from '@/app/(public)/carrito/CartClient';
 import { OrderTicketModal } from '@/components/checkout/OrderTicketModal';
 import {
   AmountBreakdown, OrderNotFoundState, PaymentDoneState, PaymentReportedState, QuotePendingState, QuoteReadyState, SummaryItems,
@@ -125,7 +126,7 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
         <Link href="/" className="inline-flex items-center text-xs font-semibold uppercase tracking-wider text-[#887870] transition-colors hover:text-[#4a3933]">
           <ChevronLeft className="mr-0.5 h-4 w-4" /> Volver a la tienda
         </Link>
-        <span className="text-[11px] text-[#887870]">Paso final</span>
+        <span className="hidden sm:block"><PurchaseSteps current={3} /></span>
       </div>
 
       {summary.paymentRejectionReason && (

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
 import { itemColors, itemFlowers } from '@/lib/product-options';
 
 export interface CartItem {
@@ -25,8 +25,16 @@ export interface CartItem {
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
+  /** Mensaje de la tarjeta */
   phraseText?: string;
   phraseFont?: string;
+  phraseTo?: string;
+  phraseFrom?: string;
+  /** marfil, rosa, pergamino, noir, salvia o foto */
+  phraseTheme?: string;
+  /** Foto propia de fondo (data URL comprimida, ~100-250 KB). Se sube solo al confirmar el pedido. */
+  cardPhoto?: string;
+  /** @deprecated v2: diseño de la tarjeta */
   phraseBackground?: string;
 }
 
@@ -50,9 +58,39 @@ const generateCartItemId = (item: CartItem): string => {
     item.hasPhraseCard ? 'card' : '',
     item.phraseText || '',
     item.phraseFont || '',
-    item.phraseBackground || ''
+    item.phraseTo || '',
+    item.phraseFrom || '',
+    item.phraseTheme || item.phraseBackground || '',
+    // La foto no entra completa en el id: basta su tamaño y el final para distinguirla
+    item.cardPhoto ? `${item.cardPhoto.length}:${item.cardPhoto.slice(-24)}` : '',
   ];
   return parts.join('|');
+};
+
+/**
+ * localStorage con respaldo: si una foto de tarjeta no cabe, se guarda el carrito sin fotos
+ * (siguen en memoria mientras la pestaña esté abierta) en lugar de perder todo el carrito.
+ */
+const safeStorage: StateStorage = {
+  getItem: name => {
+    try { return localStorage.getItem(name); } catch { return null; }
+  },
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      try {
+        const parsed = JSON.parse(value);
+        parsed.state.items = parsed.state.items.map((item: CartItem) => ({ ...item, cardPhoto: undefined }));
+        localStorage.setItem(name, JSON.stringify(parsed));
+      } catch {
+        // Sin espacio ni para el carrito: queda solo en memoria
+      }
+    }
+  },
+  removeItem: name => {
+    try { localStorage.removeItem(name); } catch { /* sin almacenamiento */ }
+  },
 };
 
 export const useCartStore = create<CartState>()(
@@ -108,11 +146,17 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'auranova-cart-storage',
-      version: 2,
-      // v1 guardaba los colores y flores como texto con comas: se convierten a listas
+      storage: createJSONStorage(() => safeStorage),
+      version: 3,
+      // v1 guardaba los colores y flores como texto con comas: se convierten a listas.
+      // v2 guardaba el diseño de la tarjeta como phraseBackground.
       migrate: (persisted, version) => {
         const state = persisted as { items?: CartItem[] } | undefined;
-        if (!state?.items || version >= 2) return state as CartState;
+        if (!state?.items || version >= 3) return state as CartState;
+        if (version === 2) {
+          const items = state.items.map(item => ({ ...item, phraseTheme: item.phraseTheme ?? item.phraseBackground, phraseBackground: undefined }));
+          return { ...state, items } as CartState;
+        }
         const items = state.items.map(item => {
           const migrated: CartItem = {
             ...item,

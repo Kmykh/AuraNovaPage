@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
-  AlertCircle, ArrowLeft, User, Truck, Package, ExternalLink, Phone, MessageCircle, Mail, MapPin, Sparkles, Download, CreditCard,
+  AlertCircle, ArrowLeft, User, Truck, Package, ExternalLink, Phone, MessageCircle, Mail, MapPin, Sparkles, Download, CreditCard, Copy,
 } from 'lucide-react';
 import { useAdminOrder } from '@/hooks/use-admin-orders';
 import { useConfirmPayment, useRejectPayment } from '@/hooks/use-admin-payments';
@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { DeliveryType } from '@/types/enums';
+import { AdminOrderDetailResponse } from '@/types/orders';
 
 import { OrderStatusChangeForm } from './OrderStatusChangeForm';
 import { OrderStatusHistory } from './OrderStatusHistory';
@@ -33,6 +34,26 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const cardClass = 'rounded-[24px] border border-sage/10 bg-white p-5 shadow-sm sm:p-6';
+
+/** Datos listos para pegar al registrar el envío en Shalom u Olva. */
+function copyAgencyData(order: AdminOrderDetailResponse) {
+  const d = order.delivery;
+  const pickup = d?.recipientName || order.customer?.name || '';
+  const phone = d?.recipientPhone || order.customer?.phone || '';
+  const lines = [
+    `Envío ${order.orderCode}${d?.preferredAgency ? ` · ${d.preferredAgency}` : ''}`,
+    `Destino: ${[d?.district, d?.province, d?.department].filter(Boolean).join(', ')}`,
+    `Sucursal: ${d?.deliveryAddress || 'la más cercana al distrito'}`,
+    `Recoge: ${pickup}`,
+    d?.recipientDocument ? `DNI: ${d.recipientDocument}` : null,
+    phone ? `Celular: ${phone}` : null,
+    'Flete: pago en destino',
+  ].filter(Boolean).join('\n');
+
+  navigator.clipboard.writeText(lines)
+    .then(() => toast.success('Datos copiados', { description: 'Pégalos al registrar el envío en la agencia.' }))
+    .catch(() => toast.error('No se pudo copiar. Selecciona el texto a mano.'));
+}
 
 export function AdminOrderDetail({ id }: { id: string }) {
   const { data: order, isLoading, error, refetch } = useAdminOrder(id);
@@ -277,6 +298,15 @@ export function AdminOrderDetail({ id }: { id: string }) {
               )}
               {order.deliveryType === DeliveryType.NationalShipping && !order.deliveryCost && (
                 <p className="rounded-lg bg-[#fdf8ee] px-3 py-2 text-xs text-[#8c6d36]">El envío lo paga el cliente en destino.</p>
+              )}
+              {order.deliveryType === DeliveryType.NationalShipping && (
+                <button
+                  type="button"
+                  onClick={() => copyAgencyData(order)}
+                  className="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gold/40 bg-white py-2 text-xs font-bold text-brown hover:bg-[#fffdf8]"
+                >
+                  <Copy size={14} className="text-gold" /> Copiar datos para la agencia
+                </button>
               )}
             </div>
 

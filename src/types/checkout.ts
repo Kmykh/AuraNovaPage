@@ -58,6 +58,12 @@ export interface CreateOrderItemRequest {
   hasPhraseCard?: boolean;
   phraseText?: string | null;
   phraseFont?: string | null;
+  phraseTo?: string | null;
+  phraseFrom?: string | null;
+  /** marfil, rosa, pergamino, noir, salvia o foto */
+  phraseTheme?: string | null;
+  /** Foto propia de fondo (data URL comprimida). El servidor la guarda en privado. */
+  cardBackgroundImage?: string | null;
 }
 
 export interface CreateOrderDeliveryRequest {

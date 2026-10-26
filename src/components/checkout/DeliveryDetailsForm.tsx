@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle2, Compass, Gift, Map, MapPin, Truck } from '
 import { DeliveryType, DeliveryZoneResponse, MeetingPointResponse } from '@/types/checkout';
 import { Input } from '@/components/ui/Input';
 import { formatCurrency } from '@/lib/formatters';
-import { PERU_DEPARTMENTS, SHIPPING_AGENCIES } from '@/lib/peru';
+import { NationalShippingFields } from './NationalShippingFields';
 import { DeliveryFormValue, LOCAL_DEPARTMENT, LOCAL_PROVINCE } from '@/lib/delivery-form';
 
 interface DeliveryDetailsFormProps {
@@ -56,6 +56,8 @@ export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZ
       department: type === DeliveryType.NationalShipping ? '' : LOCAL_DEPARTMENT,
       province: type === DeliveryType.NationalShipping ? '' : LOCAL_PROVINCE,
       district: '',
+      // Shalom es la agencia más usada: viene marcada
+      agency: type === DeliveryType.NationalShipping ? value.agency || 'Shalom' : value.agency,
     });
   };
 
@@ -154,46 +156,7 @@ export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZ
 
         {isNational && (
           <>
-            <p className="rounded-2xl border border-[#c8a96b]/30 bg-white p-3.5 text-xs leading-relaxed text-[#6d5b52]">
-              Enviamos por <strong>Shalom</strong> u <strong>Olva</strong>. El costo del envío lo pagas al recoger en la agencia.
-            </p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <FieldLabel htmlFor="ship-department">Departamento *</FieldLabel>
-                <select id="ship-department" value={value.department} onChange={e => set({ department: e.target.value })} className={selectClass}>
-                  <option value="" disabled>Elige…</option>
-                  {PERU_DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <Input label="Provincia *" value={value.province} onChange={e => set({ province: e.target.value })} placeholder="Ej. Trujillo" autoComplete="address-level2" />
-              <Input label="Distrito *" value={value.district} onChange={e => set({ district: e.target.value })} placeholder="Ej. Víctor Larco" autoComplete="address-level3" />
-            </div>
-            <div>
-              <FieldLabel>Agencia *</FieldLabel>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Agencia de envío">
-                {SHIPPING_AGENCIES.map(agency => (
-                  <button
-                    key={agency}
-                    type="button"
-                    role="radio"
-                    aria-checked={value.agency === agency}
-                    onClick={() => set({ agency })}
-                    className={`rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-                      value.agency === agency ? 'border-[#c8a96b] bg-white text-[#4a3933] ring-2 ring-[#c8a96b]/20' : 'border-[#e8dcdc] bg-white/70 text-[#887870] hover:border-[#c8a96b]/40'
-                    }`}
-                  >
-                    {agency}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Input
-              label="Agencia / sucursal o dirección *"
-              value={value.address}
-              onChange={e => set({ address: e.target.value })}
-              placeholder={value.agency ? `Ej. ${value.agency} Av. España 1250` : 'Ej. Shalom Av. España 1250'}
-              helperText="La sucursal donde recogerás, o tu dirección si la agencia entrega a domicilio."
-            />
+            <NationalShippingFields value={value} set={set} />
             {!value.isGift && (
               <Input
                 label="Tu DNI *"

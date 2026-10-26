@@ -16,6 +16,10 @@ export interface CreateOrderItemRequest {
   hasPhraseCard?: boolean;
   phraseText?: string;
   phraseFont?: string;
+  phraseTo?: string;
+  phraseFrom?: string;
+  phraseTheme?: string;
+  cardBackgroundImage?: string;
 }
 
 export interface CreateOrderDeliveryRequest {
@@ -165,6 +169,12 @@ export interface AdminOrderDetailItem {
   hasPhraseCard?: boolean;
   phraseText?: string;
   phraseFont?: string;
+  phraseTo?: string | null;
+  phraseFrom?: string | null;
+  /** marfil, rosa, pergamino, noir, salvia o foto */
+  phraseTheme?: string | null;
+  /** Foto propia del cliente (URL firmada y temporal) */
+  cardBackgroundUrl?: string | null;
 }
 
 export interface AdminOrderDetailCustomer {

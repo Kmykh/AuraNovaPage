@@ -19,6 +19,9 @@ import { ItemOptions } from '@/components/shared/ItemOptions';
 import { DeliveryDetailsForm } from '@/components/checkout/DeliveryDetailsForm';
 import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDeliveryRequest, validateDelivery } from '@/lib/delivery-form';
 import { itemColors, itemFlowers } from '@/lib/product-options';
+import { CardThemeId, cardSummary } from '@/lib/card-design';
+import { CardArt } from '@/components/card/CardArt';
+import { PurchaseSteps } from '../carrito/CartClient';
 import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
 import flo1 from '../images/flo1.png';
 
@@ -114,7 +117,12 @@ export function CheckoutClient() {
         hasButterfly: i.hasButterfly,
         hasPhraseCard: i.hasPhraseCard,
         phraseText: i.phraseText,
-        phraseFont: i.phraseFont
+        phraseFont: i.phraseFont,
+        phraseTo: i.phraseTo,
+        phraseFrom: i.phraseFrom,
+        phraseTheme: i.phraseTheme === 'foto' && !i.cardPhoto ? 'marfil' : i.phraseTheme ?? i.phraseBackground,
+        // La foto solo viaja si el cliente eligió "Tu foto"; el servidor la guarda en privado
+        cardBackgroundImage: i.phraseTheme === 'foto' ? i.cardPhoto : undefined,
       })),
       delivery: deliveryRequest
     };
@@ -138,7 +146,7 @@ export function CheckoutClient() {
             hasLights: i.hasLights,
             hasButterfly: i.hasButterfly,
             hasPhraseCard: i.hasPhraseCard,
-            phraseText: i.phraseText,
+            phraseText: i.phraseText ? cardSummary({ text: i.phraseText, to: i.phraseTo ?? '', from: i.phraseFrom ?? '' }) : undefined,
             phraseFont: i.phraseFont
           })),
           delivery: {
@@ -194,7 +202,7 @@ export function CheckoutClient() {
       if (flowers.length) msg += `  Flores: ${flowers.join(' / ')}\n`;
       if (item.hasLights) msg += `  Con luces\n`;
       if (item.hasButterfly) msg += `  Con mariposas\n`;
-      if (item.phraseText) msg += `  Tarjeta: "${item.phraseText}"\n`;
+      if (item.phraseText) msg += `  Tarjeta: ${cardSummary({ text: item.phraseText, to: item.phraseTo ?? '', from: item.phraseFrom ?? '' })}\n`;
     });
     
     msg += `\n*Modalidad de entrega:*\n`;
@@ -219,16 +227,11 @@ export function CheckoutClient() {
 
   return (
     <>
-      <div className="text-center flex flex-col items-center max-w-xl mx-auto mb-16">
-        <h1 className="font-serif text-[3.5rem] sm:text-[4.5rem] font-bold text-[#4a3933] mb-2 leading-[0.9] tracking-tighter">
-          Finaliza
-        </h1>
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl sm:text-3xl text-[#d38b8b] font-serif italic tracking-wide">
-            tu pedido
-          </h2>
-        </div>
-      </div>
+      <header className="mx-auto mb-10 max-w-xl text-center">
+        <PurchaseSteps current={2} />
+        <h1 className="mt-6 font-serif text-4xl font-bold tracking-tight text-[#4a3933] sm:text-5xl">Entrega y datos</h1>
+        <p className="mt-2 text-sm text-[#887870]">Dinos cómo te lo entregamos y a quién avisamos. En el siguiente paso pagas.</p>
+      </header>
 
       <form onSubmit={handleCreateOrder} className="w-full flex flex-col lg:flex-row gap-8 lg:gap-12 relative z-10">
       
@@ -521,22 +524,19 @@ export function CheckoutClient() {
                         hasButterfly={item.hasButterfly}
                       />
 
-                      {/* Dedication Card Quote in Ticket */}
-                      {(item.hasPhraseCard || item.phraseText) && (
-                        <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#c8a96b]/25 text-[10px] space-y-0.5">
-                          <div className="flex items-center justify-between text-[#8f6d28] font-bold text-[9px]">
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-2.5 h-2.5" /> Dedicatoria:
-                            </span>
-                            {item.phraseFont && (
-                              <span className="font-normal text-stone-400">({item.phraseFont})</span>
-                            )}
-                          </div>
-                          {item.phraseText && (
-                            <p className="font-serif italic text-[#4a3933] line-clamp-2">
-                              “{item.phraseText}”
-                            </p>
-                          )}
+                      {/* Tarjeta tal como se imprimirá */}
+                      {item.hasPhraseCard && item.phraseText && (
+                        <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2.5 rounded-xl bg-[#fdfbf7] p-1.5">
+                          <CardArt
+                            design={{
+                              text: item.phraseText, font: item.phraseFont ?? 'Elegante/Cursiva', to: item.phraseTo ?? '', from: item.phraseFrom ?? '',
+                              theme: (item.phraseTheme === 'foto' && !item.cardPhoto ? 'marfil' : item.phraseTheme ?? 'marfil') as CardThemeId,
+                              photo: item.cardPhoto,
+                            }}
+                          />
+                          <p className="line-clamp-3 font-serif text-[10px] italic text-[#4a3933]">
+                            {item.phraseTo ? `Para ${item.phraseTo}: ` : ''}“{item.phraseText}”
+                          </p>
                         </div>
                       )}
                     </div>
@@ -556,10 +556,10 @@ export function CheckoutClient() {
               <span className="font-medium">
                 {deliveryType === DeliveryType.Delivery && 'Costo de Delivery'}
                 {deliveryType === DeliveryType.MeetingPoint && 'Costo Punto de Encuentro'}
-                {deliveryType === DeliveryType.NationalShipping && 'Envío Nacional (Agencia)'}
+                {deliveryType === DeliveryType.NationalShipping && `Envío por ${delivery.agency || 'agencia'}${delivery.district ? ` a ${delivery.district}` : ''}`}
               </span>
               <span className="text-[#4a3933] font-bold">
-                {deliveryType === DeliveryType.NationalShipping ? 'Pago en destino (Olva/Shalom)' : formatCurrency(estimatedDeliveryCost)}
+                {deliveryType === DeliveryType.NationalShipping ? 'Lo pagas al recoger' : formatCurrency(estimatedDeliveryCost)}
               </span>
             </div>
 

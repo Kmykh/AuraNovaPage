@@ -1,11 +1,9 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Image from 'next/image';
-import { Sparkles } from 'lucide-react';
-import { CartClient } from './CartClient';
+import { CartClient, PurchaseSteps } from './CartClient';
 
 import flo1 from '../images/flo1.png';
-import flo2 from '../images/flo2.png';
 import flo5 from '../images/flo5.png';
 
 export const metadata: Metadata = {
@@ -16,38 +14,25 @@ export const metadata: Metadata = {
 
 export default function CartPage() {
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full bg-[#faf7f2] overflow-hidden pt-28 pb-24">
-      
-      {/* Background Flowers */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[10%] -left-16 w-[250px] md:w-[350px] opacity-80 animate-float-gentle mix-blend-multiply">
-          <Image src={flo1} alt="" width={350} height={350} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
+    <div className="relative min-h-[calc(100vh-4rem)] w-full overflow-x-clip bg-[#faf7f2] pb-32 pt-28 lg:pb-24">
+      {/* Flores solo en los bordes de pantallas grandes: no tapan el contenido */}
+      <div className="pointer-events-none absolute inset-0 z-0 hidden xl:block">
+        <div className="absolute -left-24 top-[12%] w-[260px] opacity-40 mix-blend-multiply">
+          <Image src={flo1} alt="" className="h-auto w-full" />
         </div>
-        <div className="absolute top-[40%] -right-16 w-[200px] md:w-[300px] opacity-90 animate-float-delayed mix-blend-multiply">
-          <Image src={flo5} alt="" width={300} height={300} className="object-contain rotate-12"  style={{ width: 'auto', height: 'auto' }} />
-        </div>
-        <div className="absolute bottom-[5%] left-[20%] w-[120px] md:w-[150px] opacity-50 animate-spin-slow mix-blend-multiply">
-          <Image src={flo2} alt="" width={150} height={150} className="object-contain"  style={{ width: 'auto', height: 'auto' }} />
+        <div className="absolute -right-24 top-[45%] w-[240px] rotate-12 opacity-40 mix-blend-multiply">
+          <Image src={flo5} alt="" className="h-auto w-full" />
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-        
-        {/* Top Header */}
-        <div className="text-center flex flex-col items-center max-w-xl mx-auto mb-16">
-          <h1 className="font-serif text-[3.5rem] sm:text-[4.5rem] font-bold text-[#4a3933] mb-2 leading-[0.9] tracking-tighter">
-            Tu carrito
-          </h1>
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl sm:text-3xl text-[#d38b8b] font-serif italic tracking-wide">
-              de detalles
-            </h2>
-          </div>
-        </div>
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <header className="mb-10 text-center">
+          <PurchaseSteps current={1} />
+          <h1 className="mt-6 font-serif text-4xl font-bold tracking-tight text-[#4a3933] sm:text-5xl">Tu carrito</h1>
+          <p className="mt-2 text-sm text-[#887870]">Revisa tus detalles y continúa para elegir cómo te los entregamos.</p>
+        </header>
 
-        <div className="w-full">
-          <CartClient />
-        </div>
+        <CartClient />
       </div>
     </div>
   );
