@@ -65,18 +65,19 @@ export function formatDate(dateString: string): string {
   }
 }
 
+// Mismo orden que NotificationType del backend (antes estaba corrido: "cancelado" salía como "entregado a agencia")
 export const NOTIFICATION_TYPE_MAP: Record<number, string> = {
-  0: 'Pedido creado',
-  1: 'Cotización lista',
-  2: 'Pago reportado',
-  3: 'Pago confirmado',
-  4: 'Pago rechazado',
-  5: 'Pedido en elaboración',
-  6: 'Pedido listo',
-  7: 'Pedido enviado',
-  8: 'Pedido entregado',
-  9: 'Pedido entregado a agencia',
-  10: 'Pedido cancelado',
+  [NotificationType.OrderCreated]: 'Pedido creado',
+  [NotificationType.QuoteReady]: 'Cotización lista',
+  [NotificationType.PaymentReported]: 'Pago reportado',
+  [NotificationType.PaymentConfirmed]: 'Pago confirmado',
+  [NotificationType.PaymentRejected]: 'Pago rechazado',
+  [NotificationType.OrderPreparing]: 'Pedido en elaboración',
+  [NotificationType.OrderReady]: 'Pedido listo',
+  [NotificationType.OrderShipped]: 'Pedido enviado',
+  [NotificationType.OrderDelivered]: 'Pedido entregado',
+  [NotificationType.OrderCancelled]: 'Pedido cancelado',
+  [NotificationType.BalancePaid]: 'Saldo pagado',
 };
 
 export function getNotificationTypeLabel(type: number | string) {

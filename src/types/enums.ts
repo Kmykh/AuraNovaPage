@@ -46,6 +46,7 @@ export enum NotificationType {
   OrderShipped = 7,
   OrderDelivered = 8,
   OrderCancelled = 9,
+  BalancePaid = 10,
 }
 
 export enum NotificationChannel {
