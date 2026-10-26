@@ -122,6 +122,13 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
         </div>
       )}
 
+      {hasBalance && summary.status === 'Ready' && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" role="status">
+          <p className="font-bold">¡Tu pedido está listo!</p>
+          <p className="mt-0.5">Paga el saldo y lo {summary.deliveryType === 'MeetingPoint' ? 'entregamos en el punto de encuentro' : 'enviamos'} de inmediato.</p>
+        </div>
+      )}
+
       {/* Resumen del pedido y monto a pagar */}
       <div className="grid grid-cols-1 gap-5 rounded-3xl border border-[#c8a96b]/30 bg-white/95 p-5 shadow-[0_10px_30px_-10px_rgba(200,169,107,0.1)] backdrop-blur-md md:grid-cols-[1fr_280px]">
         <div className="min-w-0">

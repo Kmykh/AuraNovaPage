@@ -325,7 +325,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
       </p>
       {summary.status !== 'WaitingPayment' && isBalance && (
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-emerald-700">
-          <CheckCircle2 className="h-3.5 w-3.5" /> Tu pedido ya está en marcha; paga el saldo antes de la entrega.
+          <CheckCircle2 className="h-3.5 w-3.5" /> Tu pedido ya está en marcha. Lo entregamos cuando el saldo esté pagado.
         </p>
       )}
     </section>

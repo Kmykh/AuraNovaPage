@@ -260,8 +260,10 @@ function NextStepCard({ tracking, trackingCode, whatsappNumber }: { tracking: Pu
   if (balance > 0 && tracking.orderId && status !== 'Cancelled') {
     return (
       <ActionCard
-        title={`Te falta pagar ${formatCurrency(balance)}`}
-        message="Ya recibimos tu adelanto y tu pedido está en marcha. Paga el saldo con tarjeta o Yape antes de la entrega."
+        title={status === 'Ready' ? `¡Está listo! Paga el saldo de ${formatCurrency(balance)}` : `Te falta pagar ${formatCurrency(balance)}`}
+        message={status === 'Ready'
+          ? 'Tu pedido está terminado. En cuanto pagues el saldo con tarjeta o Yape, lo entregamos.'
+          : 'Ya recibimos tu adelanto y tu pedido está en marcha. Lo entregamos cuando el saldo esté pagado.'}
         primary={
           <button onClick={goToPayment} className={primaryButton}>
             <CreditCard className="h-4 w-4" /> Pagar saldo

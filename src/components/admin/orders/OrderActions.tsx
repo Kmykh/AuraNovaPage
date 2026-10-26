@@ -275,6 +275,18 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
         </div>
       </div>
     );
+  } else if (status === OrderStatus.Ready && (order.payment?.balanceDue ?? 0) > 0 && (order.payment?.amountPaid ?? 0) > 0) {
+    // Regla del negocio: con solo el adelanto, el pedido no sale hasta que pague el saldo
+    title = 'Listo, esperando el saldo';
+    body = (
+      <p className="flex items-start gap-2 rounded-xl bg-[#faf7f2] p-3 text-sm text-brown">
+        <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <span>
+          La entrega se habilita cuando el cliente pague el saldo de <strong>{formatCurrency(order.payment?.balanceDue)}</strong>.
+          Ya le avisamos que su pedido está listo; puedes recordárselo con el botón de arriba.
+        </span>
+      </p>
+    );
   } else if (status === OrderStatus.Ready) {
     title = 'Listo para entregar';
     body = isNational ? (

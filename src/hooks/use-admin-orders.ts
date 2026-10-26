@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminOrdersService } from '@/services/admin-orders.service';
 import { ChangeOrderStatusRequest } from '@/types/orders';
 import { toast } from 'sonner';
+import { ApiProblemDetails } from '@/lib/api-errors';
+
+/** Muestra el motivo que da el backend (p. ej. "El cliente aún debe el saldo…"). */
+const showError = (error: unknown) => {
+  toast.error(error instanceof ApiProblemDetails && error.detail ? error.detail : 'No se pudo actualizar el pedido.');
+};
 
 export const adminOrderKeys = {
   all: ['admin-orders'] as const,
@@ -67,6 +73,7 @@ export function useChangeOrderStatus(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: ChangeOrderStatusRequest) => AdminOrdersService.changeStatus(id, request),
+    onError: showError,
     onSuccess: () => {
       toast.success('Estado del pedido actualizado.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
@@ -93,6 +100,7 @@ export function useStartPreparation(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => AdminOrdersService.startPreparation(id),
+    onError: showError,
     onSuccess: () => {
       toast.success('Elaboración iniciada.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
@@ -107,6 +115,7 @@ export function useSetEstimatedReadyDate(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: { estimatedDate: string }) => AdminOrdersService.setEstimatedReadyDate(id, request),
+    onError: showError,
     onSuccess: () => {
       toast.success('Fecha estimada de disponibilidad actualizada.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
@@ -118,6 +127,7 @@ export function useMarkAsReady(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => AdminOrdersService.markAsReady(id),
+    onError: showError,
     onSuccess: () => {
       toast.success('Pedido marcado como listo.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
@@ -132,6 +142,7 @@ export function useDeliverToAgency(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: { provider: string; trackingCode: string; proofFile?: File | null }) => AdminOrdersService.deliverToAgency(id, request),
+    onError: showError,
     onSuccess: () => {
       toast.success('Pedido entregado a agencia.');
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
