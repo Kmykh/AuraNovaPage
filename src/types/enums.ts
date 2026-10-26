@@ -50,6 +50,7 @@ export enum NotificationType {
 
 export enum NotificationChannel {
   WhatsApp = 0,
+  Email = 1,
 }
 
 export enum NotificationStatus {

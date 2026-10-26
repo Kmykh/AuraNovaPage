@@ -8,6 +8,7 @@ import { useAdminProducts } from '@/hooks/use-admin-products';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardKpiCard } from './DashboardKpiCard';
 import { DashboardLoading } from './DashboardLoading';
+import { PendingWhatsAppCard } from './PendingWhatsAppCard';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
 import { ApiProblemDetails } from '@/lib/api-errors';
@@ -120,6 +121,10 @@ export function DashboardSummary() {
           icon={Truck}
           color="brown"
         />
+      </div>
+
+      <div className="mt-6">
+        <PendingWhatsAppCard />
       </div>
     </div>
   );

@@ -8,8 +8,12 @@ export interface NotificationResponse {
   channel: NotificationChannel;
   status: NotificationStatus;
   recipient: string;
+  customerName?: string | null;
+  subject?: string | null;
   message: string;
   channelUrl: string | null;
+  errorMessage?: string | null;
+  sentAt?: string | null;
   createdAt: string;
 }
 
