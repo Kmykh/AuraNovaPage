@@ -18,6 +18,8 @@ interface MercadoPagoCheckoutProps {
   summary: OrderPaymentSummary;
   /** Se llama cuando un pago se aprueba (o queda en proceso) para recargar el estado del pedido */
   onPaid: (result: OnlinePaymentResult, method: PaymentMethodChoice) => void;
+  /** true al tocar "Pagar" (la página se cubre con "Procesando…"); false si el pago se rechaza o falla */
+  onProcessing: (active: boolean, method: PaymentMethodChoice) => void;
 }
 
 type Notice = { tone: 'error' | 'info'; text: string } | null;
@@ -40,7 +42,7 @@ const BRICK_STYLE: BrickCustomVariables = {
   errorColor: '#c0504d',
   inputFocusedBoxShadow: '0 0 0 4px rgba(200, 169, 107, 0.18)',
   inputErrorFocusedBoxShadow: '0 0 0 4px rgba(192, 80, 77, 0.15)',
-  inputVerticalPadding: '12px',
+  inputVerticalPadding: '11px',
   inputHorizontalPadding: '14px',
   borderRadiusSmall: '10px',
   borderRadiusMedium: '14px',
@@ -68,7 +70,7 @@ function StepTitle({ number, children }: { number: number; children: React.React
  * Pago dentro de la página con Mercado Pago: tarjeta (Card Payment Brick) o Yape (celular + código de aprobación).
  * En el primer pago el cliente elige el 50% o el total; si ya pagó el adelanto, solo se cobra el saldo.
  */
-export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProps) {
+export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPagoCheckoutProps) {
   const { data: mp, isError: sdkFailed, refetch: retrySdk } = useMercadoPago(true);
 
   const isBalance = summary.amountPaid > 0;
@@ -94,23 +96,29 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
   const savedEmail = /^\S+@\S+\.\S+$/.test(savedCustomer.email ?? '') ? savedCustomer.email : undefined;
 
   // Mantiene las últimas opciones para el callback del formulario de tarjeta (se crea una vez por monto)
-  const latest = useRef({ payFull, onPaid });
+  const latest = useRef({ payFull, onPaid, onProcessing });
   useEffect(() => {
-    latest.current = { payFull, onPaid };
-  }, [payFull, onPaid]);
+    latest.current = { payFull, onPaid, onProcessing };
+  }, [payFull, onPaid, onProcessing]);
 
   const handleResult = (result: OnlinePaymentResult, paidWith: PaymentMethodChoice) => {
     if (result.status === 'rejected') {
+      latest.current.onProcessing(false, paidWith);
       setNotice({ tone: 'error', text: result.message });
       return;
     }
-    if (result.status === 'pending') setNotice({ tone: 'info', text: 'Mercado Pago está confirmando tu pago. No hace falta que pagues de nuevo.' });
     latest.current.onPaid(result, paidWith);
   };
 
-  // Formulario de tarjeta de Mercado Pago (los datos de la tarjeta nunca pasan por nuestro servidor)
+  const handleError = (error: unknown, paidWith: PaymentMethodChoice, fallback?: string) => {
+    latest.current.onProcessing(false, paidWith);
+    setNotice({ tone: 'error', text: error instanceof ApiProblemDetails || !fallback ? errorText(error) : fallback });
+  };
+
+  // Formulario de tarjeta de Mercado Pago (los datos de la tarjeta nunca pasan por nuestro servidor).
+  // Queda montado aunque elija Yape: al volver a "Tarjeta" no se recarga ni se pierde lo que escribió.
   useEffect(() => {
-    if (!mp || method !== 'card') return;
+    if (!mp) return;
     let controller: BrickController | null = null;
     let cancelled = false;
     const key = cardKey;
@@ -121,6 +129,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
         customization: {
           paymentMethods: { maxInstallments: 12 },
           visual: {
+            hideFormTitle: true,
             texts: { formSubmit: `Pagar ${formatCurrency(amount)}` },
             style: { theme: 'default', customVariables: BRICK_STYLE },
           },
@@ -131,6 +140,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
           },
           onSubmit: async (formData, additionalData) => {
             setNotice(null);
+            latest.current.onProcessing(true, 'card');
             try {
               const result = await OnlinePaymentsService.pay(summary.orderId, {
                 method: 'card',
@@ -147,7 +157,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
               handleResult(result, 'card');
               if (result.status === 'rejected') setCardAttempt(a => a + 1);
             } catch (error) {
-              setNotice({ tone: 'error', text: errorText(error) });
+              handleError(error, 'card');
               setCardAttempt(a => a + 1);
             }
           },
@@ -174,7 +184,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
       }
     };
     // handleResult usa refs: el formulario solo se vuelve a crear si cambia el monto o tras un rechazo
-  }, [mp, method, cardKey, amount, summary.orderId, savedEmail]);
+  }, [mp, cardKey, amount, summary.orderId, savedEmail]);
 
   const payWithYape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +202,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
 
     setNotice(null);
     setIsPayingYape(true);
+    latest.current.onProcessing(true, 'yape');
     try {
       // El token de Yape es de un solo uso: se genera en cada intento
       const yapeToken = await mp.yape({ otp: code, phoneNumber }).create();
@@ -206,10 +217,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
       if (result.status !== 'approved') setOtp('');
     } catch (error) {
       setOtp('');
-      setNotice({
-        tone: 'error',
-        text: error instanceof ApiProblemDetails ? errorText(error) : 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.',
-      });
+      handleError(error, 'yape', 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.');
     } finally {
       setIsPayingYape(false);
     }
@@ -227,7 +235,7 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
 
   const methods = [
     { key: 'card' as const, label: 'Tarjeta', hint: 'Crédito o débito', icon: CreditCard, accent: 'bg-[#4a3933]' },
-    { key: 'yape' as const, label: 'Yape', hint: 'Con tu código de aprobación', icon: Smartphone, accent: 'bg-[#742284]' },
+    { key: 'yape' as const, label: 'Yape', hint: 'Código de aprobación', icon: Smartphone, accent: 'bg-[#742284]' },
   ];
 
   return (
@@ -295,16 +303,16 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
                   role="tab"
                   aria-selected={active}
                   onClick={() => { setMethod(item.key); setNotice(null); }}
-                  className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left transition sm:p-3.5 ${
+                  className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition sm:gap-3 sm:p-3.5 ${
                     active ? 'border-[#4a3933] bg-white shadow-sm' : 'border-[#efe6dd] bg-[#fdfbf8] hover:border-[#4a3933]/30'
                   }`}
                 >
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white ${active ? item.accent : 'bg-[#d9cfc8]'}`}>
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white sm:h-10 sm:w-10 ${active ? item.accent : 'bg-[#d9cfc8]'}`}>
                     <item.icon className="h-5 w-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-bold text-[#4a3933]">{item.label}</span>
-                    <span className="block truncate text-[11px] text-[#887870]">{item.hint}</span>
+                    <span className="block text-[11px] leading-tight text-[#887870]">{item.hint}</span>
                   </span>
                 </button>
               );
@@ -324,17 +332,16 @@ export function MercadoPagoCheckout({ summary, onPaid }: MercadoPagoCheckoutProp
           )}
 
           <div className="mt-5">
-            {method === 'card' ? (
-              <div>
-                {(!mp || readyKey !== cardKey) && (
-                  <div className="space-y-3 py-2" aria-label="Cargando formulario seguro">
-                    {[...Array(4)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-2xl bg-[#faf7f2]" />)}
-                  </div>
-                )}
-                {/* Mercado Pago dibuja aquí el formulario de tarjeta */}
-                <div id={CARD_CONTAINER_ID} />
-              </div>
-            ) : !yapeAllowed ? (
+            <div className={method === 'card' ? undefined : 'hidden'}>
+              {(!mp || readyKey !== cardKey) && (
+                <div className="space-y-3 py-2" aria-label="Cargando formulario seguro">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-2xl bg-[#faf7f2]" />)}
+                </div>
+              )}
+              {/* Mercado Pago dibuja aquí el formulario de tarjeta */}
+              <div id={CARD_CONTAINER_ID} />
+            </div>
+            {method === 'card' ? null : !yapeAllowed ? (
               <p className="flex items-start gap-2.5 rounded-2xl bg-[#faf7f2] p-4 text-sm text-[#6b5a50]">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#c8a96b]" />
                 Yape permite pagos de hasta {formatCurrency(YAPE_MAX_AMOUNT)}. Paga con tarjeta{offersDeposit ? ' o elige el adelanto del 50%' : ''}.

@@ -113,6 +113,8 @@ export interface AdminOrderCountsResponse {
 export interface OrderPaymentSummary {
   orderId: string;
   orderCode: string;
+  /** Código de seguimiento (para llevar al cliente a su pedido después de pagar) */
+  trackingCode?: string;
   status: string;
   statusLabel: string;
   deliveryType: string;
