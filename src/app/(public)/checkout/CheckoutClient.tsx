@@ -954,7 +954,7 @@ export function CheckoutClient() {
           </Button>
 
           <p className="text-[10px] text-[#887870] uppercase tracking-wider font-bold text-center mt-4 flex items-center justify-center gap-1.5 relative z-10">
-            <Sparkles className="w-3.5 h-3.5 text-[#c8a96b]" /> Pago seguro vía Transferencia / Yape / Plin
+            <Sparkles className="w-3.5 h-3.5 text-[#c8a96b]" /> Pago seguro con tarjeta o Yape vía Mercado Pago
           </p>
         </div>
       </div>

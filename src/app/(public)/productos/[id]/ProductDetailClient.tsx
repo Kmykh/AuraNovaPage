@@ -511,7 +511,7 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
             <ul className="grid grid-cols-1 gap-3 text-xs text-[#6b5a50] sm:grid-cols-3">
               <li className="flex items-center gap-2"><HandHeart className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Hecho a mano para ti</li>
               <li className="flex items-center gap-2"><Truck className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Delivery, recojo o envío a todo el Perú</li>
-              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Pago con Yape y seguimiento en línea</li>
+              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Paga con tarjeta o Yape, 50% o total</li>
             </ul>
           </div>
         </div>

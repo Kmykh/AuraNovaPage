@@ -85,6 +85,8 @@ export interface AdminOrderListItemResponse {
   items?: AdminOrderListProduct[];
   referenceImageCount?: number;
   paymentStatus?: string | null;
+  /** Saldo por cobrar cuando solo se pagó el adelanto */
+  balanceDue?: number | null;
   desiredDate?: string | null;
   occasion?: string | null;
   deliveryPlace?: string | null;
@@ -112,6 +114,11 @@ export interface OrderPaymentSummary {
   quotedAt?: string | null;
   paymentStatus?: string | null;
   paymentAmount?: number | null;
+  /** Lo ya pagado y lo que falta (con el adelanto del 50% queda saldo) */
+  amountPaid: number;
+  balanceDue: number;
+  /** Monto del adelanto (50%) disponible en el primer pago */
+  depositAmount?: number | null;
   paymentRejectionReason?: string | null;
   createdAt: string;
   items: OrderSummaryItem[];
@@ -176,11 +183,26 @@ export interface AdminOrderQuote {
   quotedAt?: string | null;
 }
 
+export interface AdminPaymentTransaction {
+  methodId: string;
+  methodType?: string | null;
+  amount: number;
+  isDeposit: boolean;
+  status: string;
+  statusDetail?: string | null;
+  approved: boolean;
+  externalOrderId?: string | null;
+  createdAt: string;
+}
+
 export interface AdminOrderPayment {
   id?: string;
   paymentStatus: string;
   paymentMethod: string;
   amount: number;
+  amountPaid?: number;
+  balanceDue?: number;
+  transactions?: AdminPaymentTransaction[];
   createdAt: string;
   verifiedAt?: string | null;
   evidenceUrl?: string | null;
@@ -263,4 +285,28 @@ export interface OrderStatusHistoryResponse {
   status: OrderStatus;
   comment: string | null;
   createdAt: string;
+}
+
+/** Pago en la página con Mercado Pago. El monto lo calcula el servidor. */
+export interface CreateOnlinePaymentRequest {
+  method: 'card' | 'yape';
+  token: string;
+  paymentMethodId?: string;
+  paymentTypeId?: string;
+  installments?: number;
+  /** true = total; false = adelanto del 50% (se ignora al pagar el saldo) */
+  payFull: boolean;
+  payerEmail?: string;
+  identificationType?: string;
+  identificationNumber?: string;
+  phone?: string;
+}
+
+export interface OnlinePaymentResult {
+  status: 'approved' | 'rejected' | 'pending';
+  message: string;
+  amountCharged: number;
+  amountPaid: number;
+  balanceDue: number;
+  orderStatus: string;
 }

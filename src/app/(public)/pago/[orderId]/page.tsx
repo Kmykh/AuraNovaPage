@@ -4,7 +4,7 @@ import { PaymentClient } from './PaymentClient';
 
 export const metadata: Metadata = {
   title: 'Paga tu pedido | Aura Nova',
-  description: 'Adjunta el comprobante de tu pedido con Yape.',
+  description: 'Paga tu pedido con tarjeta o Yape a través de Mercado Pago.',
   robots: { index: false, follow: false },
 };
 

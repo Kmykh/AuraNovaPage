@@ -24,6 +24,7 @@ import { OrderActions, whatsappLink } from './OrderActions';
 import { OrderEmailCard } from './OrderEmailCard';
 import { ConfirmPaymentModal, RejectPaymentModal } from './PaymentReviewModals';
 import { WorkshopPreparationCard } from './WorkshopPreparationCard';
+import { OrderPaymentsCard } from './OrderPaymentsCard';
 
 const STATUS_BADGE: Record<string, string> = {
   gold: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -162,6 +163,8 @@ export function AdminOrderDetail({ id }: { id: string }) {
           />
 
           <WorkshopPreparationCard order={order} />
+
+          {order.payment && <OrderPaymentsCard payment={order.payment} />}
 
           {/* Comprobante ya revisado (o rechazado): queda a mano para consultarlo */}
           {order.payment?.evidenceUrl && status !== 'PaymentReported' && (

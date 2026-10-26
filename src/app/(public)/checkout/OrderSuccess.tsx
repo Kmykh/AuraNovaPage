@@ -406,7 +406,7 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
             
             <p className="text-[#887870] text-sm md:text-base max-w-md mb-8">
               {isPaymentRequired
-                ? 'Tu pedido está reservado. Paga el 50% o el total con Yape y sube tu captura para empezar a prepararlo.'
+                ? 'Tu pedido está reservado. Paga el 50% o el total con tarjeta o Yape y empezamos a prepararlo.'
                 : isQuote
                   ? 'Revisaremos tus referencias y te enviaremos el precio por WhatsApp. En tu cotización podrás aceptarla y pagar en un solo paso.'
                   : 'Gracias por tu compra. Tu pedido ha sido recibido y pronto llegará para crear sonrisas.'}

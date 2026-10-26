@@ -20,7 +20,7 @@ const steps = [
   {
     num: '03',
     title: 'Confirma reserva',
-    desc: 'Para reservar solicitamos un adelanto del 50% mediante Yape o Plin.',
+    desc: 'Paga en la web con tarjeta o Yape: un adelanto del 50% o el total.',
   },
   {
     num: '04',
