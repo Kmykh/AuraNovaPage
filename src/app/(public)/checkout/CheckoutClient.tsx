@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/Input';
 import { OrderSuccess, OrderDetailsSnapshot } from './OrderSuccess';
 import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
-import { Package, Truck, MapPin, Map, Info, AlertTriangle, User, Phone, Mail, Flower2, Palette, Sparkles, Receipt, ShieldCheck, CheckCircle2, Navigation, Compass } from 'lucide-react';
+import { Package, Truck, User, Phone, Mail, Sparkles, Receipt, ShieldCheck } from 'lucide-react';
 import { useDeliveryZones, useMeetingPoints, useCreateOrder } from '@/hooks/use-checkout';
 import { DeliveryType, CreateOrderRequest, CreateOrderResponse } from '@/types/checkout';
 import { ApiProblemDetails, isTransientApiError } from '@/lib/api-errors';
 import { TransientApiErrorState } from '@/components/shared/TransientApiErrorState';
 import Image from 'next/image';
 import { ItemOptions } from '@/components/shared/ItemOptions';
+import { DeliveryDetailsForm } from '@/components/checkout/DeliveryDetailsForm';
+import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDeliveryRequest, validateDelivery } from '@/lib/delivery-form';
 import { itemColors, itemFlowers } from '@/lib/product-options';
 import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
 import flo1 from '../images/flo1.png';
@@ -37,14 +39,10 @@ export function CheckoutClient() {
   // Customer Form State: se recuerdan los datos del último pedido en este navegador
   const [customer, setCustomer] = useState(readSavedCustomer);
   
-  // Delivery State
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>(DeliveryType.Delivery);
-  const [deliveryZoneId, setDeliveryZoneId] = useState<string>('');
-  const [meetingPointId, setMeetingPointId] = useState<string>('');
-  const [address, setAddress] = useState('');
-  
-  // Location State (Common to all)
-  const [location, setLocation] = useState({ department: 'Junín', province: 'Huancayo', district: '' });
+  // Entrega: solo los datos que aplican a cada modalidad
+  const [delivery, setDelivery] = useState<DeliveryFormValue>(emptyDelivery);
+  const deliveryType = delivery.type;
+  const address = delivery.address;
 
   // Redirigir si el carrito está vacío y no hay orden creada
   useEffect(() => {
@@ -70,14 +68,15 @@ export function CheckoutClient() {
   const subtotal = getSubtotal();
   let estimatedDeliveryCost = 0;
   
-  const selectedZone = deliveryZones?.find(z => z.id === deliveryZoneId);
-  const selectedMeetingPoint = meetingPoints?.find(p => p.id === meetingPointId);
-
-  if (deliveryType === DeliveryType.Delivery && deliveryZoneId && deliveryZones) {
-    if (selectedZone) estimatedDeliveryCost = selectedZone.cost;
-  } else if (deliveryType === DeliveryType.MeetingPoint && meetingPointId && meetingPoints) {
-    if (selectedMeetingPoint) estimatedDeliveryCost = selectedMeetingPoint.cost;
-  }
+  const selectedZone = deliveryZones?.find(z => z.id === delivery.zoneId);
+  const selectedMeetingPoint = meetingPoints?.find(p => p.id === delivery.meetingPointId);
+  estimatedDeliveryCost = deliveryCost(delivery, deliveryZones, meetingPoints);
+  const deliveryRequest = toDeliveryRequest(delivery, deliveryZones);
+  const location = {
+    department: deliveryRequest.department ?? '',
+    province: deliveryRequest.province ?? '',
+    district: deliveryRequest.district ?? '',
+  };
 
   const handleCreateOrder = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,23 +92,9 @@ export function CheckoutClient() {
       return;
     }
 
-    if (!location.department.trim() || !location.province.trim() || !location.district.trim()) {
-      toast.error('Faltan datos de ubicación', { description: 'Completa departamento, provincia y distrito.' });
-      return;
-    }
-
-    if (deliveryType === DeliveryType.Delivery && (!deliveryZoneId || !address.trim())) {
-      toast.error('Faltan datos de entrega', { description: 'Selecciona una zona e ingresa tu dirección.' });
-      return;
-    }
-
-    if (deliveryType === DeliveryType.MeetingPoint && !meetingPointId) {
-      toast.error('Faltan datos de recojo', { description: 'Selecciona un punto de encuentro.' });
-      return;
-    }
-
-    if (deliveryType === DeliveryType.NationalShipping && !address.trim()) {
-      toast.error('Faltan datos de envío', { description: 'Completa tu dirección de destino.' });
+    const deliveryError = validateDelivery(delivery);
+    if (deliveryError) {
+      toast.error('Revisa los datos de entrega', { description: deliveryError });
       return;
     }
 
@@ -131,15 +116,7 @@ export function CheckoutClient() {
         phraseText: i.phraseText,
         phraseFont: i.phraseFont
       })),
-      delivery: {
-        type: deliveryType.toString(),
-        deliveryZoneId: deliveryType === DeliveryType.Delivery ? deliveryZoneId : undefined,
-        meetingPointId: deliveryType === DeliveryType.MeetingPoint ? meetingPointId : undefined,
-        deliveryAddress: deliveryType === DeliveryType.Delivery || deliveryType === DeliveryType.NationalShipping ? address.trim() : undefined,
-        department: location.department.trim(),
-        province: location.province.trim(),
-        district: location.district.trim()
-      }
+      delivery: deliveryRequest
     };
 
     // 3. Mutar
@@ -170,9 +147,9 @@ export function CheckoutClient() {
             meetingPointName: selectedMeetingPoint?.name,
             meetingPointAddress: selectedMeetingPoint?.address,
             address: address.trim(),
-            department: location.department.trim(),
-            province: location.province.trim(),
-            district: location.district.trim()
+            department: location.department,
+            province: location.province,
+            district: location.district
           }
         };
 
@@ -189,30 +166,6 @@ export function CheckoutClient() {
         setCreatedOrder(data);
         clearCart();
         window.scrollTo(0, 0);
-
-        // Disparar silenciosamente el envío de correo de confirmación
-        if (customer.email.trim()) {
-          try {
-            await fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                order: data,
-                customer: {
-                  name: customer.name.trim(),
-                  email: customer.email.trim()
-                },
-                items: items,
-                subtotal: subtotal,
-                deliveryType: deliveryType,
-                estimatedDeliveryCost: estimatedDeliveryCost,
-                emailType: data.status === 0 ? 'quote_received' : 'receipt'
-              })
-            });
-          } catch (error) {
-            console.error("No se pudo enviar el correo de confirmación", error);
-          }
-        }
       },
       onError: (error) => {
         if (isTransientApiError(error)) {
@@ -245,14 +198,8 @@ export function CheckoutClient() {
     });
     
     msg += `\n*Modalidad de entrega:*\n`;
-    if (deliveryType === DeliveryType.Delivery) {
-      msg += `Delivery\nUbicación: ${location.department}, ${location.province}, ${location.district}\nDirección: ${address}\n`;
-    } else if (deliveryType === DeliveryType.MeetingPoint) {
-      msg += `Punto de Encuentro\nUbicación: ${location.department}, ${location.province}, ${location.district}\n`;
-    } else {
-      msg += `Envío Nacional\nUbicación: ${location.department}, ${location.province}, ${location.district}\nDirección: ${address}\n`;
-    }
-    
+    msg += `${describeDelivery(delivery, deliveryZones, meetingPoints)}\n`;
+    if (delivery.isGift) msg += `Recibe: ${delivery.recipientName} (${delivery.recipientPhone})\n`;
     msg += `\nQuisiera continuar la coordinación de mi pedido.`;
     return msg;
   };
@@ -393,318 +340,14 @@ export function CheckoutClient() {
             </span>
           </div>
 
-          {/* Selector de Modalidades */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 mb-8">
-            {/* Opción 1: Delivery Huancayo */}
-            <button
-              type="button"
-              onClick={() => {
-                setDeliveryType(DeliveryType.Delivery);
-                setLocation(prev => ({ ...prev, department: 'Junín', province: 'Huancayo' }));
-              }}
-              className={`group relative flex flex-col p-5 rounded-3xl transition-all duration-300 text-left border ${
-                deliveryType === DeliveryType.Delivery 
-                  ? 'border-[#c8a96b] bg-gradient-to-b from-[#fdfbf7] to-white shadow-md ring-2 ring-[#c8a96b]/20' 
-                  : 'border-[#e8dcdc]/80 bg-white/70 hover:bg-white hover:border-[#c8a96b]/40 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-                  deliveryType === DeliveryType.Delivery ? 'bg-[#c8a96b] text-white shadow-sm' : 'bg-[#faf7f2] text-[#887870] group-hover:text-[#c8a96b]'
-                }`}>
-                  <Truck className="w-5 h-5" />
-                </div>
-                {deliveryType === DeliveryType.Delivery ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#c8a96b]" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full border border-stone-300" />
-                )}
-              </div>
-              <span className="font-serif font-bold text-base text-[#4a3933] block mb-0.5">
-                Delivery a Domicilio
-              </span>
-              <span className="text-xs text-[#887870] block">
-                Solo Huancayo y distritos
-              </span>
-              <span className="inline-block mt-3 text-[10px] font-bold uppercase tracking-wider text-[#8f6d28] bg-[#fcf9f2] px-2.5 py-1 rounded-full border border-[#c8a96b]/20 w-fit">
-                Directo a tu puerta
-              </span>
-            </button>
-
-            {/* Opción 2: Punto de Encuentro */}
-            <button
-              type="button"
-              onClick={() => {
-                setDeliveryType(DeliveryType.MeetingPoint);
-                setLocation(prev => ({ ...prev, department: 'Junín', province: 'Huancayo' }));
-              }}
-              className={`group relative flex flex-col p-5 rounded-3xl transition-all duration-300 text-left border ${
-                deliveryType === DeliveryType.MeetingPoint 
-                  ? 'border-[#c8a96b] bg-gradient-to-b from-[#fdfbf7] to-white shadow-md ring-2 ring-[#c8a96b]/20' 
-                  : 'border-[#e8dcdc]/80 bg-white/70 hover:bg-white hover:border-[#c8a96b]/40 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-                  deliveryType === DeliveryType.MeetingPoint ? 'bg-[#c8a96b] text-white shadow-sm' : 'bg-[#faf7f2] text-[#887870] group-hover:text-[#c8a96b]'
-                }`}>
-                  <Compass className="w-5 h-5" />
-                </div>
-                {deliveryType === DeliveryType.MeetingPoint ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#c8a96b]" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full border border-stone-300" />
-                )}
-              </div>
-              <span className="font-serif font-bold text-base text-[#4a3933] block mb-0.5">
-                Punto de Encuentro
-              </span>
-              <span className="text-xs text-[#887870] block">
-                Plazas y puntos céntricos
-              </span>
-              <span className="inline-block mt-3 text-[10px] font-bold uppercase tracking-wider text-[#8f6d28] bg-[#fcf9f2] px-2.5 py-1 rounded-full border border-[#c8a96b]/20 w-fit">
-                Recojo coordinado
-              </span>
-            </button>
-
-            {/* Opción 3: Envíos Nacionales */}
-            <button
-              type="button"
-              onClick={() => {
-                setDeliveryType(DeliveryType.NationalShipping);
-                setLocation(prev => ({ ...prev, department: '', province: '' }));
-              }}
-              className={`group relative flex flex-col p-5 rounded-3xl transition-all duration-300 text-left border ${
-                deliveryType === DeliveryType.NationalShipping 
-                  ? 'border-[#c8a96b] bg-gradient-to-b from-[#fdfbf7] to-white shadow-md ring-2 ring-[#c8a96b]/20' 
-                  : 'border-[#e8dcdc]/80 bg-white/70 hover:bg-white hover:border-[#c8a96b]/40 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-                  deliveryType === DeliveryType.NationalShipping ? 'bg-[#c8a96b] text-white shadow-sm' : 'bg-[#faf7f2] text-[#887870] group-hover:text-[#c8a96b]'
-                }`}>
-                  <Map className="w-5 h-5" />
-                </div>
-                {deliveryType === DeliveryType.NationalShipping ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#c8a96b]" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full border border-stone-300" />
-                )}
-              </div>
-              <span className="font-serif font-bold text-base text-[#4a3933] block mb-0.5">
-                Envíos a Provincias
-              </span>
-              <span className="text-xs text-[#887870] block">
-                Todo el territorio nacional
-              </span>
-              <span className="inline-block mt-3 text-[10px] font-bold uppercase tracking-wider text-[#d38b8b] bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100 w-fit">
-                Olva / Shalom
-              </span>
-            </button>
-          </div>
-
-          {/* Formulario Dinámico según Modalidad */}
-          <div className="bg-[#faf7f2]/90 rounded-3xl p-6 sm:p-7 border border-[#e8dcdc]/80 shadow-2xs">
-            {deliveryType === DeliveryType.Delivery && (
-              <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                {isLoadingZones ? (
-                  <div className="h-13 bg-white rounded-2xl animate-pulse shadow-inner"></div>
-                ) : deliveryZones && deliveryZones.length > 0 ? (
-                  <>
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5 ml-1">
-                        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#887870]">
-                          <MapPin className="w-3.5 h-3.5 text-[#c8a96b]" />
-                          <span>Zona de reparto en Huancayo *</span>
-                        </span>
-                        <span className="text-[10px] text-[#8f6d28] font-medium">El Tambo, Huancayo, Chilca</span>
-                      </div>
-                      <select 
-                        value={deliveryZoneId}
-                        onChange={e => setDeliveryZoneId(e.target.value)}
-                        required
-                        className="flex h-13 w-full rounded-2xl border border-[#e8dcdc] bg-white px-5 py-3 text-sm text-[#4a3933] font-medium shadow-xs hover:border-[#c8a96b]/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#c8a96b]/15 focus:border-[#c8a96b] transition-all"
-                      >
-                        <option value="" disabled>Selecciona tu zona de reparto...</option>
-                        {deliveryZones.map(z => (
-                          <option key={z.id} value={z.id}>
-                            {z.name} ({z.district}) — {formatCurrency(z.cost)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1.5 ml-1">
-                        <Navigation className="w-3.5 h-3.5 text-[#c8a96b]" />
-                        <span className="text-xs font-bold uppercase tracking-widest text-[#887870]">Dirección exacta de entrega *</span>
-                      </div>
-                      <Input 
-                        value={address}
-                        onChange={e => setAddress(e.target.value)}
-                        required
-                        placeholder="Ej. Av. Ferrocarril 450, Interior 2B (Ref: Frente al parque)"
-                      />
-                      {deliveryZoneId && (
-                        <div className="mt-3 flex items-start gap-2.5 text-[#8f6d28] bg-[#fdfbf7] p-3.5 rounded-2xl border border-[#c8a96b]/30 text-xs">
-                          <CheckCircle2 className="w-4 h-4 text-[#c8a96b] flex-shrink-0 mt-0.5" />
-                          <p className="leading-relaxed">
-                            Zona configurada: <strong>{deliveryZones.find(z => z.id === deliveryZoneId)?.name}</strong> ({deliveryZones.find(z => z.id === deliveryZoneId)?.district}). Entregaremos tu pedido en este rango.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-3 text-red-500 bg-red-50 p-5 rounded-2xl">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                    <p className="text-sm font-medium">No hay zonas de delivery disponibles en este momento. Por favor elige otra modalidad.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {deliveryType === DeliveryType.MeetingPoint && (
-              <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                {isLoadingPoints ? (
-                  <div className="h-13 bg-white rounded-2xl animate-pulse shadow-inner"></div>
-                ) : meetingPoints && meetingPoints.length > 0 ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 ml-1">
-                      <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#887870]">
-                        <Compass className="w-3.5 h-3.5 text-[#c8a96b]" />
-                        <span>Selecciona el Punto de Encuentro *</span>
-                      </span>
-                      <span className="text-[10px] text-[#8f6d28] font-medium">Puntos céntricos seguros</span>
-                    </div>
-                    <select 
-                      value={meetingPointId}
-                      onChange={e => setMeetingPointId(e.target.value)}
-                      required
-                      className="flex h-13 w-full rounded-2xl border border-[#e8dcdc] bg-white px-5 py-3 text-sm text-[#4a3933] font-medium shadow-xs hover:border-[#c8a96b]/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#c8a96b]/15 focus:border-[#c8a96b] transition-all"
-                    >
-                      <option value="" disabled>Selecciona un punto céntrico...</option>
-                      {meetingPoints.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} — {p.cost === 0 ? 'Gratis' : formatCurrency(p.cost)}
-                        </option>
-                      ))}
-                    </select>
-
-                    {meetingPointId && (
-                      <div className="mt-4 p-4 rounded-2xl bg-[#fdfbf7] border border-[#c8a96b]/30 text-xs space-y-1">
-                        <div className="flex items-center gap-1.5 text-[#8f6d28] font-bold">
-                          <MapPin className="w-3.5 h-3.5 text-[#c8a96b]" />
-                          <span>Punto Seleccionado: {meetingPoints.find(p => p.id === meetingPointId)?.name}</span>
-                        </div>
-                        <p className="text-[#6d5b52] pl-5">
-                          <strong>Dirección / Referencia:</strong> {meetingPoints.find(p => p.id === meetingPointId)?.address}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 text-red-500 bg-red-50 p-5 rounded-2xl">
-                    <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                    <p className="text-sm font-medium">No hay puntos de encuentro disponibles en este momento. Por favor elige otra modalidad.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {deliveryType === DeliveryType.NationalShipping && (
-              <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
-                {/* Banner Boutique Olva / Shalom */}
-                <div className="bg-gradient-to-br from-[#fffcf7] to-[#fbf5eb] text-[#4a3933] border border-[#c8a96b]/35 p-5 rounded-2xl shadow-2xs">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#c8a96b]/15 flex items-center justify-center flex-shrink-0 text-[#8f6d28]">
-                      <Truck className="w-5 h-5" />
-                    </div>
-                    <div className="text-xs space-y-1.5">
-                      <p className="font-bold text-[#8f6d28] uppercase tracking-wider text-[11px] flex items-center gap-2">
-                        <span>Aviso Oficial: Envíos Nacionales</span>
-                        <span className="bg-rose-100 text-rose-700 text-[9px] px-2 py-0.5 rounded-full font-bold">Olva / Shalom</span>
-                      </p>
-                      <p className="text-[#6d5b52] leading-relaxed">
-                        Despachamos pedidos a todo el Perú exclusivamente a través de <strong>Olva Courier</strong> o <strong>Shalom</strong> (modalidad pago en destino o entrega en agencia según cobertura).
-                      </p>
-                      <p className="text-[#887870] text-[11px]">
-                        Al confirmar tu orden, coordinaremos vía WhatsApp la agencia exacta y sucursal de tu mayor comodidad.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-1.5 mb-1.5 ml-1">
-                    <Navigation className="w-3.5 h-3.5 text-[#c8a96b]" />
-                    <span className="text-xs font-bold uppercase tracking-widest text-[#887870]">Dirección o Agencia de destino *</span>
-                  </div>
-                  <Input 
-                    value={address} 
-                    onChange={e => setAddress(e.target.value)} 
-                    required 
-                    placeholder="Ej. Agencia Shalom El Agustino o tu dirección exacta" 
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* Ubicación Común integrada */}
-            <div className="mt-8 pt-6 border-t border-[#e8dcdc]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
-                <div className="flex items-center gap-2 text-sm font-bold text-[#4a3933] font-serif">
-                  <MapPin className="w-4 h-4 text-[#c8a96b]" />
-                  <span>Ubicación Geográfica de Destino</span>
-                </div>
-                <span className="text-[10px] text-[#887870] bg-white px-2.5 py-1 rounded-full border border-[#e8dcdc] w-fit">
-                  {deliveryType !== DeliveryType.NationalShipping ? 'Fijado en Huancayo, Junín' : 'Completa tu provincia/departamento'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#887870] ml-1 mb-1 block">
-                    Departamento *
-                  </label>
-                  <Input 
-                    value={location.department} 
-                    onChange={e => setLocation({ ...location, department: e.target.value })} 
-                    placeholder="Ej. Junín o Lima" 
-                    required
-                    disabled={deliveryType !== DeliveryType.NationalShipping} 
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#887870] ml-1 mb-1 block">
-                    Provincia *
-                  </label>
-                  <Input 
-                    value={location.province} 
-                    onChange={e => setLocation({ ...location, province: e.target.value })} 
-                    placeholder="Ej. Huancayo" 
-                    required
-                    disabled={deliveryType !== DeliveryType.NationalShipping} 
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#887870] ml-1 mb-1 block">
-                    Distrito *
-                  </label>
-                  <Input 
-                    value={location.district} 
-                    onChange={e => setLocation({ ...location, district: e.target.value })} 
-                    placeholder={deliveryType !== DeliveryType.NationalShipping ? "Ej. El Tambo, Huancayo, Chilca..." : "Ej. Miraflores, Trujillo..."} 
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-          </div>
+          <DeliveryDetailsForm
+            value={delivery}
+            onChange={setDelivery}
+            zones={deliveryZones}
+            points={meetingPoints}
+            isLoadingZones={isLoadingZones}
+            isLoadingPoints={isLoadingPoints}
+          />
         </section>
       </div>
 
@@ -813,6 +456,13 @@ export function CheckoutClient() {
                     <span className="font-medium text-right max-w-[220px] truncate">{address.trim() || <span className="text-stone-400 font-normal italic">Olva o Shalom</span>}</span>
                   </div>
                 </>
+              )}
+
+              {delivery.isGift && delivery.recipientName.trim() && (
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-[#887870]">Recibe:</span>
+                  <span className="font-medium text-right">{delivery.recipientName.trim()}</span>
+                </div>
               )}
 
               <div className="flex justify-between items-center pt-1 border-t border-black/5 text-[11px]">
