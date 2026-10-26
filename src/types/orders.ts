@@ -313,6 +313,8 @@ export interface CreateOnlinePaymentRequest {
   identificationType?: string;
   identificationNumber?: string;
   phone?: string;
+  /** Identificador del dispositivo (security.js de Mercado Pago) */
+  deviceId?: string;
 }
 
 export interface OnlinePaymentResult {
