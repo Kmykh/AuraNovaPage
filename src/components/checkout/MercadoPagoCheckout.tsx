@@ -13,6 +13,7 @@ import { readSavedCustomer } from '@/lib/saved-customer';
 import { MercadoPagoLogo } from './MercadoPagoLogo';
 import { CardFields, CardPaymentData } from './CardFields';
 import { CardMethodIcon, YapeLogo } from './PaymentIcons';
+import { YapeForm } from './YapeForm';
 
 export type PaymentMethodChoice = 'card' | 'yape';
 
@@ -59,10 +60,8 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   const yapeAllowed = amount <= YAPE_MAX_AMOUNT;
 
   // Lo que el cliente ya escribió al pedir en este dispositivo: no tiene que volver a escribirlo
+  // El correo del pedido se reusa; el celular de Yape no: el cliente lo escribe (puede ser otro número)
   const [savedCustomer] = useState(readSavedCustomer);
-  const [phone, setPhone] = useState(savedCustomer.phone ?? '');
-  const [otp, setOtp] = useState('');
-  const [isPayingYape, setIsPayingYape] = useState(false);
   const savedEmail = /^\S+@\S+\.\S+$/.test(savedCustomer.email ?? '') ? savedCustomer.email : undefined;
 
   const handleResult = (result: OnlinePaymentResult, paidWith: PaymentMethodChoice) => {
@@ -101,25 +100,12 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
     }
   };
 
-  const payWithYape = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mp) return;
-    const phoneNumber = phone.replace(/\D/g, '');
-    const code = otp.replace(/\D/g, '');
-    if (phoneNumber.length !== 9) {
-      setNotice({ tone: 'error', text: 'Ingresa el celular de 9 dígitos asociado a tu Yape.' });
-      return;
-    }
-    if (code.length !== 6) {
-      setNotice({ tone: 'error', text: 'Ingresa el código de aprobación de 6 dígitos que ves en tu app Yape.' });
-      return;
-    }
-
+  /** Yape: el token es de un solo uso y se genera en cada intento. Devuelve true si se aprobó. */
+  const payWithYape = async (phoneNumber: string, code: string): Promise<boolean> => {
+    if (!mp) return false;
     setNotice(null);
-    setIsPayingYape(true);
     onProcessing(true, 'yape');
     try {
-      // El token de Yape es de un solo uso: se genera en cada intento
       const yapeToken = await mp.yape({ otp: code, phoneNumber }).create();
       const result = await OnlinePaymentsService.pay(summary.orderId, {
         method: 'yape',
@@ -129,12 +115,10 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
         deviceId: await waitForDeviceId(),
       });
       handleResult(result, 'yape');
-      if (result.status !== 'approved') setOtp('');
+      return result.status === 'approved';
     } catch (error) {
-      setOtp('');
       handleError(error, 'yape', 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.');
-    } finally {
-      setIsPayingYape(false);
+      return false;
     }
   };
 
@@ -266,51 +250,7 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
                 Yape permite pagos de hasta {formatCurrency(YAPE_MAX_AMOUNT)}. Paga con tarjeta{offersDeposit ? ' o elige el adelanto del 50%' : ''}.
               </p>
             ) : (
-              <form onSubmit={payWithYape} className="space-y-4">
-                <ol className="grid grid-cols-1 gap-2 rounded-2xl bg-[#f7f0f9] p-4 text-xs text-[#5b2a67] sm:grid-cols-3">
-                  <li><strong className="block text-[#742284]">1. Abre Yape</strong>En tu celular.</li>
-                  <li><strong className="block text-[#742284]">2. Menú → Código de aprobación</strong>Cambia cada pocos minutos.</li>
-                  <li><strong className="block text-[#742284]">3. Escríbelo aquí</strong>Junto a tu número.</li>
-                </ol>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-bold text-[#887870]">Celular de tu Yape</span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel-national"
-                      maxLength={11}
-                      value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/[^\d ]/g, ''))}
-                      placeholder="987 654 321"
-                      className="h-12 w-full rounded-2xl border border-[#e8dcdc] bg-white px-4 text-base text-[#4a3933] outline-none transition focus:border-[#742284] focus:ring-4 focus:ring-[#742284]/10"
-                      disabled={isPayingYape}
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-bold text-[#887870]">Código de aprobación</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      value={otp}
-                      onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                      placeholder="• • • • • •"
-                      className="h-12 w-full rounded-2xl border border-[#e8dcdc] bg-white px-4 text-center font-mono text-xl tracking-[0.5em] text-[#4a3933] outline-none transition focus:border-[#742284] focus:ring-4 focus:ring-[#742284]/10"
-                      disabled={isPayingYape}
-                    />
-                  </label>
-                </div>
-                <button
-                  type="submit"
-                  disabled={!mp || isPayingYape}
-                  className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-[#742284] text-sm font-bold text-white shadow-lg shadow-[#742284]/25 transition hover:bg-[#5e1b6b] disabled:opacity-50"
-                >
-                  {isPayingYape ? <><Loader2 className="h-4 w-4 animate-spin" /> Procesando…</> : <>Pagar {formatCurrency(amount)} con Yape</>}
-                </button>
-                <p className="text-center text-[11px] text-[#887870]">Revisa que tu límite de Yape (S/ 500, 900 o 2,000) cubra el monto.</p>
-              </form>
+              <YapeForm amount={amount} disabled={!mp} onPay={payWithYape} />
             )}
           </div>
         </div>

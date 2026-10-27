@@ -1,4 +1,6 @@
 import React from 'react';
+import Image from 'next/image';
+import yapeLogo from '@/app/(public)/images/yape-logo.png';
 
 /** Marcas de tarjeta que acepta Mercado Pago en Perú, detectadas por los primeros dígitos. */
 export type CardBrand = 'visa' | 'master' | 'amex' | 'diners';
@@ -62,15 +64,9 @@ export function BrandLogo({ brand, className }: { brand: CardBrand; className?: 
   }
 }
 
-/** Logo de Yape (morado con la palabra), para el selector del medio de pago. */
+/** Logo oficial de Yape (imagen), para el selector del medio de pago y el formulario. */
 export function YapeLogo({ className = 'h-9 w-9' }: IconProps) {
-  return (
-    <svg viewBox="0 0 40 40" className={className} role="img" aria-label="Yape">
-      <rect width="40" height="40" rx="11" fill="#742284" />
-      <text x="20" y="25" textAnchor="middle" fontFamily="'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif" fontSize="13" fontWeight="800" fill="#fff">yape</text>
-      <path d="M27.5 9.5c1.4.8 2.3 2 2.6 3.4" stroke="#20D3C2" strokeWidth="2" strokeLinecap="round" fill="none" />
-    </svg>
-  );
+  return <Image src={yapeLogo} alt="Yape" className={`rounded-[22%] object-cover ${className}`} sizes="48px" />;
 }
 
 /** Tarjeta pequeña para el selector "Tarjeta" (con chip dorado). */
