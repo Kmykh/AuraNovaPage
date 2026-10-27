@@ -36,23 +36,24 @@ export function OrderPaymentsCard({ orderId, payment }: { orderId: string; payme
         <CreditCard size={18} className="text-gold" /> Pagos con Mercado Pago
       </h3>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-[#faf7f2] p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-sage">Total</p>
-          <p className="font-serif text-lg font-bold text-brown">{formatCurrency(payment.amount)}</p>
+      {/* Cuánto se pagó del total (el total ya está en la cabecera del pedido) */}
+      <div className="mt-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+          <p className="text-brown">
+            Pagado <strong className="font-serif text-lg text-emerald-700">{formatCurrency(paid)}</strong>
+            <span className="text-sage"> de {formatCurrency(payment.amount)}</span>
+          </p>
+          <p className={`text-xs font-bold ${balance > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+            {balance > 0 ? `Falta ${formatCurrency(balance)}` : 'Pagado por completo'}
+          </p>
         </div>
-        <div className="rounded-xl bg-emerald-50 p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Pagado</p>
-          <p className="font-serif text-lg font-bold text-emerald-800">{formatCurrency(paid)}</p>
-        </div>
-        <div className={`rounded-xl p-3 ${balance > 0 ? 'bg-amber-50' : 'bg-[#faf7f2]'}`}>
-          <p className={`text-[10px] font-bold uppercase tracking-wider ${balance > 0 ? 'text-amber-700' : 'text-sage'}`}>Saldo</p>
-          <p className={`font-serif text-lg font-bold ${balance > 0 ? 'text-amber-800' : 'text-brown'}`}>{formatCurrency(balance)}</p>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#f1e9e4]">
+          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${payment.amount > 0 ? Math.min(100, (paid / payment.amount) * 100) : 0}%` }} />
         </div>
       </div>
 
       {transactions.length > 0 && (
-        <ul className="mt-4 divide-y divide-sage/10">
+        <ul className="mt-5 divide-y divide-sage/10">
           {transactions.map((t, index) => {
             const badge = paymentStatusBadge(t);
             const Icon = t.methodId === 'yape' ? Smartphone : CreditCard;

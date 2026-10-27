@@ -37,6 +37,8 @@ const successButton = 'flex items-center gap-2 rounded-full bg-[#71a37c] text-wh
 export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderActionsProps) {
   const [isEstimatedDateModalOpen, setIsEstimatedDateModalOpen] = useState(false);
   const [isDeliverAgencyModalOpen, setIsDeliverAgencyModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [estimatedDate, setEstimatedDate] = useState('');
   // La agencia que eligió el cliente al comprar viene marcada
   const [agencyData, setAgencyData] = useState<{ provider: string; trackingCode: string; proofFile: File | null }>({
@@ -97,6 +99,22 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
     if (!estimatedDate) return;
     setEstimated({ estimatedDate: new Date(estimatedDate).toISOString() }, {
       onSuccess: () => setIsEstimatedDateModalOpen(false),
+    });
+  };
+
+  // El motivo le llega al cliente en el aviso de cancelación (WhatsApp y correo)
+  const handleCancel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const reason = cancelReason.trim();
+    if (reason.length < 3) {
+      toast.error('Escribe el motivo: se lo enviamos al cliente.');
+      return;
+    }
+    changeStatus({ status: OrderStatus.Cancelled, comment: reason }, {
+      onSuccess: () => {
+        setIsCancelModalOpen(false);
+        setCancelReason('');
+      },
     });
   };
 
@@ -358,6 +376,45 @@ export function OrderActions({ order, onReviewPayment, onRejectPayment }: OrderA
       <h2 className="mb-4 mt-0.5 font-serif text-xl font-bold text-brown">{title}</h2>
       {balanceNotice}
       {body}
+
+      {/* Antes de entregarse se puede cancelar (si pagó, se devuelve desde Pagos con Mercado Pago) */}
+      {status < OrderStatus.Delivered && (
+        <div className="mt-5 border-t border-[#c8a96b]/20 pt-3">
+          <button type="button" onClick={() => setIsCancelModalOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-500 hover:text-rose-600 hover:underline">
+            <Ban className="h-3.5 w-3.5" /> Cancelar pedido
+          </button>
+        </div>
+      )}
+
+      <Modal isOpen={isCancelModalOpen} onClose={() => setIsCancelModalOpen(false)} title={`Cancelar el pedido ${order.orderCode}`}>
+        <form onSubmit={handleCancel} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm text-sage" htmlFor="cancel-reason">Motivo</label>
+            <textarea
+              id="cancel-reason"
+              required
+              rows={3}
+              maxLength={500}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ej. El cliente pidió cancelarlo."
+              className="w-full resize-none rounded-xl border border-sage/20 px-4 py-2 text-sm text-brown outline-none focus:border-gold"
+            />
+            <p className="mt-1.5 text-xs text-sage">Se lo enviamos al cliente en el aviso de cancelación.</p>
+          </div>
+          {(order.payment?.amountPaid ?? 0) > 0 && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              El cliente pagó <strong>{formatCurrency(order.payment?.amountPaid)}</strong>. Después de cancelar, devuélveselo desde <strong>Pagos con Mercado Pago</strong>.
+            </p>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setIsCancelModalOpen(false)}>Volver</Button>
+            <Button type="submit" disabled={isChangingStatus} className="bg-rose-500 text-white hover:bg-rose-600">
+              {isChangingStatus ? 'Cancelando…' : 'Cancelar pedido'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal isOpen={isEstimatedDateModalOpen} onClose={() => setIsEstimatedDateModalOpen(false)} title="Fecha estimada">
         <form onSubmit={handleSetEstimatedDate} className="space-y-4">
