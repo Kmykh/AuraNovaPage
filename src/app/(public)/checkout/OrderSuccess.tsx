@@ -11,6 +11,7 @@ import flo4 from '@/app/(public)/images/flo4.png';
 import { Button } from '@/components/ui/Button';
 import { ArrowRight, CheckCircle2, Check, Copy, MapPin } from 'lucide-react';
 import { trackingPath } from '@/lib/tracking-code';
+import { saveRecentTracking } from '@/lib/recent-tracking';
 import { TicketOptionLines } from '@/components/checkout/TicketOptionLines';
 
 export interface OrderDetailsSnapshot {
@@ -74,6 +75,10 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
       }
     }
   }, [snapshot]);
+
+  useEffect(() => {
+    saveRecentTracking(order.trackingToken, order.orderCode);
+  }, [order.trackingToken, order.orderCode]);
 
   useEffect(() => {
     setMounted(true);
