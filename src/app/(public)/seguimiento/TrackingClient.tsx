@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -21,6 +21,7 @@ import { FlowerWaterfallLoader } from '@/components/ui/FlowerWaterfallLoader';
 import { formatCurrency } from '@/lib/formatters';
 import { formatLongDate, statusName } from '@/lib/tracking-progress';
 import { trackingUrl } from '@/lib/tracking-code';
+import { saveRecentTracking } from '@/lib/recent-tracking';
 import { PublicTrackingResponse } from '@/types/tracking';
 
 import flo1 from '@/app/(public)/images/flo1.png';
@@ -105,6 +106,8 @@ interface TrackingViewProps {
 
 function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTicket, ticket }: TrackingViewProps) {
   const [copied, setCopied] = useState(false);
+  // Este dispositivo recuerda el pedido para volver a verlo sin escribir el código
+  useEffect(() => { saveRecentTracking(trackingCode, tracking.orderCode); }, [trackingCode, tracking.orderCode]);
   const firstName = tracking.customerFirstName || 'AuraLover';
   const moneyState = trackingPayment(tracking).state;
   const helpMessage = moneyState === 'refund_pending' || moneyState === 'refunded'

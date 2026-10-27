@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 
 export default function ProductsPage() {
   return (
-    <div className="relative min-h-screen bg-cream overflow-hidden">
+    // overflow-x-clip (no hidden): así la barra de filtros puede quedarse fija al bajar
+    <div className="relative min-h-screen overflow-x-clip bg-cream">
       {/* Decorative Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Soft Background Gradients */}
@@ -35,7 +36,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-col gap-6 pt-36 sm:pt-40 md:pt-44 pb-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-1">
           <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#c8a96b] block mb-2">
             Catálogo Exclusivo

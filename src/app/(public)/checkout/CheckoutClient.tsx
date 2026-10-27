@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart.store';
 import { useMounted } from '@/hooks/use-mounted';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { OrderSuccess, OrderDetailsSnapshot } from './OrderSuccess';
 import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
-import { Package, Truck, User, Phone, Mail, Sparkles, Receipt, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Package, User, Phone, Mail, ShieldCheck } from 'lucide-react';
 import { useDeliveryZones, useMeetingPoints, useCreateOrder } from '@/hooks/use-checkout';
 import { DeliveryType, CreateOrderRequest, CreateOrderResponse } from '@/types/checkout';
 import { ApiProblemDetails, isTransientApiError } from '@/lib/api-errors';
@@ -19,11 +20,9 @@ import { ItemOptions } from '@/components/shared/ItemOptions';
 import { DeliveryDetailsForm } from '@/components/checkout/DeliveryDetailsForm';
 import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDeliveryRequest, validateDelivery } from '@/lib/delivery-form';
 import { itemAccessories, itemColors, itemFlowers } from '@/lib/product-options';
-import { CardThemeId, cardSummary } from '@/lib/card-design';
-import { CardArt } from '@/components/card/CardArt';
+import { cardSummary } from '@/lib/card-design';
 import { PurchaseSteps } from '../carrito/CartClient';
 import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
-import flo1 from '../images/flo1.png';
 
 export function CheckoutClient() {
   const isMounted = useMounted();
@@ -357,261 +356,88 @@ export function CheckoutClient() {
         </section>
       </div>
 
-      {/* Columna Derecha - Ticket de Orden (Resumen Completo antes del pago) */}
-      <div className="w-full lg:w-[440px] flex-shrink-0">
-        <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(200,169,107,0.2)] border border-[#c8a96b]/30 sticky top-28 relative overflow-hidden">
-          
-          {/* Floral decoration top right */}
-          <div className="absolute -top-10 -right-10 w-[120px] h-[120px] pointer-events-none z-10 mix-blend-multiply opacity-75">
-            <Image src={flo1} alt="" width={120} height={120} className="object-contain rotate-[15deg]"  style={{ width: 'auto', height: 'auto' }} />
+      {/* Columna derecha: solo lo que cambia el precio (los datos ya están en el formulario y el ticket sale al confirmar) */}
+      <aside className="w-full flex-shrink-0 lg:w-[400px]">
+        <div className="sticky top-28 overflow-hidden rounded-[2rem] border border-[#c8a96b]/30 bg-white/95 shadow-[0_25px_60px_-20px_rgba(200,169,107,0.3)] backdrop-blur-xl">
+          <div className="flex items-baseline justify-between gap-3 border-b border-[#efe6dd] px-6 pb-4 pt-6">
+            <h2 className="font-serif text-2xl font-bold text-[#4a3933]">Tu pedido</h2>
+            <Link href="/carrito" className="text-xs font-bold text-[#b08a4e] hover:text-[#4a3933]">
+              {items.reduce((a, b) => a + b.quantity, 0)} {items.reduce((a, b) => a + b.quantity, 0) === 1 ? 'detalle' : 'detalles'} · Editar
+            </Link>
           </div>
 
-          {/* Ticket Header */}
-          <div className="border-b border-[#e8dcdc] pb-5 mb-5 relative z-10">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-serif uppercase tracking-[0.25em] text-[#c8a96b] font-bold">
-                Aura Nova • Atelier
-              </span>
-              <span className="bg-[#fcf9f2] text-[#8f6d28] border border-[#c8a96b]/30 text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                Ticket Pre-Pago
-              </span>
+          <ul className="max-h-[42vh] divide-y divide-[#f1e9e4] overflow-y-auto px-6 custom-scrollbar">
+            {items.map(item => (
+              <li key={item.cartItemId || item.productId} className="flex gap-3 py-3.5">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#e8dcdc]/60 bg-[#faf7f2]">
+                  {item.imageUrl
+                    ? <Image src={item.imageUrl} alt="" fill sizes="56px" className="object-cover" />
+                    : <Package className="absolute inset-0 m-auto h-5 w-5 text-[#d38b8b]/40" />}
+                  {item.quantity > 1 && (
+                    <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#4a3933] px-1 text-[10px] font-bold text-white">{item.quantity}</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-sm font-bold text-[#4a3933]">{item.name}</p>
+                    <span className="shrink-0 text-sm font-bold text-[#4a3933]">{formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                  {item.quantity > 1 && <p className="text-[11px] text-[#887870]">{item.quantity} × {formatCurrency(item.price)}</p>}
+                  <ItemOptions
+                    className="mt-1.5"
+                    colors={itemColors(item)}
+                    flowers={itemFlowers(item)}
+                    accessories={item.accessories}
+                    hasLights={item.hasLights}
+                    hasButterfly={item.hasButterfly}
+                    hasPhraseCard={item.hasPhraseCard && !!item.phraseText}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <dl className="space-y-2 border-t border-dashed border-[#e8dcdc] bg-[#fdfbf8] px-6 py-4 text-sm">
+            <div className="flex justify-between text-[#887870]">
+              <dt>Productos</dt>
+              <dd className="font-semibold text-[#4a3933]">{formatCurrency(subtotal)}</dd>
             </div>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4a3933] mt-1 flex items-center gap-2">
-              <Receipt className="w-6 h-6 text-[#c8a96b]" />
-              <span>Ticket de Orden</span>
-            </h2>
-            <p className="text-[11px] text-[#887870] mt-0.5">
-              Revisa todos los datos de tu pedido artesanal antes de procesar el pago.
+            <div className="flex justify-between gap-3 text-[#887870]">
+              <dt className="min-w-0">
+                Entrega
+                <span className="block truncate text-[11px]">
+                  {deliveryType === DeliveryType.Delivery && (selectedZone ? `Delivery · ${selectedZone.name}` : 'Delivery · elige tu zona')}
+                  {deliveryType === DeliveryType.MeetingPoint && (selectedMeetingPoint ? `Recojo · ${selectedMeetingPoint.name}` : 'Recojo · elige el punto')}
+                  {deliveryType === DeliveryType.NationalShipping && `Envío por ${delivery.agency || 'agencia'}`}
+                </span>
+              </dt>
+              <dd className="shrink-0 font-semibold text-[#4a3933]">
+                {deliveryType === DeliveryType.NationalShipping
+                  ? 'Al recoger'
+                  : estimatedDeliveryCost === 0 && (selectedZone || selectedMeetingPoint) ? 'Gratis' : formatCurrency(estimatedDeliveryCost)}
+              </dd>
+            </div>
+            <div className="flex items-end justify-between border-t border-[#e8dcdc] pt-3">
+              <dt className="text-xs font-bold uppercase tracking-widest text-[#887870]">Total</dt>
+              <dd className="font-serif text-3xl font-bold text-[#4a3933]">{formatCurrency(subtotal + estimatedDeliveryCost)}</dd>
+            </div>
+          </dl>
+
+          <div className="px-6 pb-6 pt-1">
+            <Button
+              type="submit"
+              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-full bg-[#4a3933] font-sans text-xs font-bold uppercase tracking-widest text-white shadow-xl shadow-[#4a3933]/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#382b26] disabled:pointer-events-none disabled:opacity-50"
+              disabled={isSubmitting || items.some(i => !i.isAvailable)}
+            >
+              {isSubmitting ? 'Procesando pedido…' : <>Confirmar pedido <ArrowRight className="h-4 w-4" /></>}
+            </Button>
+            <p className="mt-3 flex items-start justify-center gap-1.5 text-center text-[11px] leading-snug text-[#887870]">
+              <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0 text-[#c8a96b]" />
+              En el siguiente paso pagas el 50% o el total, con tarjeta o Yape.
             </p>
           </div>
-
-          {/* SECTION 1: CUSTOMER DATA */}
-          <div className="bg-[#faf7f2] rounded-2xl p-3.5 mb-4 border border-[#e8dcdc]/80 relative z-10">
-            <div className="flex items-center gap-1.5 text-[10px] font-serif uppercase tracking-wider text-[#8f6d28] font-bold mb-2">
-              <User className="w-3.5 h-3.5 text-[#c8a96b]" />
-              <span>Datos del Cliente</span>
-            </div>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between items-center text-[#4a3933]">
-                <span className="text-[#887870] text-[11px]">Nombre:</span>
-                <span className="font-bold truncate max-w-[200px] text-right">
-                  {customer.name.trim() || <span className="text-stone-400 font-normal italic">Por completar</span>}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[#4a3933]">
-                <span className="text-[#887870] text-[11px]">Teléfono:</span>
-                <span className="font-medium">
-                  {customer.phone.trim() || <span className="text-stone-400 font-normal italic">Por completar</span>}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[#4a3933]">
-                <span className="text-[#887870] text-[11px]">Correo:</span>
-                <span className="font-medium truncate max-w-[200px] text-right">
-                  {customer.email.trim() || <span className="text-stone-400 font-normal italic">Por completar</span>}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 2: DELIVERY DATA */}
-          <div className="bg-[#faf7f2] rounded-2xl p-3.5 mb-5 border border-[#e8dcdc]/80 relative z-10">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-[10px] font-serif uppercase tracking-wider text-[#8f6d28] font-bold">
-                <Truck className="w-3.5 h-3.5 text-[#c8a96b]" />
-                <span>Modalidad de Entrega</span>
-              </div>
-              <span className="text-[10px] font-bold text-[#d38b8b]">
-                {deliveryType === DeliveryType.Delivery && 'Delivery Huancayo'}
-                {deliveryType === DeliveryType.MeetingPoint && 'Punto de Encuentro'}
-                {deliveryType === DeliveryType.NationalShipping && 'Envío Nacional'}
-              </span>
-            </div>
-            <div className="space-y-1.5 text-xs text-[#4a3933]">
-              {deliveryType === DeliveryType.Delivery && (
-                <>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[#887870] text-[11px]">Zona:</span>
-                    <span className="font-bold text-right">{selectedZone?.name || <span className="text-stone-400 font-normal italic">Sin seleccionar</span>}</span>
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[#887870] text-[11px]">Dirección:</span>
-                    <span className="font-medium text-right max-w-[220px] truncate">{address.trim() || <span className="text-stone-400 font-normal italic">Por ingresar</span>}</span>
-                  </div>
-                </>
-              )}
-
-              {deliveryType === DeliveryType.MeetingPoint && (
-                <>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[#887870] text-[11px]">Punto:</span>
-                    <span className="font-bold text-right">{selectedMeetingPoint?.name || <span className="text-stone-400 font-normal italic">Sin seleccionar</span>}</span>
-                  </div>
-                  {selectedMeetingPoint?.address && (
-                    <div className="flex justify-between items-start text-[11px]">
-                      <span className="text-[#887870]">Referencia:</span>
-                      <span className="text-stone-600 text-right max-w-[200px]">{selectedMeetingPoint.address}</span>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {deliveryType === DeliveryType.NationalShipping && (
-                <>
-                  <div className="flex justify-between items-start">
-                    <span className="text-[#887870] text-[11px]">Agencia / Dir:</span>
-                    <span className="font-medium text-right max-w-[220px] truncate">{address.trim() || <span className="text-stone-400 font-normal italic">Olva o Shalom</span>}</span>
-                  </div>
-                </>
-              )}
-
-              {delivery.isGift && delivery.recipientName.trim() && (
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-[#887870]">Recibe:</span>
-                  <span className="font-medium text-right">{delivery.recipientName.trim()}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center pt-1 border-t border-black/5 text-[11px]">
-                <span className="text-[#887870]">Destino:</span>
-                <span className="font-medium text-right">
-                  {location.district ? `${location.district}, ` : ''}{location.province}, {location.department}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION 3: ITEMS LIST WITH FULL CUSTOMIZATION */}
-          <div className="relative z-10 mb-5">
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-[#d38b8b]/30">
-              <span className="text-[10px] font-serif uppercase tracking-wider text-[#887870] font-bold">
-                Detalle de Detalles ({items.reduce((a, b) => a + b.quantity, 0)})
-              </span>
-              <span className="text-[10px] text-[#887870]">Cant. x Precio</span>
-            </div>
-
-            <div className="space-y-4 max-h-[38vh] overflow-y-auto pr-1.5 custom-scrollbar">
-              {items.map(item => (
-                <div key={item.cartItemId || item.productId} className="bg-white/80 rounded-2xl p-3 border border-[#e8dcdc]/60 shadow-2xs space-y-2">
-                  <div className="flex gap-3 items-center">
-                    {item.imageUrl ? (
-                      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#faf7f2] border border-[#e8dcdc]/60 flex-shrink-0">
-                        <Image src={item.imageUrl} alt={item.name} fill sizes="56px" className="object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-[#faf7f2] flex items-center justify-center flex-shrink-0 text-[#d38b8b]/40">
-                        <Package className="w-5 h-5" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-1">
-                        <h4 className="text-xs font-serif font-bold text-[#4a3933] truncate leading-tight">
-                          {item.name}
-                        </h4>
-                        <span className="text-xs font-bold text-[#c8a96b] whitespace-nowrap">
-                          {formatCurrency(item.price * item.quantity)}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-[#887870]">
-                        {item.quantity} x {formatCurrency(item.price)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Personalization Specs */}
-                  {(itemColors(item).length > 0 || itemFlowers(item).length > 0 || item.hasLights || item.hasButterfly || item.hasPhraseCard || item.phraseText) && (
-                    <div className="pt-2 border-t border-black/5 space-y-1.5">
-                      <ItemOptions
-                        colors={itemColors(item)}
-                        flowers={itemFlowers(item)}
-                        accessories={item.accessories}
-                        hasLights={item.hasLights}
-                        hasButterfly={item.hasButterfly}
-                      />
-
-                      {/* Tarjeta tal como se imprimirá */}
-                      {item.hasPhraseCard && item.phraseText && (
-                        <div className="grid grid-cols-[6.5rem_1fr] items-center gap-2.5 rounded-xl bg-[#fdfbf7] p-1.5">
-                          <CardArt
-                            design={{
-                              text: item.phraseText, font: item.phraseFont ?? 'Elegante/Cursiva', to: item.phraseTo ?? '', from: item.phraseFrom ?? '',
-                              theme: (item.phraseTheme === 'foto' && !item.cardPhoto ? 'marfil' : item.phraseTheme ?? 'marfil') as CardThemeId,
-                              photo: item.cardPhoto,
-                            }}
-                          />
-                          <p className="line-clamp-3 font-serif text-[10px] italic text-[#4a3933]">
-                            {item.phraseTo ? `Para ${item.phraseTo}: ` : ''}“{item.phraseText}”
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SECTION 4: ACCOUNTING & TOTALS */}
-          <div className="pt-4 border-t border-dashed border-[#d38b8b]/30 space-y-2.5 mb-5 text-xs relative z-10">
-            <div className="flex justify-between text-[#887870]">
-              <span className="font-medium">Subtotal</span>
-              <span className="text-[#4a3933] font-bold">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-[#887870]">
-              <span className="font-medium">
-                {deliveryType === DeliveryType.Delivery && 'Costo de Delivery'}
-                {deliveryType === DeliveryType.MeetingPoint && 'Costo Punto de Encuentro'}
-                {deliveryType === DeliveryType.NationalShipping && `Envío por ${delivery.agency || 'agencia'}${delivery.district ? ` a ${delivery.district}` : ''}`}
-              </span>
-              <span className="text-[#4a3933] font-bold">
-                {deliveryType === DeliveryType.NationalShipping ? 'Lo pagas al recoger' : formatCurrency(estimatedDeliveryCost)}
-              </span>
-            </div>
-
-            <div className="pt-3 border-t border-[#e8dcdc] flex justify-between items-end">
-              <div>
-                <span className="text-[10px] uppercase tracking-widest font-serif font-bold text-[#887870] block">
-                  Total Estimado
-                </span>
-                <span className="text-[10px] text-stone-400">Impuestos y detalles incluidos</span>
-              </div>
-              <span className="text-3xl font-serif font-bold text-[#c8a96b] tracking-tight">
-                {formatCurrency(subtotal + estimatedDeliveryCost)}
-              </span>
-            </div>
-          </div>
-
-          {/* Barcode & Signature */}
-          <div className="my-4 pt-3 border-t border-dashed border-black/10 flex flex-col items-center gap-1.5 opacity-75 relative z-10">
-            <div className="flex gap-[3px] h-6 items-end">
-              {Array.from({ length: 28 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className="bg-[#4a3933]" 
-                  style={{ 
-                    width: i % 4 === 0 ? '3px' : i % 3 === 0 ? '1.5px' : '2px', 
-                    height: i % 2 === 0 ? '100%' : '75%' 
-                  }} 
-                />
-              ))}
-            </div>
-            <span className="text-[8px] tracking-[0.25em] font-mono uppercase text-[#887870]">
-              AURA-NOVA-ORDER-TICKET
-            </span>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full h-14 text-xs tracking-widest uppercase flex items-center justify-center gap-2.5 rounded-full bg-[#4a3933] hover:bg-[#382b26] text-white font-sans font-bold shadow-xl shadow-[#4a3933]/20 transition-all duration-300 hover:-translate-y-1 disabled:opacity-50 disabled:pointer-events-none relative z-10"
-            disabled={isSubmitting || items.some(i => !i.isAvailable)}
-          >
-            {isSubmitting ? 'Procesando pedido…' : `Confirmar pedido · ${formatCurrency(subtotal + estimatedDeliveryCost)}`}
-          </Button>
-
-          <p className="text-[10px] text-[#887870] uppercase tracking-wider font-bold text-center mt-4 flex items-center justify-center gap-1.5 relative z-10">
-            <Sparkles className="w-3.5 h-3.5 text-[#c8a96b]" /> Pago seguro con tarjeta o Yape vía Mercado Pago
-          </p>
         </div>
-      </div>
+      </aside>
     </form>
     </>
   );
