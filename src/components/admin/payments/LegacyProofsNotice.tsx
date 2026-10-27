@@ -23,13 +23,13 @@ export function LegacyProofsNotice() {
           <p className="font-semibold text-brown">
             {pending.length === 1 ? '1 comprobante de Yape por revisar' : `${pending.length} comprobantes de Yape por revisar`}
           </p>
-          <p className="text-xs text-sage">Capturas enviadas con el sistema anterior. Revísalas para confirmar o rechazar el pago.</p>
+          <p className="text-xs text-sage">Capturas enviadas con el sistema anterior. Ábrelas en el pedido para confirmar o rechazar el pago.</p>
         </div>
       </div>
       <ul className="mt-4 divide-y divide-amber-100 rounded-2xl bg-white">
         {pending.map(p => (
           <li key={p.id}>
-            <Link href={`/admin/pagos/${p.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-amber-50/50">
+            <Link href={`/admin/pedidos/${p.orderId}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-amber-50/50">
               <span className="min-w-0">
                 <span className="font-mono text-xs font-bold text-gold">{p.orderCode}</span>
                 <span className="block truncate text-brown">{p.customerName} · <span className="text-sage">{formatDate(p.updatedAt ?? p.createdAt)}</span></span>

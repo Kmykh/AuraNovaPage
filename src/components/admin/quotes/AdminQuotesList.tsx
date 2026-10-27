@@ -84,7 +84,7 @@ export function AdminQuotesList() {
                         {statusInfo.label}
                       </span>
                     </div>
-                    <Link href={`/admin/cotizaciones/${quote.quoteId}`}>
+                    <Link href={`/admin/pedidos/${quote.orderId}`}>
                       <Button variant="outline" className="w-full mt-2 h-9">Cotizar / Revisar</Button>
                     </Link>
                   </div>
@@ -133,7 +133,7 @@ export function AdminQuotesList() {
                         </td>
                         <td className="px-6 py-4 text-sage">{formatDate(quote.createdAt)}</td>
                         <td className="px-6 py-4 text-right">
-                          <Link href={`/admin/cotizaciones/${quote.quoteId}`}>
+                          <Link href={`/admin/pedidos/${quote.orderId}`}>
                             <Button variant="outline" className="h-8 px-4 text-xs">Revisar</Button>
                           </Link>
                         </td>

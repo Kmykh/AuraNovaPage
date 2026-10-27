@@ -8,6 +8,7 @@ export interface DashboardSummaryResponse {
     preparing: number;
     ready: number;
     shipped: number;
+    deliveredToAgency?: number;
     delivered: number;
     cancelled: number;
   };
