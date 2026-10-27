@@ -5,7 +5,7 @@ import { CheckCircle2, Clock, CreditCard, RotateCcw, Smartphone, Undo2, XCircle 
 import { AdminOrderPayment, AdminPaymentTransaction } from '@/types/orders';
 import { formatCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/order-helpers';
-import { useRefundOnlinePayment } from '@/hooks/use-admin-payments';
+import { useReconcileOrderPayments, useRefundOnlinePayment } from '@/hooks/use-admin-payments';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 
@@ -28,13 +28,29 @@ export function OrderPaymentsCard({ orderId, payment }: { orderId: string; payme
   const paid = payment.amountPaid ?? 0;
   const balance = payment.balanceDue ?? Math.max(0, payment.amount - paid);
   const [refunding, setRefunding] = useState<AdminPaymentTransaction | null>(null);
+  const { mutate: reconcile, isPending: isReconciling } = useReconcileOrderPayments(orderId);
   if (transactions.length === 0 && paid <= 0) return null;
+  // Intentos sin aprobar: puede que Mercado Pago sí los haya cobrado (el backend revisa los de los últimos 3 días)
+  const unresolved = transactions.some(t => !t.approved);
 
   return (
     <section className="rounded-[24px] border border-sage/10 bg-white p-5 shadow-sm sm:p-6">
-      <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-brown">
-        <CreditCard size={18} className="text-gold" /> Pagos con Mercado Pago
-      </h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-brown">
+          <CreditCard size={18} className="text-gold" /> Pagos con Mercado Pago
+        </h3>
+        {unresolved && (
+          <button
+            type="button"
+            onClick={() => reconcile()}
+            disabled={isReconciling}
+            title="Si Mercado Pago cobró pero aquí no figura, esto lo confirma"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-gold/40 bg-white px-3 text-xs font-bold text-brown hover:bg-[#fffdf8] disabled:opacity-60"
+          >
+            <RotateCcw className={`h-3.5 w-3.5 text-gold ${isReconciling ? 'animate-spin' : ''}`} /> Verificar con Mercado Pago
+          </button>
+        )}
+      </div>
 
       {/* Cuánto se pagó del total (el total ya está en la cabecera del pedido) */}
       <div className="mt-4">

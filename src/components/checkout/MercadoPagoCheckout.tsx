@@ -73,6 +73,19 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
     onPaid(result, paidWith);
   };
 
+  // Sin respuesta (corte de red, tiempo agotado o el servidor reiniciándose): Mercado Pago pudo haber cobrado.
+  // No se dice que falló: la página espera y consulta el pedido hasta confirmarlo.
+  const outcomeUnknown = (error: unknown) =>
+    error instanceof ApiProblemDetails && (error.status === 0 || (error.status ?? 0) >= 500);
+  const confirmLater = (paidWith: PaymentMethodChoice) => onPaid({
+    status: 'pending',
+    message: 'Estamos confirmando tu pago con Mercado Pago.',
+    amountCharged: amount,
+    amountPaid: summary.amountPaid,
+    balanceDue: summary.balanceDue,
+    orderStatus: String(summary.status),
+  }, paidWith);
+
   const handleError = (error: unknown, paidWith: PaymentMethodChoice, fallback?: string) => {
     onProcessing(false, paidWith);
     setNotice({ tone: 'error', text: error instanceof ApiProblemDetails || !fallback ? errorText(error) : fallback });
@@ -96,7 +109,8 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
       });
       handleResult(result, 'card');
     } catch (error) {
-      handleError(error, 'card');
+      if (outcomeUnknown(error)) confirmLater('card');
+      else handleError(error, 'card');
     }
   };
 
@@ -105,11 +119,18 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
     if (!mp) return false;
     setNotice(null);
     onProcessing(true, 'yape');
+    let token: string;
     try {
-      const yapeToken = await mp.yape({ otp: code, phoneNumber }).create();
+      token = (await mp.yape({ otp: code, phoneNumber }).create()).id;
+    } catch (error) {
+      // Aún no se envió nada a cobrar: el celular o el código no son válidos
+      handleError(error, 'yape', 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.');
+      return false;
+    }
+    try {
       const result = await OnlinePaymentsService.pay(summary.orderId, {
         method: 'yape',
-        token: yapeToken.id,
+        token,
         phone: phoneNumber,
         payFull,
         deviceId: await waitForDeviceId(),
@@ -117,7 +138,8 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
       handleResult(result, 'yape');
       return result.status === 'approved';
     } catch (error) {
-      handleError(error, 'yape', 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.');
+      if (outcomeUnknown(error)) confirmLater('yape');
+      else handleError(error, 'yape', 'No pudimos validar tu Yape. Revisa el celular y el código e inténtalo de nuevo.');
       return false;
     }
   };

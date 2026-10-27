@@ -15,10 +15,11 @@ const STEPS = [
 /** Anuncio en el inicio: ya se puede pagar con Yape en la web (por Mercado Pago). */
 export function YapeOnlineSection() {
   return (
-    <section className="relative z-10 px-4 py-12 md:py-16" aria-labelledby="yape-online-title">
-      <div className="mx-auto grid max-w-6xl items-center gap-8 overflow-hidden rounded-[2.5rem] border border-[#ecdff0] bg-gradient-to-br from-white via-[#fcf8fd] to-[#f3e9f6] p-5 shadow-[0_30px_60px_-40px_rgba(116,34,132,0.55)] sm:p-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-12 md:p-10">
+    <section className="relative z-10 px-6 py-14 md:py-20" aria-labelledby="yape-online-title">
+      {/* Sin caja: la imagen y el texto van directo sobre el fondo de la página */}
+      <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:gap-16">
         <div className="relative">
-          <div className="pointer-events-none absolute -inset-6 rounded-full bg-[radial-gradient(circle,rgba(32,211,194,0.25),transparent_65%)]" />
+          <div className="pointer-events-none absolute -inset-10 rounded-full bg-[radial-gradient(circle,rgba(116,34,132,0.18),rgba(32,211,194,0.12)_45%,transparent_70%)] blur-2xl" />
           <Image
             src={yapeOnline}
             alt="Ya puedes yapear online en auranovaoficial.com con tu código de aprobación"

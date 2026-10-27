@@ -28,6 +28,12 @@ export const AdminPaymentsService = {
     return data;
   },
 
+  /** Revisa ya en Mercado Pago los cobros sin aprobar del pedido; devuelve cuántos cambiaron. */
+  reconcileOrder: async (orderId: string): Promise<{ changed: number }> => {
+    const { data } = await apiClient.post<{ changed: number }>(`/api/admin/orders/${orderId}/payments/reconcile`, null, { timeout: 60000 });
+    return data;
+  },
+
   /** Devuelve un cobro de Mercado Pago (total, o parcial si se indica el monto). */
   refundOnlinePayment: async (orderId: string, transactionId: string, request: RefundOnlinePaymentRequest): Promise<RefundOnlinePaymentResult> => {
     const { data } = await apiClient.post<RefundOnlinePaymentResult>(`/api/admin/orders/${orderId}/payments/${transactionId}/refund`, request, {

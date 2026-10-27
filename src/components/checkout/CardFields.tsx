@@ -63,6 +63,8 @@ export function CardFields({ mp, amount, onProcessing, onPay }: CardFieldsProps)
     securityCode: `${uid}-cvv`,
   };
   const fields = useRef<Partial<Record<SecureFieldType, SecureField>>>({});
+  // Bloqueo inmediato contra el doble toque en "Pagar" (el estado tarda un render)
+  const sending = useRef(false);
 
   const [ready, setReady] = useState(false);
   const [focused, setFocused] = useState<SecureFieldType | null>(null);
@@ -183,6 +185,8 @@ export function CardFields({ mp, amount, onProcessing, onPay }: CardFieldsProps)
       return;
     }
 
+    if (sending.current) return;
+    sending.current = true;
     setPaying(true);
     onProcessing(true);
     try {
@@ -212,6 +216,7 @@ export function CardFields({ mp, amount, onProcessing, onPay }: CardFieldsProps)
         identificationNumber: documentDigits,
       });
     } finally {
+      sending.current = false;
       setPaying(false);
     }
   };

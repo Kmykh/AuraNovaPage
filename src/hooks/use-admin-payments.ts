@@ -78,6 +78,25 @@ export function useRefundOnlinePayment(orderId: string) {
   });
 }
 
+/** "Verificar con Mercado Pago": por si Mercado Pago cobró y la respuesta no llegó al pedido. */
+export function useReconcileOrderPayments(orderId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => AdminPaymentsService.reconcileOrder(orderId),
+    onSuccess: ({ changed }) => {
+      if (changed > 0) toast.success('Pago actualizado', { description: 'Mercado Pago confirmó el estado del cobro.' });
+      else toast.info('Sin cambios', { description: 'Mercado Pago no tiene un cobro aprobado nuevo para este pedido.' });
+      queryClient.invalidateQueries({ queryKey: adminPaymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-order-status-history', orderId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof ApiProblemDetails && error.detail ? error.detail : 'No se pudo consultar a Mercado Pago.');
+    },
+  });
+}
+
 export function useOnlinePaymentsReport(from: string, to: string) {
   return useQuery({
     queryKey: adminPaymentKeys.online(from, to),

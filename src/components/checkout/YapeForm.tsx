@@ -27,8 +27,11 @@ export function YapeForm({ amount, disabled, onPay }: YapeFormProps) {
   const [paying, setPaying] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const boxes = useRef<(HTMLInputElement | null)[]>([]);
+  // Bloqueo inmediato: el estado tarda un render y un doble toque mandaba dos cobros
+  const sending = useRef(false);
 
-  const phoneValid = /^9\d{8}$/.test(phone);
+  // 9 dígitos, como valida el backend (los números de prueba de Mercado Pago no empiezan con 9)
+  const phoneValid = /^\d{9}$/.test(phone);
   const codeValue = code.join('');
   const codeValid = codeValue.length === CODE_LENGTH;
 
@@ -65,7 +68,8 @@ export function YapeForm({ amount, disabled, onPay }: YapeFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!phoneValid || !codeValid) return;
+    if (!phoneValid || !codeValid || sending.current) return;
+    sending.current = true;
     setPaying(true);
     try {
       const approved = await onPay(phone, codeValue);
@@ -75,6 +79,7 @@ export function YapeForm({ amount, disabled, onPay }: YapeFormProps) {
         setSubmitted(false);
       }
     } finally {
+      sending.current = false;
       setPaying(false);
     }
   };
