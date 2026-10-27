@@ -16,6 +16,7 @@ import { ImportantInfoSection } from './home/ImportantInfoSection';
 import { TrackingPromoSection } from './home/TrackingPromoSection';
 import { ContactSection } from './home/ContactSection';
 import { PersonalizedGiftsSection } from './home/PersonalizedGiftsSection';
+import { YapeOnlineSection } from './home/YapeOnlineSection';
 import flo from './images/flo.png';
 import flo1 from './images/flo1.png';
 import flo2 from './images/flo2.png';
@@ -131,6 +132,9 @@ export function HomeClient() {
           <p className="font-sans text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#887870] font-bold">Llegamos a donde estés</p>
         </div>
       </div>
+
+      {/* ══════════════ YAPE ONLINE ══════════════ */}
+      <YapeOnlineSection />
 
       {/* ── Cloud transition ── */}
       <CloudDivider flip slower />

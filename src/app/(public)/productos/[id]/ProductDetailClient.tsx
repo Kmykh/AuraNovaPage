@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   ArrowLeft, PackageOpen, ShoppingBag, Check, ChevronRight, Minus, Plus, Lightbulb, Mail,
-  Truck, ShieldCheck, HandHeart, Pencil, Trash2,
+  Truck, HandHeart, Pencil, Trash2,
 } from 'lucide-react';
 import { useProduct } from '@/hooks/use-product';
 import { useProducts } from '@/hooks/use-products';
@@ -26,6 +26,7 @@ import { CardDesign, EMPTY_CARD, cardTheme } from '@/lib/card-design';
 import { formatCurrency, formatStageName, getImageUrl } from '@/lib/formatters';
 import { colorBackground, colorLabel, isLightColor, parseCustomColor, productImages } from '@/lib/product-options';
 import { CustomColorPanel } from './CustomColorPanel';
+import { YapeLogo } from '@/components/checkout/PaymentIcons';
 import { ApiProblemDetails } from '@/lib/api-errors';
 
 import angelesImg from '../../images/angeles.png';
@@ -559,7 +560,7 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
             <ul className="grid grid-cols-1 gap-3 text-xs text-[#6b5a50] sm:grid-cols-3">
               <li className="flex items-center gap-2"><HandHeart className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Hecho a mano para ti</li>
               <li className="flex items-center gap-2"><Truck className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Delivery, recojo o envío a todo el Perú</li>
-              <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-[#c8a96b]" /> Paga con tarjeta o Yape, 50% o total</li>
+              <li className="flex items-center gap-2"><YapeLogo className="h-5 w-5 shrink-0" /> Paga con tarjeta o Yape, 50% o total</li>
             </ul>
           </div>
         </div>
