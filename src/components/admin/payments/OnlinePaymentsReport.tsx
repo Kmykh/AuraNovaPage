@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle2, Download, Radio, RefreshCw, Search } from 'lucide-react';
+import { AlertTriangle, Check, CheckCircle2, Copy, Download, Radio, RefreshCw, Search } from 'lucide-react';
 import { useOnlinePaymentsReport, usePaymentWebhookEvents } from '@/hooks/use-admin-payments';
 import { OnlinePaymentReportRow, PaymentWebhookEvent } from '@/types/orders';
 import { CARD_BRANDS, paymentStatusBadge } from '@/components/admin/orders/OrderPaymentsCard';
@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/order-helpers';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { apiClient } from '@/lib/api-client';
 
 type Preset = 'today' | '7d' | '30d' | 'month';
 type Filter = 'all' | 'approved' | 'refunded' | 'pending' | 'rejected';
@@ -279,9 +280,19 @@ const WEBHOOK_RESULTS: Record<string, { label: string; className: string }> = {
 };
 
 /** Si los avisos de Mercado Pago llegan bien: así se detecta una clave secreta o una URL mal configurada. */
+/** Dirección que va en Mercado Pago → Webhooks (es la del backend, no la de la tienda). */
+const WEBHOOK_URL = `${(apiClient.defaults.baseURL ?? '').replace(/\/$/, '')}/api/webhooks/mercadopago`;
+
 function WebhookHealth() {
   const { data: events, isLoading } = usePaymentWebhookEvents();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyUrl = () => {
+    navigator.clipboard?.writeText(WEBHOOK_URL).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
   if (isLoading) return <Skeleton variant="rect" className="h-20 w-full rounded-[24px]" />;
 
   const last = events?.[0];
@@ -310,6 +321,17 @@ function WebhookHealth() {
             {open ? 'Ocultar' : `Ver los últimos ${events.length}`}
           </button>
         )}
+      </div>
+      {/* La URL correcta a mano: si apunta a la tienda, Mercado Pago marca 405 y los pagos no se confirman por aviso */}
+      <div className="mt-4 rounded-2xl bg-[#faf7f2] p-3.5 text-xs text-sage">
+        <p className="font-semibold text-brown">URL para Mercado Pago → Webhooks (modo productivo y de prueba, evento &quot;Order&quot;)</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <code className="min-w-0 flex-1 break-all rounded-lg bg-white px-2.5 py-1.5 font-mono text-[11px] text-brown">{WEBHOOK_URL}</code>
+          <button type="button" onClick={copyUrl} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-gold/40 bg-white px-3 font-semibold text-brown hover:bg-[#fffdf8]">
+            {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} className="text-gold" />} {copied ? 'Copiada' : 'Copiar'}
+          </button>
+        </div>
+        <p className="mt-2">Si en Mercado Pago los avisos salen con <strong>405</strong>, la URL apunta a la tienda y no a esta.</p>
       </div>
       {open && !!events?.length && <WebhookList events={events} />}
     </section>
