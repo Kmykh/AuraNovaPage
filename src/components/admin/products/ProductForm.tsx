@@ -72,6 +72,14 @@ function ToggleCard({ active, onToggle, icon, title, hint }: { active: boolean; 
   );
 }
 
+/** Cuántos colores y tipos de flor puede elegir el cliente en el detalle del producto. */
+const CHOICE_LIMITS: { value: number | null; label: string; hint: string }[] = [
+  { value: 1, label: 'Solo 1', hint: 'Flor por unidad' },
+  { value: 2, label: 'Hasta 2', hint: 'Ramo pequeño' },
+  { value: 3, label: 'Hasta 3', hint: 'Ramo mediano' },
+  { value: null, label: 'Hasta 5', hint: 'Ramo grande o surtido' },
+];
+
 export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) {
   const router = useRouter();
 
@@ -87,6 +95,8 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
   const [allowsLights, setAllowsLights] = useState<boolean>(initialData?.allowsLights ?? false);
   const [allowsButterfly, setAllowsButterfly] = useState<boolean>(initialData?.allowsButterfly ?? false);
   const [allowsPhraseCard, setAllowsPhraseCard] = useState<boolean>(initialData?.allowsPhraseCard ?? false);
+  // 1 = flor por unidad (un solo color y tipo de flor); null = hasta 5
+  const [maxChoices, setMaxChoices] = useState<number | null>(initialData?.maxChoices ?? null);
 
   const [stockInput, setStockInput] = useState<string>(initialData?.stock?.toString() || '0');
   const [currentAvailability, setCurrentAvailability] = useState<boolean>(initialData?.isAvailable ?? true);
@@ -176,6 +186,7 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
       allowsLights,
       allowsButterfly,
       allowsPhraseCard,
+      maxChoices,
       categoryId: categoryId || null,
       audience: audience || null,
     };
@@ -296,7 +307,17 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
                 </div>
                 <div>
                   <label className={labelClass} htmlFor="product-category">Categoría</label>
-                  <select id="product-category" value={categoryId} onChange={e => setCategoryId(e.target.value)} disabled={isSaving} className={inputClass}>
+                  <select
+                    id="product-category"
+                    value={categoryId}
+                    onChange={e => {
+                      setCategoryId(e.target.value);
+                      // Al pasarlo a una categoría "por unidad" se sugiere un solo color
+                      if (mode === 'create' && /por unidad/i.test(categories?.find(c => c.id === e.target.value)?.name ?? '')) setMaxChoices(1);
+                    }}
+                    disabled={isSaving}
+                    className={inputClass}
+                  >
                     <option value="">{isLoadingCategories ? 'Cargando…' : 'Sin categoría'}</option>
                     {categories?.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                   </select>
@@ -322,6 +343,30 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
               onFlowersChange={setSelectedFlowers}
               disabled={isSaving}
             />
+            {(selectedColors.length > 0 || selectedFlowers.length > 0) && (
+              <div className="mt-6">
+                <p className={labelClass}>¿Cuántos colores y tipos de flor elige el cliente?</p>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Cuántos colores y tipos de flor elige el cliente">
+                  {CHOICE_LIMITS.map(option => {
+                    const active = maxChoices === option.value;
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setMaxChoices(option.value)}
+                        disabled={isSaving}
+                        className={`rounded-xl border px-3.5 py-2 text-left text-xs transition ${active ? 'border-gold bg-gold/10 font-bold text-brown' : 'border-sage/20 bg-white text-sage hover:border-gold/50'}`}
+                      >
+                        {option.label}
+                        <span className="block text-[10px] font-normal text-sage">{option.hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ToggleCard active={allowsLights} onToggle={() => setAllowsLights(v => !v)} icon={<Lightbulb size={18} />} title="Luces LED" hint="Opción de luces" />
               <ToggleCard active={allowsButterfly} onToggle={() => setAllowsButterfly(v => !v)} icon={<span className="text-base">🦋</span>} title="Mariposas" hint="Decoración extra" />

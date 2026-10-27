@@ -36,9 +36,11 @@ interface ProductDetailClientProps {
   id: string;
 }
 
-function toggleInList(list: string[], value: string): string[] {
+/** Con límite 1 (flor por unidad) elegir otra opción reemplaza la anterior; si no, se suma hasta el límite. */
+function toggleInList(list: string[], value: string, limit: number): string[] {
+  if (limit <= 1) return [value];
   if (list.includes(value)) return list.length > 1 ? list.filter(v => v !== value) : list;
-  return list.length >= MAX_SELECTIONS ? [...list.slice(1), value] : [...list, value];
+  return list.length >= limit ? [...list.slice(1), value] : [...list, value];
 }
 
 /** Paso de la personalización: número unido por una línea al siguiente, y lo elegido a la derecha. */
@@ -161,9 +163,12 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
 
   const availableColors = product.availableColors ?? [];
   const availableFlowers = product.availableFlowerTypes ?? [];
+  // Flor por unidad: un solo color y un tipo de flor (sin surtido)
+  const limit = Math.min(product.maxChoices ?? MAX_SELECTIONS, MAX_SELECTIONS);
+  const single = limit === 1;
   const colors = chosenColors ?? (availableColors.length ? [availableColors[0]] : []);
   const flowers = chosenFlowers ?? (availableFlowers.length ? [availableFlowers[0]] : []);
-  const finalColors = isMixed ? [MIXED_COLORS] : colors;
+  const finalColors = isMixed && !single ? [MIXED_COLORS] : colors;
   const cardReady = hasPhraseCard && card.text.trim().length > 0;
   const total = product.effectivePrice * quantity;
 
@@ -317,20 +322,20 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                 {availableColors.length > 0 && (
                   <Step
                     step={stepOf('colors')}
-                    title="Colores"
-                    hint={isMixed ? 'El taller los combina con armonía.' : `Hasta ${MAX_SELECTIONS}. Toca de nuevo para quitar.`}
-                    summary={isMixed ? 'Surtido multicolor' : colors.join(' · ')}
+                    title={single ? 'Color' : 'Colores'}
+                    hint={single ? 'Es una sola flor: elige su color. ¿Varias de distinto color? Agrégalas por separado.' : isMixed ? 'El taller los combina con armonía.' : `Hasta ${limit}. Toca de nuevo para quitar.`}
+                    summary={isMixed && !single ? 'Surtido multicolor' : colors.join(' · ')}
                     last={stepOf('colors') === sections.length}
                   >
                     <div className="flex flex-wrap gap-x-2 gap-y-3">
                       {availableColors.map(color => {
-                        const selected = !isMixed && colors.includes(color);
+                        const selected = (single || !isMixed) && colors.includes(color);
                         const light = isLightColor(color, options.colors);
                         return (
                           <button
                             key={color}
                             type="button"
-                            onClick={() => { setIsMixed(false); setChosenColors(toggleInList(colors, color)); }}
+                            onClick={() => { setIsMixed(false); setChosenColors(toggleInList(colors, color, limit)); }}
                             className="group flex w-[3.75rem] flex-col items-center gap-1.5"
                             aria-pressed={selected}
                           >
@@ -346,12 +351,15 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                           </button>
                         );
                       })}
-                      <button type="button" onClick={() => setIsMixed(v => !v)} className="group flex w-[3.75rem] flex-col items-center gap-1.5" aria-pressed={isMixed}>
-                        <span className={`flex h-12 w-12 items-center justify-center rounded-full transition ${isMixed ? 'scale-105 ring-2 ring-[#c8a96b] ring-offset-2' : 'ring-1 ring-black/10 group-hover:ring-[#c8a96b]/60'}`}>
-                          <ColorSwatch name={MIXED_COLORS} size={48} />
-                        </span>
-                        <span className={`text-center text-[11px] leading-tight ${isMixed ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>Surtido</span>
-                      </button>
+                      {/* Surtido solo tiene sentido si lleva varias flores */}
+                      {!single && (
+                        <button type="button" onClick={() => setIsMixed(v => !v)} className="group flex w-[3.75rem] flex-col items-center gap-1.5" aria-pressed={isMixed}>
+                          <span className={`flex h-12 w-12 items-center justify-center rounded-full transition ${isMixed ? 'scale-105 ring-2 ring-[#c8a96b] ring-offset-2' : 'ring-1 ring-black/10 group-hover:ring-[#c8a96b]/60'}`}>
+                            <ColorSwatch name={MIXED_COLORS} size={48} />
+                          </span>
+                          <span className={`text-center text-[11px] leading-tight ${isMixed ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>Surtido</span>
+                        </button>
+                      )}
                     </div>
                   </Step>
                 )}
@@ -359,8 +367,8 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                 {availableFlowers.length > 0 && (
                   <Step
                     step={stepOf('flowers')}
-                    title="Flores"
-                    hint={`Hasta ${MAX_SELECTIONS} tipos.`}
+                    title={single ? 'Tipo de flor' : 'Flores'}
+                    hint={single ? 'Elige cuál.' : `Hasta ${limit} tipos.`}
                     summary={flowers.join(' · ')}
                     last={stepOf('flowers') === sections.length}
                   >
@@ -371,7 +379,7 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                           <button
                             key={flower}
                             type="button"
-                            onClick={() => setChosenFlowers(toggleInList(flowers, flower))}
+                            onClick={() => setChosenFlowers(toggleInList(flowers, flower, limit))}
                             aria-pressed={selected}
                             className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold transition ${
                               selected ? 'border-[#4a3933] bg-[#4a3933] text-white shadow-sm' : 'border-[#e8dcdc] bg-white text-[#6b5a50] hover:border-[#4a3933]/40'
