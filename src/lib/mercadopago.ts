@@ -22,83 +22,61 @@ export function getPublicKey(): Promise<string> {
   return publicKeyPromise;
 }
 
-/** Datos que entrega el Card Payment Brick al enviar (la tarjeta ya viene convertida en token). */
-export interface CardPaymentFormData {
-  token: string;
-  issuer_id?: string;
-  payment_method_id: string;
-  transaction_amount: number;
-  installments: number;
-  payer: {
-    email?: string;
-    identification?: { type?: string; number?: string };
-  };
+/** Campos seguros de MercadoPago.js: el número, el vencimiento y el código se escriben dentro de un iframe de Mercado Pago. */
+export type SecureFieldType = 'cardNumber' | 'expirationDate' | 'securityCode';
+
+export interface SecureFieldStyle {
+  color?: string;
+  placeholderColor?: string;
+  fontFamily?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  height?: string;
+  padding?: string;
 }
 
-export interface CardPaymentAdditionalData {
-  paymentTypeId?: string;
-  bin?: string;
-  lastFourDigits?: string;
-  cardholderName?: string;
+export interface SecureFieldValidity {
+  field: SecureFieldType;
+  errorMessages: { message: string; cause?: string }[];
 }
 
-export interface BrickController {
+export interface SecureField {
+  mount: (containerId: string) => SecureField;
   unmount: () => void;
+  update: (options: { settings?: unknown; placeholder?: string }) => void;
+  on(event: 'binChange', callback: (data: { bin?: string | null }) => void): SecureField;
+  on(event: 'validityChange', callback: (data: SecureFieldValidity) => void): SecureField;
+  on(event: 'focus' | 'blur' | 'ready' | 'change' | 'error', callback: (data?: unknown) => void): SecureField;
 }
 
-/** Variables de estilo de los Bricks (lista oficial de @mercadopago/sdk-react). */
-export interface BrickCustomVariables {
-  textPrimaryColor?: string;
-  textSecondaryColor?: string;
-  inputBackgroundColor?: string;
-  formBackgroundColor?: string;
-  baseColor?: string;
-  baseColorFirstVariant?: string;
-  baseColorSecondVariant?: string;
-  errorColor?: string;
-  successColor?: string;
-  outlinePrimaryColor?: string;
-  outlineSecondaryColor?: string;
-  buttonTextColor?: string;
-  fontSizeSmall?: string;
-  fontSizeMedium?: string;
-  fontWeightNormal?: string;
-  fontWeightSemiBold?: string;
-  inputVerticalPadding?: string;
-  inputHorizontalPadding?: string;
-  inputFocusedBoxShadow?: string;
-  inputErrorFocusedBoxShadow?: string;
-  inputBorderWidth?: string;
-  inputFocusedBorderWidth?: string;
-  borderRadiusSmall?: string;
-  borderRadiusMedium?: string;
-  borderRadiusLarge?: string;
-  borderRadiusFull?: string;
-  formPadding?: string;
+/** Medio de pago que Mercado Pago reconoce por los primeros dígitos (visa, debvisa, master…). */
+export interface CardPaymentMethod {
+  id: string;
+  payment_type_id: string;
+  settings?: { card_number?: unknown; security_code?: unknown }[];
 }
 
-export interface CardPaymentBrickSettings {
-  initialization: { amount: number; payer?: { email?: string } };
-  customization?: {
-    paymentMethods?: { maxInstallments?: number };
-    visual?: {
-      hideFormTitle?: boolean;
-      texts?: { formSubmit?: string; formTitle?: string };
-      style?: { theme?: 'default' | 'dark' | 'bootstrap' | 'flat'; customVariables?: BrickCustomVariables };
-    };
-  };
-  callbacks: {
-    onReady?: () => void;
-    onSubmit: (formData: CardPaymentFormData, additionalData?: CardPaymentAdditionalData) => Promise<void>;
-    onError?: (error: unknown) => void;
-  };
+export interface InstallmentOption {
+  installments: number;
+  recommended_message: string;
+}
+
+export interface IdentificationType {
+  id: string;
+  name: string;
+  min_length?: number;
+  max_length?: number;
 }
 
 /** Lo que usamos de MercadoPago.js v2 (la librería no trae tipos). */
 export interface MercadoPagoInstance {
-  bricks: () => {
-    create: (type: 'cardPayment', containerId: string, settings: CardPaymentBrickSettings) => Promise<BrickController>;
+  fields: {
+    create: (type: SecureFieldType, options?: { placeholder?: string; style?: SecureFieldStyle }) => SecureField;
+    createCardToken: (data: { cardholderName: string; identificationType: string; identificationNumber: string }) => Promise<{ id: string }>;
   };
+  getPaymentMethods: (params: { bin: string }) => Promise<{ results: CardPaymentMethod[] }>;
+  getInstallments: (params: { amount: string; bin: string; paymentTypeId?: string }) => Promise<{ payer_costs: InstallmentOption[] }[]>;
+  getIdentificationTypes: () => Promise<IdentificationType[]>;
   /** Token de Yape a partir del celular y el código de aprobación (OTP) de la app Yape. */
   yape: (options: { otp: string; phoneNumber: string }) => { create: () => Promise<{ id: string }> };
 }

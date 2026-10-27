@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, CreditCard, Info, Loader2, Lock, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertCircle, Check, Info, Loader2, Lock } from 'lucide-react';
 import { OrderPaymentSummary, OnlinePaymentResult } from '@/types/orders';
 import { OnlinePaymentsService } from '@/services/online-payments.service';
 import { useMercadoPago } from '@/hooks/use-mercadopago';
-import { BrickController, BrickCustomVariables, YAPE_MAX_AMOUNT, waitForDeviceId } from '@/lib/mercadopago';
+import { YAPE_MAX_AMOUNT, waitForDeviceId } from '@/lib/mercadopago';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/Button';
 import { readSavedCustomer } from '@/lib/saved-customer';
 import { MercadoPagoLogo } from './MercadoPagoLogo';
+import { CardFields, CardPaymentData } from './CardFields';
+import { CardMethodIcon, YapeLogo } from './PaymentIcons';
 
 export type PaymentMethodChoice = 'card' | 'yape';
 
@@ -23,34 +25,6 @@ interface MercadoPagoCheckoutProps {
 }
 
 type Notice = { tone: 'error' | 'info'; text: string } | null;
-
-const CARD_CONTAINER_ID = 'auranova-card-payment-brick';
-
-/** El formulario de Mercado Pago con los colores de Aura Nova. */
-const BRICK_STYLE: BrickCustomVariables = {
-  baseColor: '#4a3933',
-  baseColorFirstVariant: '#5e4a42',
-  baseColorSecondVariant: '#3a2d28',
-  buttonTextColor: '#ffffff',
-  textPrimaryColor: '#4a3933',
-  textSecondaryColor: '#887870',
-  inputBackgroundColor: '#ffffff',
-  formBackgroundColor: '#ffffff',
-  outlinePrimaryColor: '#dccbb0',
-  outlineSecondaryColor: '#e8dcdc',
-  successColor: '#4f755b',
-  errorColor: '#c0504d',
-  inputFocusedBoxShadow: '0 0 0 4px rgba(200, 169, 107, 0.18)',
-  inputErrorFocusedBoxShadow: '0 0 0 4px rgba(192, 80, 77, 0.15)',
-  inputVerticalPadding: '11px',
-  inputHorizontalPadding: '14px',
-  borderRadiusSmall: '10px',
-  borderRadiusMedium: '14px',
-  borderRadiusLarge: '18px',
-  borderRadiusFull: '999px',
-  fontWeightSemiBold: '600',
-  formPadding: '0px',
-};
 
 const errorText = (error: unknown) =>
   error instanceof ApiProblemDetails && error.detail && error.status && error.status < 500
@@ -67,7 +41,7 @@ function StepTitle({ number, children }: { number: number; children: React.React
 }
 
 /**
- * Pago dentro de la página con Mercado Pago: tarjeta (Card Payment Brick) o Yape (celular + código de aprobación).
+ * Pago dentro de la página con Mercado Pago: tarjeta (campos seguros de MercadoPago.js) o Yape (celular + código de aprobación).
  * En el primer pago el cliente elige el 50% o el total; si ya pagó el adelanto, solo se cobra el saldo.
  */
 export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPagoCheckoutProps) {
@@ -79,13 +53,9 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   const [payFull, setPayFull] = useState(true);
   const [method, setMethod] = useState<PaymentMethodChoice>('card');
   const [notice, setNotice] = useState<Notice>(null);
-  // Cambia para volver a montar el formulario de tarjeta (cada token sirve una sola vez)
-  const [cardAttempt, setCardAttempt] = useState(0);
-  const [readyKey, setReadyKey] = useState<string | null>(null);
 
   const offersDeposit = !isBalance && deposit != null && deposit < total;
   const amount = isBalance ? summary.balanceDue : payFull || !offersDeposit ? total : deposit!;
-  const cardKey = `${amount}-${cardAttempt}`;
   const yapeAllowed = amount <= YAPE_MAX_AMOUNT;
 
   // Lo que el cliente ya escribió al pedir en este dispositivo: no tiene que volver a escribirlo
@@ -95,96 +65,41 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   const [isPayingYape, setIsPayingYape] = useState(false);
   const savedEmail = /^\S+@\S+\.\S+$/.test(savedCustomer.email ?? '') ? savedCustomer.email : undefined;
 
-  // Mantiene las últimas opciones para el callback del formulario de tarjeta (se crea una vez por monto)
-  const latest = useRef({ payFull, onPaid, onProcessing });
-  useEffect(() => {
-    latest.current = { payFull, onPaid, onProcessing };
-  }, [payFull, onPaid, onProcessing]);
-
   const handleResult = (result: OnlinePaymentResult, paidWith: PaymentMethodChoice) => {
     if (result.status === 'rejected') {
-      latest.current.onProcessing(false, paidWith);
+      onProcessing(false, paidWith);
       setNotice({ tone: 'error', text: result.message });
       return;
     }
-    latest.current.onPaid(result, paidWith);
+    onPaid(result, paidWith);
   };
 
   const handleError = (error: unknown, paidWith: PaymentMethodChoice, fallback?: string) => {
-    latest.current.onProcessing(false, paidWith);
+    onProcessing(false, paidWith);
     setNotice({ tone: 'error', text: error instanceof ApiProblemDetails || !fallback ? errorText(error) : fallback });
   };
 
-  // Formulario de tarjeta de Mercado Pago (los datos de la tarjeta nunca pasan por nuestro servidor).
-  // Queda montado aunque elija Yape: al volver a "Tarjeta" no se recarga ni se pierde lo que escribió.
-  useEffect(() => {
-    if (!mp) return;
-    let controller: BrickController | null = null;
-    let cancelled = false;
-    const key = cardKey;
-
-    mp.bricks()
-      .create('cardPayment', CARD_CONTAINER_ID, {
-        initialization: { amount, ...(savedEmail ? { payer: { email: savedEmail } } : {}) },
-        customization: {
-          paymentMethods: { maxInstallments: 12 },
-          visual: {
-            hideFormTitle: true,
-            texts: { formSubmit: `Pagar ${formatCurrency(amount)}` },
-            style: { theme: 'default', customVariables: BRICK_STYLE },
-          },
-        },
-        callbacks: {
-          onReady: () => {
-            if (!cancelled) setReadyKey(key);
-          },
-          onSubmit: async (formData, additionalData) => {
-            setNotice(null);
-            latest.current.onProcessing(true, 'card');
-            try {
-              const result = await OnlinePaymentsService.pay(summary.orderId, {
-                method: 'card',
-                token: formData.token,
-                paymentMethodId: formData.payment_method_id,
-                paymentTypeId: additionalData?.paymentTypeId,
-                installments: formData.installments,
-                payFull: latest.current.payFull,
-                payerEmail: formData.payer?.email,
-                identificationType: formData.payer?.identification?.type,
-                identificationNumber: formData.payer?.identification?.number,
-                deviceId: await waitForDeviceId(),
-              });
-              handleResult(result, 'card');
-              if (result.status === 'rejected') setCardAttempt(a => a + 1);
-            } catch (error) {
-              handleError(error, 'card');
-              setCardAttempt(a => a + 1);
-            }
-          },
-          onError: (error) => {
-            console.error('Mercado Pago (tarjeta):', error);
-          },
-        },
-      })
-      .then((created) => {
-        if (cancelled) created.unmount();
-        else controller = created;
-      })
-      .catch((error) => {
-        console.error('No se pudo mostrar el formulario de tarjeta', error);
-        if (!cancelled) setNotice({ tone: 'error', text: 'No pudimos cargar el formulario de tarjeta. Recarga la página.' });
+  // Tarjeta: el formulario ya creó el token (los datos de la tarjeta nunca pasan por nuestro servidor)
+  const payWithCard = async (card: CardPaymentData) => {
+    setNotice(null);
+    try {
+      const result = await OnlinePaymentsService.pay(summary.orderId, {
+        method: 'card',
+        token: card.token,
+        paymentMethodId: card.paymentMethodId,
+        paymentTypeId: card.paymentTypeId,
+        installments: card.installments,
+        payFull,
+        payerEmail: savedEmail,
+        identificationType: card.identificationType,
+        identificationNumber: card.identificationNumber,
+        deviceId: await waitForDeviceId(),
       });
-
-    return () => {
-      cancelled = true;
-      try {
-        controller?.unmount();
-      } catch {
-        // El contenedor ya no existe: no hay nada que desmontar
-      }
-    };
-    // handleResult usa refs: el formulario solo se vuelve a crear si cambia el monto o tras un rechazo
-  }, [mp, cardKey, amount, summary.orderId, savedEmail]);
+      handleResult(result, 'card');
+    } catch (error) {
+      handleError(error, 'card');
+    }
+  };
 
   const payWithYape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,7 +117,7 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
 
     setNotice(null);
     setIsPayingYape(true);
-    latest.current.onProcessing(true, 'yape');
+    onProcessing(true, 'yape');
     try {
       // El token de Yape es de un solo uso: se genera en cada intento
       const yapeToken = await mp.yape({ otp: code, phoneNumber }).create();
@@ -234,8 +149,8 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   }
 
   const methods = [
-    { key: 'card' as const, label: 'Tarjeta', hint: 'Crédito o débito', icon: CreditCard, accent: 'bg-[#4a3933]' },
-    { key: 'yape' as const, label: 'Yape', hint: 'Código de aprobación', icon: Smartphone, accent: 'bg-[#742284]' },
+    { key: 'card' as const, label: 'Tarjeta', hint: 'Crédito o débito', icon: CardMethodIcon, ring: 'border-[#4a3933]' },
+    { key: 'yape' as const, label: 'Yape', hint: 'Código de aprobación', icon: YapeLogo, ring: 'border-[#742284]' },
   ];
 
   return (
@@ -303,17 +218,20 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
                   role="tab"
                   aria-selected={active}
                   onClick={() => { setMethod(item.key); setNotice(null); }}
-                  className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition sm:gap-3 sm:p-3.5 ${
-                    active ? 'border-[#4a3933] bg-white shadow-sm' : 'border-[#efe6dd] bg-[#fdfbf8] hover:border-[#4a3933]/30'
+                  className={`relative flex items-center gap-3 rounded-2xl border-2 p-3 text-left transition sm:p-3.5 ${
+                    active ? `${item.ring} bg-white shadow-[0_10px_24px_-16px_rgba(74,57,51,0.6)]` : 'border-[#efe6dd] bg-[#fdfbf8] hover:border-[#4a3933]/25'
                   }`}
                 >
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white sm:h-10 sm:w-10 ${active ? item.accent : 'bg-[#d9cfc8]'}`}>
-                    <item.icon className="h-5 w-5" />
-                  </span>
+                  <item.icon className={`h-10 w-10 shrink-0 transition ${active ? '' : 'opacity-60 grayscale-[35%]'}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-bold text-[#4a3933]">{item.label}</span>
                     <span className="block text-[11px] leading-tight text-[#887870]">{item.hint}</span>
                   </span>
+                  {active && (
+                    <span className={`absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full text-white ${item.key === 'yape' ? 'bg-[#742284]' : 'bg-[#4a3933]'}`}>
+                      <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -332,14 +250,15 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
           )}
 
           <div className="mt-5">
+            {/* Queda montado aunque elija Yape: al volver a "Tarjeta" no se pierde lo que escribió */}
             <div className={method === 'card' ? undefined : 'hidden'}>
-              {(!mp || readyKey !== cardKey) && (
+              {mp ? (
+                <CardFields mp={mp} amount={amount} onProcessing={active => onProcessing(active, 'card')} onPay={payWithCard} />
+              ) : (
                 <div className="space-y-3 py-2" aria-label="Cargando formulario seguro">
                   {[...Array(4)].map((_, i) => <div key={i} className="h-12 animate-pulse rounded-2xl bg-[#faf7f2]" />)}
                 </div>
               )}
-              {/* Mercado Pago dibuja aquí el formulario de tarjeta */}
-              <div id={CARD_CONTAINER_ID} />
             </div>
             {method === 'card' ? null : !yapeAllowed ? (
               <p className="flex items-start gap-2.5 rounded-2xl bg-[#faf7f2] p-4 text-sm text-[#6b5a50]">
