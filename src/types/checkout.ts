@@ -53,6 +53,8 @@ export interface CreateOrderItemRequest {
   selectedSecondaryColor?: string | null;
   selectedFlowerType?: string | null;
   selectedFlowerColor?: string | null;
+  /** Claves de los accesorios; sin la lista el backend usa hasLights/hasButterfly */
+  selectedAccessories?: string[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;

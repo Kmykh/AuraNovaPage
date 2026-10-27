@@ -49,6 +49,7 @@ export function ProductCard({ product, isActive = true }: ProductCardProps) {
   const hasCustomizations =
     (product.availableColors && product.availableColors.length > 0) ||
     (product.availableFlowerTypes && product.availableFlowerTypes.length > 0) ||
+    (product.availableAccessories?.length ?? 0) > 0 ||
     product.allowsLights ||
     product.allowsButterfly ||
     product.allowsPhraseCard;

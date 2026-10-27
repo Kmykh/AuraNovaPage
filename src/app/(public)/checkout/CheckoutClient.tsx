@@ -18,7 +18,7 @@ import Image from 'next/image';
 import { ItemOptions } from '@/components/shared/ItemOptions';
 import { DeliveryDetailsForm } from '@/components/checkout/DeliveryDetailsForm';
 import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDeliveryRequest, validateDelivery } from '@/lib/delivery-form';
-import { itemColors, itemFlowers } from '@/lib/product-options';
+import { itemAccessories, itemColors, itemFlowers } from '@/lib/product-options';
 import { CardThemeId, cardSummary } from '@/lib/card-design';
 import { CardArt } from '@/components/card/CardArt';
 import { PurchaseSteps } from '../carrito/CartClient';
@@ -113,6 +113,8 @@ export function CheckoutClient() {
         quantity: i.quantity,
         selectedColors: itemColors(i),
         selectedFlowerTypes: itemFlowers(i),
+        // El backend cobra cada accesorio con el precio de la configuración
+        selectedAccessories: i.accessories?.map(a => a.key),
         hasLights: i.hasLights,
         hasButterfly: i.hasButterfly,
         hasPhraseCard: i.hasPhraseCard,
@@ -143,6 +145,7 @@ export function CheckoutClient() {
             price: i.price,
             selectedColors: itemColors(i),
             selectedFlowerTypes: itemFlowers(i),
+            accessories: itemAccessories(i),
             hasLights: i.hasLights,
             hasButterfly: i.hasButterfly,
             hasPhraseCard: i.hasPhraseCard,
@@ -200,8 +203,8 @@ export function CheckoutClient() {
       const flowers = itemFlowers(item);
       if (colors.length) msg += `  Colores: ${colors.join(' / ')}\n`;
       if (flowers.length) msg += `  Flores: ${flowers.join(' / ')}\n`;
-      if (item.hasLights) msg += `  Con luces\n`;
-      if (item.hasButterfly) msg += `  Con mariposas\n`;
+      const accessories = itemAccessories(item);
+      if (accessories.length) msg += `  Con: ${accessories.map(a => a.name).join(', ')}\n`;
       if (item.phraseText) msg += `  Tarjeta: ${cardSummary({ text: item.phraseText, to: item.phraseTo ?? '', from: item.phraseFrom ?? '' })}\n`;
     });
     
@@ -520,6 +523,7 @@ export function CheckoutClient() {
                       <ItemOptions
                         colors={itemColors(item)}
                         flowers={itemFlowers(item)}
+                        accessories={item.accessories}
                         hasLights={item.hasLights}
                         hasButterfly={item.hasButterfly}
                       />

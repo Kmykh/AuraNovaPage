@@ -1,3 +1,4 @@
+import { ItemAccessory } from './products';
 import { OrderStatus, DeliveryType } from './enums';
 
 export interface TrackingTimelineEvent {
@@ -24,6 +25,7 @@ export interface TrackingItem {
   imageUrl?: string;
   selectedColors?: string[];
   selectedFlowerTypes?: string[];
+  accessories?: ItemAccessory[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;

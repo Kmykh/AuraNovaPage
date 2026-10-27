@@ -262,8 +262,6 @@ export function OrderTicketModal({
                       {/* Atributos y personalización */}
                       <div className="text-[10px] text-[#555] space-y-0.5 pl-2 border-l border-stone-300">
                         <TicketOptionLines item={item} />
-                        {item.hasLights && <div className="text-[#b58129] font-medium">• Luces LED incluidas ✨</div>}
-                        {item.hasButterfly && <div className="text-[#71a37c] font-medium">• Mariposa decorativa 🦋</div>}
                         {(item.hasPhraseCard || item.phraseText) && (
                           <div className="italic text-[#4a3933] bg-[#f8f5ee] p-1.5 rounded mt-1 border border-[#e8dcdc]/60">
                             <span className="not-italic font-bold">💌 Dedicatoria:</span> “{item.phraseText}” 

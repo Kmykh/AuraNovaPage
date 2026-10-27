@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist, StateStorage } from 'zustand/middleware';
 import { itemColors, itemFlowers } from '@/lib/product-options';
+import { ItemAccessory } from '@/types/products';
 
 export interface CartItem {
   cartItemId?: string; // ID único que combina productId y personalizaciones
   productId: string;
   name: string;
+  /** Precio por unidad, con los accesorios incluidos */
   price: number;
   quantity: number;
   imageUrl?: string | null;
@@ -22,7 +24,11 @@ export interface CartItem {
   selectedFlowerType?: string;
   /** @deprecated */
   selectedFlowerColor?: string;
+  /** Accesorios con su precio (los carritos anteriores solo tienen hasLights/hasButterfly) */
+  accessories?: ItemAccessory[];
+  /** @deprecated carritos anteriores a los accesorios con precio */
   hasLights?: boolean;
+  /** @deprecated */
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
   /** Mensaje de la tarjeta */
@@ -53,8 +59,9 @@ const generateCartItemId = (item: CartItem): string => {
     item.productId,
     itemColors(item).join('+'),
     itemFlowers(item).join('+'),
-    item.hasLights ? 'lights' : '',
-    item.hasButterfly ? 'butterfly' : '',
+    ...(item.accessories
+      ? [item.accessories.map(a => a.key).sort().join('+')]
+      : [item.hasLights ? 'lights' : '', item.hasButterfly ? 'butterfly' : '']),
     item.hasPhraseCard ? 'card' : '',
     item.phraseText || '',
     item.phraseFont || '',

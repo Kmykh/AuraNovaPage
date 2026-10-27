@@ -76,6 +76,7 @@ export function SummaryItems({ summary }: { summary: OrderPaymentSummary }) {
               className="mt-1.5"
               colors={item.selectedColors}
               flowers={item.selectedFlowerTypes}
+              accessories={item.accessories}
               hasLights={item.hasLights}
               hasButterfly={item.hasButterfly}
               hasPhraseCard={item.hasPhraseCard}

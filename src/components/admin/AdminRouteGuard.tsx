@@ -20,8 +20,8 @@ export function AdminRouteGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Check audit route restriction
-    if (pathname.startsWith('/admin/auditoria')) {
+    // Auditoría y Sistema (herramientas del desarrollador): solo SuperAdmin
+    if (pathname.startsWith('/admin/auditoria') || pathname.startsWith('/admin/sistema')) {
       const role = AuthSession.getRole();
       if (role !== 'SuperAdmin') {
         router.push('/admin');

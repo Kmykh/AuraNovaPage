@@ -2,22 +2,24 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCreateProduct, useUpdateProduct, useUpdateStock, useUpdateAvailability } from '@/hooks/use-admin-products';
 import { useAdminCategories } from '@/hooks/use-categories';
 import { AdminProductsService } from '@/services/admin-products.service';
-import { ProductResponse } from '@/types/products';
+import { AccessoryOption, ProductResponse } from '@/types/products';
 import { ProductAudience } from '@/types/categories';
 import { Button } from '@/components/ui/Button';
 import {
   AlertCircle, Image as ImageIcon, Save, Loader2, ArrowLeft, Package, ArchiveRestore, ArchiveX, Sparkles,
-  Lightbulb, Mail, Images, FileText,
+  Mail, Images, FileText, Check,
 } from 'lucide-react';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { Modal } from '@/components/ui/Modal';
 import { formatCurrency } from '@/lib/formatters';
 import { compressImage } from '@/lib/compress-image';
-import { productImages } from '@/lib/product-options';
+import { DEFAULT_ACCESSORIES, accessoryPriceLabel, productAccessoryKeys, productImages } from '@/lib/product-options';
+import { useAdminCustomizationOptions } from '@/hooks/use-customization-options';
 import { ItemOptions } from '@/components/shared/ItemOptions';
 import { GalleryItem, ProductImagesManager, galleryFromPaths } from './ProductImagesManager';
 import { ProductOptionsPicker } from './ProductOptionsPicker';
@@ -92,8 +94,9 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => galleryFromPaths(initialData ? productImages(initialData) : []));
   const [selectedColors, setSelectedColors] = useState<string[]>(initialData?.availableColors || []);
   const [selectedFlowers, setSelectedFlowers] = useState<string[]>(initialData?.availableFlowerTypes || []);
-  const [allowsLights, setAllowsLights] = useState<boolean>(initialData?.allowsLights ?? false);
-  const [allowsButterfly, setAllowsButterfly] = useState<boolean>(initialData?.allowsButterfly ?? false);
+  // Claves de los accesorios que ofrece (el precio se define en Personalización)
+  const [accessoryKeys, setAccessoryKeys] = useState<string[]>(() => (initialData ? productAccessoryKeys(initialData) : []));
+  const { data: customization } = useAdminCustomizationOptions();
   const [allowsPhraseCard, setAllowsPhraseCard] = useState<boolean>(initialData?.allowsPhraseCard ?? false);
   // 1 = flor por unidad (un solo color y tipo de flor); null = hasta 5
   const [maxChoices, setMaxChoices] = useState<number | null>(initialData?.maxChoices ?? null);
@@ -112,6 +115,11 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
   const { data: categories, isLoading: isLoadingCategories } = useAdminCategories();
 
   const isSaving = isCreating || isUpdating || uploadProgress !== null;
+
+  // Activos del negocio, y los desactivados solo si este producto ya los tenía (para poder quitarlos)
+  const accessoryChoices = (customization?.accessories ?? DEFAULT_ACCESSORIES)
+    .filter((a): a is AccessoryOption & { key: string } => !!a.key && (a.active || accessoryKeys.includes(a.key)))
+    .map(a => ({ key: a.key, name: a.name, price: a.price, active: a.active }));
   const cover = gallery[0]?.preview;
 
   const handleStockUpdate = () => {
@@ -183,8 +191,9 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
       imageUrls,
       availableColors: selectedColors,
       availableFlowerTypes: selectedFlowers,
-      allowsLights,
-      allowsButterfly,
+      availableAccessories: accessoryKeys,
+      allowsLights: accessoryKeys.includes('luces'),
+      allowsButterfly: accessoryKeys.includes('mariposas'),
       allowsPhraseCard,
       maxChoices,
       categoryId: categoryId || null,
@@ -367,9 +376,44 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
                 </div>
               </div>
             )}
+            <div className="mt-6">
+              <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                <p className={labelClass}>Accesorios que ofrece</p>
+                <Link href="/admin/personalizacion?tab=accesorios" className="text-[11px] font-semibold text-gold hover:text-brown">
+                  Crear accesorios o cambiar precios →
+                </Link>
+              </div>
+              {accessoryChoices.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-sage/25 px-4 py-3 text-xs text-sage">
+                  Aún no hay accesorios activos. Créalos en Personalización.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {accessoryChoices.map(accessory => {
+                    const active = accessoryKeys.includes(accessory.key);
+                    return (
+                      <button
+                        key={accessory.key}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setAccessoryKeys(prev => (active ? prev.filter(k => k !== accessory.key) : [...prev, accessory.key]))}
+                        disabled={isSaving}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition ${
+                          active ? 'border-gold bg-gold/10 text-brown' : 'border-sage/20 bg-white text-sage hover:border-gold/50'
+                        } ${accessory.active ? '' : 'opacity-60'}`}
+                      >
+                        <span className={`flex h-4 w-4 items-center justify-center rounded-full border ${active ? 'border-gold bg-gold text-white' : 'border-sage/30'}`}>
+                          {active && <Check size={10} strokeWidth={3} />}
+                        </span>
+                        {accessory.name}
+                        <span className="font-normal text-sage">{accessory.active ? accessoryPriceLabel(accessory.price) : 'desactivado'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <ToggleCard active={allowsLights} onToggle={() => setAllowsLights(v => !v)} icon={<Lightbulb size={18} />} title="Luces LED" hint="Opción de luces" />
-              <ToggleCard active={allowsButterfly} onToggle={() => setAllowsButterfly(v => !v)} icon={<span className="text-base">🦋</span>} title="Mariposas" hint="Decoración extra" />
               <ToggleCard active={allowsPhraseCard} onToggle={() => setAllowsPhraseCard(v => !v)} icon={<Mail size={18} />} title="Tarjeta" hint="Con dedicatoria" />
             </div>
           </Section>
@@ -458,8 +502,7 @@ export function ProductForm({ mode, initialData, onRefresh }: ProductFormProps) 
               <ItemOptions
                 colors={selectedColors.slice(0, 6)}
                 flowers={selectedFlowers.slice(0, 4)}
-                hasLights={allowsLights}
-                hasButterfly={allowsButterfly}
+                accessories={accessoryChoices.filter(a => accessoryKeys.includes(a.key))}
                 hasPhraseCard={allowsPhraseCard}
               />
             </div>

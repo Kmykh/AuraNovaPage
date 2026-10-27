@@ -8,7 +8,7 @@ import { AdminOrderDetailItem, AdminOrderDetailResponse } from '@/types/orders';
 import { Button } from '@/components/ui/Button';
 import { ItemOptions } from '@/components/shared/ItemOptions';
 import { formatCurrency, getImageUrl } from '@/lib/formatters';
-import { itemColors, itemFlowers } from '@/lib/product-options';
+import { itemAccessories, itemColors, itemFlowers } from '@/lib/product-options';
 import { deliveryTypeName } from '@/lib/tracking-progress';
 import { CustomOrderBriefPanel } from './CustomOrderBriefPanel';
 import { CardArt } from '@/components/card/CardArt';
@@ -142,10 +142,11 @@ export function WorkshopPreparationCard({ order }: WorkshopPreparationCardProps)
                     size="md"
                     colors={colors}
                     flowers={flowers}
+                    accessories={item.accessories}
                     hasLights={item.hasLights}
                     hasButterfly={item.hasButterfly}
                   />
-                  {colors.length === 0 && flowers.length === 0 && !item.hasLights && !item.hasButterfly && !item.hasPhraseCard && (
+                  {colors.length === 0 && flowers.length === 0 && itemAccessories(item).length === 0 && !item.hasPhraseCard && (
                     <p className="mt-2 text-xs text-[#887870]">Tal como en el catálogo (sin personalización).</p>
                   )}
                 </div>

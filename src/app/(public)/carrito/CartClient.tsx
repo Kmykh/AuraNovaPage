@@ -83,6 +83,7 @@ function CartLine({ item, onDecrease, onIncrease, onRemove }: {
             className="mt-2.5"
             colors={itemColors(item)}
             flowers={itemFlowers(item)}
+            accessories={item.accessories}
             hasLights={item.hasLights}
             hasButterfly={item.hasButterfly}
           />

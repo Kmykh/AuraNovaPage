@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { ColorSwatch } from '@/components/shared/ColorSwatch';
-import { itemColors, colorLabel, itemFlowers } from '@/lib/product-options';
+import { accessoryPriceLabel, itemAccessories, itemColors, colorLabel, itemFlowers } from '@/lib/product-options';
+import { ItemAccessory } from '@/types/products';
 
 interface TicketOptionItem {
   selectedColors?: string[];
@@ -11,12 +12,16 @@ interface TicketOptionItem {
   selectedSecondaryColor?: string;
   selectedFlowerType?: string;
   selectedFlowerColor?: string;
+  accessories?: ItemAccessory[];
+  hasLights?: boolean;
+  hasButterfly?: boolean;
 }
 
-/** Líneas del ticket: cada color con su muestra y cada flor por separado. */
+/** Líneas del ticket: cada color con su muestra, cada flor y cada accesorio (con su precio) por separado. */
 export function TicketOptionLines({ item }: { item: TicketOptionItem }) {
   const colors = itemColors(item);
   const flowers = itemFlowers(item);
+  const accessories = itemAccessories(item);
   return (
     <>
       {colors.length > 0 && (
@@ -37,6 +42,11 @@ export function TicketOptionLines({ item }: { item: TicketOptionItem }) {
           ))}
         </div>
       )}
+      {accessories.map(accessory => (
+        <div key={accessory.key}>
+          • {accessory.name} <span className="text-[#887870]">({accessoryPriceLabel(accessory.price).toLowerCase()})</span>
+        </div>
+      ))}
     </>
   );
 }
