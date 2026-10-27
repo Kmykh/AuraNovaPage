@@ -3,6 +3,7 @@
 import React from 'react';
 import { Flower2, Lightbulb, Mail } from 'lucide-react';
 import { ColorSwatch } from './ColorSwatch';
+import { colorLabel } from '@/lib/product-options';
 
 interface ItemOptionsProps {
   colors?: string[];
@@ -36,7 +37,7 @@ export function ItemOptions({
         {colors.map(color => (
           <span key={`c-${color}`} className={`inline-flex items-center border border-[#e8dcdc] bg-white font-medium text-[#4a3933] ${chip[size]}`}>
             <ColorSwatch name={color} size={swatch} />
-            {color}
+            {colorLabel(color)}
           </span>
         ))}
         {flowers.map(flower => (

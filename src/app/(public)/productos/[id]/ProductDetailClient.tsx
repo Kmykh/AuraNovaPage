@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ProductCard } from '@/components/shared/ProductCard';
-import { ColorSwatch } from '@/components/shared/ColorSwatch';
 import { ItemOptions } from '@/components/shared/ItemOptions';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { CampaignBanner } from '@/components/product/CampaignBanner';
@@ -25,7 +24,8 @@ import { PhraseCardModal } from '@/components/product/PhraseCardEditor';
 import { CardArt } from '@/components/card/CardArt';
 import { CardDesign, EMPTY_CARD, cardTheme } from '@/lib/card-design';
 import { formatCurrency, formatStageName, getImageUrl } from '@/lib/formatters';
-import { MIXED_COLORS, colorBackground, isLightColor, productImages } from '@/lib/product-options';
+import { colorBackground, colorLabel, isLightColor, parseCustomColor, productImages } from '@/lib/product-options';
+import { CustomColorPanel } from './CustomColorPanel';
 import { ApiProblemDetails } from '@/lib/api-errors';
 
 import angelesImg from '../../images/angeles.png';
@@ -101,7 +101,8 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
   // null = todavía no eligió: se usa la primera opción del producto
   const [chosenColors, setChosenColors] = useState<string[] | null>(null);
   const [chosenFlowers, setChosenFlowers] = useState<string[] | null>(null);
-  const [isMixed, setIsMixed] = useState(false);
+  // "Otro color": panel para pedir un tono que no está en la lista
+  const [isCustomColorOpen, setIsCustomColorOpen] = useState(false);
   const [hasLights, setHasLights] = useState(false);
   const [hasButterfly, setHasButterfly] = useState(false);
   const [hasPhraseCard, setHasPhraseCard] = useState(false);
@@ -168,7 +169,9 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
   const single = limit === 1;
   const colors = chosenColors ?? (availableColors.length ? [availableColors[0]] : []);
   const flowers = chosenFlowers ?? (availableFlowers.length ? [availableFlowers[0]] : []);
-  const finalColors = isMixed && !single ? [MIXED_COLORS] : colors;
+  const finalColors = colors;
+  // Los colores a pedido que eligió también se muestran en la fila, junto a los del producto
+  const colorChoices = [...availableColors, ...colors.filter(c => parseCustomColor(c) && !availableColors.includes(c))];
   const cardReady = hasPhraseCard && card.text.trim().length > 0;
   const total = product.effectivePrice * quantity;
 
@@ -323,19 +326,20 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                   <Step
                     step={stepOf('colors')}
                     title={single ? 'Color' : 'Colores'}
-                    hint={single ? 'Es una sola flor: elige su color. ¿Varias de distinto color? Agrégalas por separado.' : isMixed ? 'El taller los combina con armonía.' : `Hasta ${limit}. Toca de nuevo para quitar.`}
-                    summary={isMixed && !single ? 'Surtido multicolor' : colors.join(' · ')}
+                    hint={single ? 'Es una sola flor: elige su color. ¿Varias de distinto color? Agrégalas por separado.' : `Hasta ${limit}. Toca de nuevo para quitar.`}
+                    summary={colors.map(colorLabel).join(' · ')}
                     last={stepOf('colors') === sections.length}
                   >
                     <div className="flex flex-wrap gap-x-2 gap-y-3">
-                      {availableColors.map(color => {
-                        const selected = (single || !isMixed) && colors.includes(color);
+                      {colorChoices.map(color => {
+                        const selected = colors.includes(color);
+                        const custom = parseCustomColor(color);
                         const light = isLightColor(color, options.colors);
                         return (
                           <button
                             key={color}
                             type="button"
-                            onClick={() => { setIsMixed(false); setChosenColors(toggleInList(colors, color, limit)); }}
+                            onClick={() => setChosenColors(custom && selected && colors.length > 1 ? colors.filter(c => c !== color) : toggleInList(colors, color, limit))}
                             className="group flex w-[3.75rem] flex-col items-center gap-1.5"
                             aria-pressed={selected}
                           >
@@ -347,20 +351,37 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                             >
                               {selected && <Check className={`h-4 w-4 ${light ? 'text-[#4a3933]' : 'text-white'}`} strokeWidth={3} />}
                             </span>
-                            <span className={`text-center text-[11px] leading-tight ${selected ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>{color}</span>
+                            <span className={`text-center text-[11px] leading-tight ${selected ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>
+                              {custom ? custom.name : color}
+                              {custom && <span className="block text-[9px] font-semibold uppercase tracking-wider text-[#b08a4e]">a pedido</span>}
+                            </span>
                           </button>
                         );
                       })}
-                      {/* Surtido solo tiene sentido si lleva varias flores */}
-                      {!single && (
-                        <button type="button" onClick={() => setIsMixed(v => !v)} className="group flex w-[3.75rem] flex-col items-center gap-1.5" aria-pressed={isMixed}>
-                          <span className={`flex h-12 w-12 items-center justify-center rounded-full transition ${isMixed ? 'scale-105 ring-2 ring-[#c8a96b] ring-offset-2' : 'ring-1 ring-black/10 group-hover:ring-[#c8a96b]/60'}`}>
-                            <ColorSwatch name={MIXED_COLORS} size={48} />
-                          </span>
-                          <span className={`text-center text-[11px] leading-tight ${isMixed ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>Surtido</span>
-                        </button>
-                      )}
+                      {/* Otro color: un tono que no está en la lista */}
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomColorOpen(v => !v)}
+                        className="group flex w-[3.75rem] flex-col items-center gap-1.5"
+                        aria-expanded={isCustomColorOpen}
+                      >
+                        <span className={`flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed transition ${isCustomColorOpen ? 'border-[#c8a96b] bg-[#fdf8ee] text-[#8f6d28]' : 'border-[#d9cfc8] text-[#b7a9a0] group-hover:border-[#c8a96b] group-hover:text-[#8f6d28]'}`}>
+                          <Plus className="h-5 w-5" />
+                        </span>
+                        <span className={`text-center text-[11px] leading-tight ${isCustomColorOpen ? 'font-bold text-[#4a3933]' : 'text-[#887870]'}`}>Otro color</span>
+                      </button>
                     </div>
+                    {isCustomColorOpen && (
+                      <CustomColorPanel
+                        offered={availableColors}
+                        palette={options.colors}
+                        onClose={() => setIsCustomColorOpen(false)}
+                        onUse={value => {
+                          setChosenColors(colors.includes(value) ? colors : toggleInList(colors, value, limit));
+                          setIsCustomColorOpen(false);
+                        }}
+                      />
+                    )}
                   </Step>
                 )}
 

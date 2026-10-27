@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ColorSwatch } from '@/components/shared/ColorSwatch';
-import { itemColors, itemFlowers } from '@/lib/product-options';
+import { itemColors, colorLabel, itemFlowers } from '@/lib/product-options';
 
 interface TicketOptionItem {
   selectedColors?: string[];
@@ -24,7 +24,7 @@ export function TicketOptionLines({ item }: { item: TicketOptionItem }) {
           <span>• {colors.length === 1 ? 'Color' : 'Colores'}:</span>
           {colors.map(color => (
             <span key={color} className="inline-flex items-center gap-1 font-semibold">
-              <ColorSwatch name={color} size={8} /> {color}
+              <ColorSwatch name={color} size={8} /> {colorLabel(color)}
             </span>
           ))}
         </div>
