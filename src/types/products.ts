@@ -24,6 +24,8 @@ export interface ProductResponse {
   allowsLights: boolean;
   allowsButterfly: boolean;
   allowsPhraseCard: boolean;
+  /** Cuántos colores y tipos de flor puede elegir el cliente (1 = flor por unidad); vacío = hasta 5 */
+  maxChoices?: number | null;
   createdAt: string;
   updatedAt: string | null;
   category?: Category | null;
@@ -51,6 +53,7 @@ export interface CreateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  maxChoices?: number | null;
   categoryId?: string | null;
   audience?: ProductAudience | null;
 }
@@ -66,6 +69,7 @@ export interface UpdateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  maxChoices?: number | null;
   categoryId?: string | null;
   audience?: ProductAudience | null;
 }
