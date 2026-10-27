@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreateOrderResponse } from '@/types/checkout';
+import { ItemAccessory } from '@/types/products';
 import Image from 'next/image';
 import flo1 from '@/app/(public)/images/flo1.png';
 import flo2 from '@/app/(public)/images/flo2.png';
@@ -30,6 +31,7 @@ export interface OrderDetailsSnapshot {
     selectedSecondaryColor?: string;
     selectedFlowerType?: string;
     selectedFlowerColor?: string;
+    accessories?: ItemAccessory[];
     hasLights?: boolean;
     hasButterfly?: boolean;
     hasPhraseCard?: boolean;
@@ -327,8 +329,6 @@ export function OrderSuccess({ order, orderDetails }: OrderSuccessProps) {
                                 {/* Especificaciones de personalización */}
                                 <div className="text-[10px] text-[#555] space-y-0.5 pl-2 border-l border-stone-300">
                                   <TicketOptionLines item={item} />
-                                  {item.hasLights && <div>• Luces LED incluidas ✨</div>}
-                                  {item.hasButterfly && <div>• Mariposa decorativa 🦋</div>}
                                   {(item.hasPhraseCard || item.phraseText) && (
                                     <div className="italic text-[#4a3933] bg-[#f8f5ee] p-1.5 rounded mt-1">
                                       💌 “{item.phraseText}” {item.phraseFont ? `(${item.phraseFont})` : ''}

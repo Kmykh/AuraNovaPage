@@ -1,3 +1,4 @@
+import { ItemAccessory } from './products';
 import { OrderStatus, DeliveryType } from './enums';
 
 export interface CreateOrderCustomerRequest {
@@ -11,6 +12,7 @@ export interface CreateOrderItemRequest {
   quantity: number;
   selectedColors?: string[];
   selectedFlowerTypes?: string[];
+  selectedAccessories?: string[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
@@ -145,6 +147,7 @@ export interface OrderSummaryItem {
   imageUrl?: string | null;
   selectedColors?: string[];
   selectedFlowerTypes?: string[];
+  accessories?: ItemAccessory[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
@@ -166,6 +169,7 @@ export interface AdminOrderDetailItem {
   selectedSecondaryColor?: string;
   selectedFlowerType?: string;
   selectedFlowerColor?: string;
+  accessories?: ItemAccessory[];
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;

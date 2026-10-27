@@ -58,6 +58,7 @@ export function TrackingOrderSummary({ tracking, onOpenTicket }: { tracking: Pub
                   className="mt-1.5"
                   colors={item.selectedColors}
                   flowers={item.selectedFlowerTypes}
+                  accessories={item.accessories}
                   hasLights={item.hasLights}
                   hasButterfly={item.hasButterfly}
                   hasPhraseCard={item.hasPhraseCard}

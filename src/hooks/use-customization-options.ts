@@ -2,14 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { CustomizationService } from '@/services/customization.service';
 import { CustomizationOptions } from '@/types/products';
-import { DEFAULT_COLORS, DEFAULT_FLOWER_TYPES } from '@/lib/product-options';
+import { DEFAULT_ACCESSORIES, DEFAULT_COLORS, DEFAULT_FLOWER_TYPES } from '@/lib/product-options';
 
 export const customizationKeys = {
   public: ['customization-options'] as const,
   admin: ['admin-customization-options'] as const,
 };
 
-const FALLBACK: CustomizationOptions = { colors: DEFAULT_COLORS, flowerTypes: DEFAULT_FLOWER_TYPES };
+const FALLBACK: CustomizationOptions = { colors: DEFAULT_COLORS, flowerTypes: DEFAULT_FLOWER_TYPES, accessories: DEFAULT_ACCESSORIES };
 
 /** Paleta pública (cambia muy poco): mientras carga o si falla se usa la paleta inicial. */
 export function useCustomizationOptions() {

@@ -8,6 +8,7 @@ import { useProducts } from '@/hooks/use-products';
 import { useBusinessSettings } from '@/hooks/use-info';
 import { ProductResponse } from '@/types/products';
 import { formatCurrency, formatStageName, getImageUrl } from '@/lib/formatters';
+import { productAccessoryKeys } from '@/lib/product-options';
 import { SITE_URL } from '@/lib/site';
 
 import flo1 from '@/app/(public)/images/flo1.png';
@@ -43,8 +44,8 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 function customizationHints(product: ProductResponse): string[] {
   const hints: string[] = [];
-  if (product.allowsLights) hints.push('luces LED');
-  if (product.allowsButterfly) hints.push('mariposas');
+  // Accesorios por su clave ("luces", "perlas-doradas" → "perlas doradas")
+  for (const key of productAccessoryKeys(product)) hints.push(key === 'luces' ? 'luces LED' : key.replace(/-/g, ' '));
   if (product.allowsPhraseCard) hints.push('tarjeta con frase');
   return hints;
 }

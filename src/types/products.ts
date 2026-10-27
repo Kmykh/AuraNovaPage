@@ -24,6 +24,8 @@ export interface ProductResponse {
   allowsLights: boolean;
   allowsButterfly: boolean;
   allowsPhraseCard: boolean;
+  /** Claves de los accesorios que ofrece (luces, mariposas, perlas…); el precio está en la configuración */
+  availableAccessories?: string[];
   /** Cuántos colores y tipos de flor puede elegir el cliente (1 = flor por unidad); vacío = hasta 5 */
   maxChoices?: number | null;
   createdAt: string;
@@ -53,6 +55,7 @@ export interface CreateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  availableAccessories?: string[];
   maxChoices?: number | null;
   categoryId?: string | null;
   audience?: ProductAudience | null;
@@ -69,6 +72,7 @@ export interface UpdateProductRequest {
   allowsLights?: boolean;
   allowsButterfly?: boolean;
   allowsPhraseCard?: boolean;
+  availableAccessories?: string[];
   maxChoices?: number | null;
   categoryId?: string | null;
   audience?: ProductAudience | null;
@@ -80,9 +84,27 @@ export interface ColorOption {
   hex: string;
 }
 
+/** Accesorio del negocio con su precio extra por unidad (0 = incluido). */
+export interface AccessoryOption {
+  /** Clave fija ("luces"); vacía en uno nuevo, la crea el backend con el nombre */
+  key?: string;
+  name: string;
+  price: number;
+  active: boolean;
+}
+
 export interface CustomizationOptions {
   colors: ColorOption[];
   flowerTypes: string[];
+  /** Si no se envía, el backend mantiene los accesorios guardados */
+  accessories?: AccessoryOption[];
+}
+
+/** Accesorio elegido en un ítem (carrito o pedido), con el precio de ese momento. */
+export interface ItemAccessory {
+  key: string;
+  name: string;
+  price: number;
 }
 
 export interface UpdateProductStockRequest {

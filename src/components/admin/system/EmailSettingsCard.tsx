@@ -39,7 +39,7 @@ export function EmailSettingsCard() {
   };
 
   return (
-    <section className="mx-auto mt-8 max-w-6xl rounded-[24px] border border-sage/15 bg-white p-5 shadow-sm sm:p-8">
+    <section className="rounded-[24px] border border-sage/15 bg-white p-5 shadow-sm sm:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold"><Mail size={20} /></span>

@@ -1,4 +1,5 @@
-import { ColorOption, ProductResponse } from '@/types/products';
+import { AccessoryOption, ColorOption, ItemAccessory, ProductResponse } from '@/types/products';
+import { formatCurrency } from '@/lib/formatters';
 
 /** El cliente deja que el taller combine los colores (mismo texto que guarda el backend). */
 export const MIXED_COLORS = 'Surtido multicolor';
@@ -69,6 +70,41 @@ export const EXTRA_TONES: ColorOption[] = [
   { name: 'Plateado', hex: '#c0c0c8' },
   { name: 'Negro', hex: '#222222' },
 ];
+
+/** Mientras el negocio no configure los suyos (igual que el backend): sin costo. */
+export const DEFAULT_ACCESSORIES: AccessoryOption[] = [
+  { key: 'luces', name: 'Luces LED', price: 0, active: true },
+  { key: 'mariposas', name: 'Mariposas', price: 0, active: true },
+];
+
+/** Claves que ofrece el producto; los anteriores solo tenían luces y mariposas como sí/no. */
+export function productAccessoryKeys(product: Pick<ProductResponse, 'availableAccessories' | 'allowsLights' | 'allowsButterfly'>): string[] {
+  if (product.availableAccessories?.length) return product.availableAccessories;
+  return [product.allowsLights && 'luces', product.allowsButterfly && 'mariposas'].filter(Boolean) as string[];
+}
+
+/** Accesorios activos del negocio que ofrece el producto, en el orden de la configuración. */
+export function productAccessories(
+  product: Pick<ProductResponse, 'availableAccessories' | 'allowsLights' | 'allowsButterfly'>,
+  catalog: AccessoryOption[] = DEFAULT_ACCESSORIES,
+): ItemAccessory[] {
+  const keys = productAccessoryKeys(product);
+  return catalog
+    .filter(a => a.active && a.key && keys.includes(a.key))
+    .map(a => ({ key: a.key!, name: a.name, price: a.price }));
+}
+
+/** Accesorios de un ítem; en carritos y pedidos anteriores, luces y mariposas como sí/no. */
+export function itemAccessories(item: { accessories?: ItemAccessory[] | null; hasLights?: boolean; hasButterfly?: boolean }): ItemAccessory[] {
+  if (item.accessories?.length) return item.accessories;
+  const legacy: ItemAccessory[] = [];
+  if (item.hasLights) legacy.push({ key: 'luces', name: 'Luces LED', price: 0 });
+  if (item.hasButterfly) legacy.push({ key: 'mariposas', name: 'Mariposas', price: 0 });
+  return legacy;
+}
+
+/** "+S/ 1.00" o "Incluido". */
+export const accessoryPriceLabel = (price: number) => (price > 0 ? `+${formatCurrency(price)}` : 'Incluido');
 
 export const DEFAULT_FLOWER_TYPES = [
   'Rosas', 'Girasoles', 'Tulipanes', 'Lirios', 'Orquídeas', 'Margaritas', 'Claveles', 'Hortensias',

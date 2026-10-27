@@ -1,13 +1,16 @@
 "use client";
 
 import React from 'react';
-import { Flower2, Lightbulb, Mail } from 'lucide-react';
+import { Flower2, Lightbulb, Mail, Sparkles } from 'lucide-react';
 import { ColorSwatch } from './ColorSwatch';
-import { colorLabel } from '@/lib/product-options';
+import { colorLabel, itemAccessories } from '@/lib/product-options';
+import { ItemAccessory } from '@/types/products';
 
 interface ItemOptionsProps {
   colors?: string[];
   flowers?: string[];
+  /** Accesorios elegidos; sin la lista se usan hasLights/hasButterfly (pedidos y carritos anteriores) */
+  accessories?: ItemAccessory[] | null;
   hasLights?: boolean;
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
@@ -25,10 +28,11 @@ const chip = {
 
 /** Lo que el cliente eligió para un producto: colores con su muestra, flores y extras. */
 export function ItemOptions({
-  colors = [], flowers = [], hasLights, hasButterfly, hasPhraseCard, phraseText, showPhrase = false, size = 'sm', className = '',
+  colors = [], flowers = [], accessories, hasLights, hasButterfly, hasPhraseCard, phraseText, showPhrase = false, size = 'sm', className = '',
 }: ItemOptionsProps) {
   const swatch = size === 'sm' ? 10 : 12;
-  const hasAny = colors.length || flowers.length || hasLights || hasButterfly || hasPhraseCard;
+  const extras = itemAccessories({ accessories, hasLights, hasButterfly });
+  const hasAny = colors.length || flowers.length || extras.length || hasPhraseCard;
   if (!hasAny) return null;
 
   return (
@@ -45,16 +49,14 @@ export function ItemOptions({
             <Flower2 size={swatch} /> {flower}
           </span>
         ))}
-        {hasLights && (
-          <span className={`inline-flex items-center bg-[#fdf8ee] font-semibold text-[#8c6d36] ${chip[size]}`}>
-            <Lightbulb size={swatch} /> Luces
+        {extras.map(accessory => (
+          <span key={`a-${accessory.key}`} className={`inline-flex items-center bg-[#fdf8ee] font-semibold text-[#8c6d36] ${chip[size]}`}>
+            {accessory.key.startsWith('luces') ? <Lightbulb size={swatch} />
+              : accessory.key.startsWith('mariposa') ? <span aria-hidden>🦋</span>
+              : <Sparkles size={swatch} />}
+            {accessory.name}
           </span>
-        )}
-        {hasButterfly && (
-          <span className={`inline-flex items-center bg-[#f3f0fa] font-semibold text-[#6b5aa0] ${chip[size]}`}>
-            <span aria-hidden>🦋</span> Mariposas
-          </span>
-        )}
+        ))}
         {hasPhraseCard && (
           <span className={`inline-flex items-center bg-[#f1f5f2] font-semibold text-[#4f755b] ${chip[size]}`}>
             <Mail size={swatch} /> Tarjeta

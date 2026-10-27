@@ -19,6 +19,8 @@ import {
   Megaphone,
   Radio,
   BookOpen,
+  Sparkles,
+  Wrench,
 } from 'lucide-react';
 import { Logo } from '../shared/Logo';
 import { useAdminOrderCounts, needsActionCount } from '@/hooks/use-admin-orders';
@@ -46,6 +48,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     items: [
       { name: 'Productos', href: '/admin/productos', icon: PackageSearch },
       { name: 'Categorías', href: '/admin/categorias', icon: Tags },
+      { name: 'Personalización', href: '/admin/personalizacion', icon: Sparkles },
       { name: 'Campañas', href: '/admin/campanas', icon: Megaphone },
       { name: 'Catálogo PDF', href: '/admin/catalogo', icon: BookOpen },
     ],
@@ -56,6 +59,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { name: 'Transmisión', href: '/admin/transmision', icon: Radio },
       { name: 'Configuración', href: '/admin/configuracion', icon: Settings },
       { name: 'Auditoría', href: '/admin/auditoria', icon: ShieldAlert },
+      { name: 'Sistema', href: '/admin/sistema', icon: Wrench },
     ],
   },
 ];
@@ -75,9 +79,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const visibleGroups = React.useMemo(() => navGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
-      // Transmisión: cualquier administrador autenticado. Auditoría: solo SuperAdmin.
+      // Transmisión: cualquier administrador autenticado. Auditoría y Sistema: solo SuperAdmin.
       if (item.name === 'Transmisión' && !role) return false;
-      if (item.name === 'Auditoría' && !role?.includes('SuperAdmin')) return false;
+      if ((item.name === 'Auditoría' || item.name === 'Sistema') && !role?.includes('SuperAdmin')) return false;
       return true;
     }),
   })), [role]);

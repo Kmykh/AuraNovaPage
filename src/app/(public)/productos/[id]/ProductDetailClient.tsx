@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   ArrowLeft, PackageOpen, ShoppingBag, Check, ChevronRight, Minus, Plus, Lightbulb, Mail,
-  Truck, HandHeart, Pencil, Trash2,
+  Truck, HandHeart, Pencil, Trash2, Sparkles,
 } from 'lucide-react';
 import { useProduct } from '@/hooks/use-product';
 import { useProducts } from '@/hooks/use-products';
@@ -24,7 +24,7 @@ import { PhraseCardModal } from '@/components/product/PhraseCardEditor';
 import { CardArt } from '@/components/card/CardArt';
 import { CardDesign, EMPTY_CARD, cardTheme } from '@/lib/card-design';
 import { formatCurrency, formatStageName, getImageUrl } from '@/lib/formatters';
-import { colorBackground, colorLabel, isLightColor, parseCustomColor, productImages } from '@/lib/product-options';
+import { accessoryPriceLabel, colorBackground, colorLabel, isLightColor, parseCustomColor, productAccessories, productImages } from '@/lib/product-options';
 import { CustomColorPanel } from './CustomColorPanel';
 import { YapeLogo } from '@/components/checkout/PaymentIcons';
 import { ApiProblemDetails } from '@/lib/api-errors';
@@ -70,6 +70,13 @@ function Step({ step, title, hint, summary, last, children }: {
   );
 }
 
+/** Ícono del accesorio: los conocidos con su dibujo, el resto con un destello. */
+function accessoryIcon(key: string) {
+  if (key.startsWith('luces')) return <Lightbulb className="h-5 w-5" />;
+  if (key.startsWith('mariposa')) return <span className="text-lg" aria-hidden>🦋</span>;
+  return <Sparkles className="h-5 w-5" />;
+}
+
 function ExtraToggle({ active, onToggle, icon, title, hint }: { active: boolean; onToggle: () => void; icon: React.ReactNode; title: string; hint: string }) {
   return (
     <button
@@ -104,8 +111,8 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
   const [chosenFlowers, setChosenFlowers] = useState<string[] | null>(null);
   // "Otro color": panel para pedir un tono que no está en la lista
   const [isCustomColorOpen, setIsCustomColorOpen] = useState(false);
-  const [hasLights, setHasLights] = useState(false);
-  const [hasButterfly, setHasButterfly] = useState(false);
+  // Claves de los accesorios elegidos (luces, mariposas, perlas…)
+  const [chosenAccessories, setChosenAccessories] = useState<string[]>([]);
   const [hasPhraseCard, setHasPhraseCard] = useState(false);
   const [card, setCard] = useState<CardDesign>(EMPTY_CARD);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
@@ -174,12 +181,18 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
   // Los colores a pedido que eligió también se muestran en la fila, junto a los del producto
   const colorChoices = [...availableColors, ...colors.filter(c => parseCustomColor(c) && !availableColors.includes(c))];
   const cardReady = hasPhraseCard && card.text.trim().length > 0;
-  const total = product.effectivePrice * quantity;
+  // Precio de cada accesorio según la configuración del negocio (el backend cobra el mismo)
+  const accessories = productAccessories(product, options.accessories);
+  const selectedAccessories = accessories.filter(a => chosenAccessories.includes(a.key));
+  const unitPrice = product.effectivePrice + selectedAccessories.reduce((sum, a) => sum + a.price, 0);
+  const total = unitPrice * quantity;
+  const toggleAccessory = (key: string) =>
+    setChosenAccessories(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
 
   const sections = [
     availableColors.length > 0 && 'colors',
     availableFlowers.length > 0 && 'flowers',
-    (product.allowsLights || product.allowsButterfly) && 'extras',
+    accessories.length > 0 && 'extras',
     product.allowsPhraseCard && 'card',
   ].filter(Boolean) as string[];
   const stepOf = (key: string) => sections.indexOf(key) + 1;
@@ -201,15 +214,16 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
     addItem({
       productId: product.id,
       name: product.name,
-      price: product.effectivePrice,
+      price: unitPrice,
       quantity,
       imageUrl: getImageUrl(product.imageUrl),
       stock: product.stock,
       isAvailable: product.isAvailable,
       selectedColors: finalColors,
       selectedFlowerTypes: flowers,
-      hasLights: product.allowsLights ? hasLights : undefined,
-      hasButterfly: product.allowsButterfly ? hasButterfly : undefined,
+      accessories: selectedAccessories,
+      hasLights: selectedAccessories.some(a => a.key === 'luces') || undefined,
+      hasButterfly: selectedAccessories.some(a => a.key === 'mariposas') || undefined,
       hasPhraseCard: product.allowsPhraseCard ? hasPhraseCard : undefined,
       phraseText: hasPhraseCard ? card.text.trim() : undefined,
       phraseFont: hasPhraseCard ? card.font : undefined,
@@ -416,21 +430,25 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                   </Step>
                 )}
 
-                {(product.allowsLights || product.allowsButterfly) && (
+                {accessories.length > 0 && (
                   <Step
                     step={stepOf('extras')}
-                    title="Toque mágico"
-                    hint="Opcional."
-                    summary={[hasLights && 'Luces', hasButterfly && 'Mariposas'].filter(Boolean).join(' · ') || undefined}
+                    title="Accesorios"
+                    hint="Opcional. Se suman al precio de cada unidad."
+                    summary={selectedAccessories.map(a => a.name).join(' · ') || undefined}
                     last={stepOf('extras') === sections.length}
                   >
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                      {product.allowsLights && (
-                        <ExtraToggle active={hasLights} onToggle={() => setHasLights(v => !v)} icon={<Lightbulb className="h-5 w-5" />} title="Luces LED" hint="Brilla de noche" />
-                      )}
-                      {product.allowsButterfly && (
-                        <ExtraToggle active={hasButterfly} onToggle={() => setHasButterfly(v => !v)} icon={<span className="text-lg">🦋</span>} title="Mariposas" hint="Decoración delicada" />
-                      )}
+                      {accessories.map(accessory => (
+                        <ExtraToggle
+                          key={accessory.key}
+                          active={chosenAccessories.includes(accessory.key)}
+                          onToggle={() => toggleAccessory(accessory.key)}
+                          icon={accessoryIcon(accessory.key)}
+                          title={accessory.name}
+                          hint={accessoryPriceLabel(accessory.price)}
+                        />
+                      ))}
                     </div>
                   </Step>
                 )}
@@ -495,8 +513,7 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                     className="mt-2"
                     colors={finalColors}
                     flowers={flowers}
-                    hasLights={product.allowsLights && hasLights}
-                    hasButterfly={product.allowsButterfly && hasButterfly}
+                    accessories={selectedAccessories}
                     hasPhraseCard={cardReady}
                   />
                 </div>
@@ -527,6 +544,9 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
                 <div className="text-right">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-[#887870]">Total</p>
                   <p className="font-serif text-2xl font-bold text-[#4a3933]">{formatCurrency(total)}</p>
+                  {unitPrice > product.effectivePrice && (
+                    <p className="text-[11px] text-[#887870]">Incluye accesorios: {accessoryPriceLabel(unitPrice - product.effectivePrice)} c/u</p>
+                  )}
                 </div>
               </div>
 
