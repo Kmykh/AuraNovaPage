@@ -56,7 +56,9 @@ export const AdminOrdersService = {
   },
 
   changeStatus: async (id: string, request: ChangeOrderStatusRequest): Promise<OrderStatusChangeResponse> => {
-    const { data } = await apiClient.patch<OrderStatusChangeResponse>(`/api/admin/orders/${id}/status`, request);
+    // La API espera el nombre del estado ("Delivered"), no su número
+    const status = typeof request.status === 'number' ? OrderStatus[request.status] : request.status;
+    const { data } = await apiClient.patch<OrderStatusChangeResponse>(`/api/admin/orders/${id}/status`, { ...request, status });
     return data;
   },
 
