@@ -4,7 +4,7 @@ import React from 'react';
 import { useOrderStatusHistory } from '@/hooks/use-admin-orders';
 import { getOrderStatusInfo, formatDate } from '@/lib/order-helpers';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { History, MessageSquare } from 'lucide-react';
+import { History } from 'lucide-react';
 import { OrderStatus } from '@/types/checkout';
 
 interface OrderStatusHistoryProps {
@@ -16,70 +16,41 @@ export function OrderStatusHistory({ orderId, deliveryType }: OrderStatusHistory
   const { data: history, isLoading, error } = useOrderStatusHistory(orderId);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} variant="rect" className="w-full h-20 rounded-xl" />
-        ))}
-      </div>
-    );
+    return <Skeleton variant="rect" className="mt-6 h-24 w-full rounded-xl" />;
   }
-
   if (error || !history) {
-    return <div className="text-sm text-rose">No se pudo cargar el historial.</div>;
+    return <p className="mt-6 text-sm text-rose">No se pudo cargar el historial.</p>;
   }
+  if (history.length === 0) return null;
 
-  if (history.length === 0) {
-    return <div className="text-sm text-sage">No hay historial registrado.</div>;
-  }
+  // Lo más reciente arriba
+  const events = [...history].reverse();
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10 relative">
-      <div className="flex items-center gap-2 mb-6 text-brown font-serif font-semibold text-lg">
-        <History size={20} />
-        <h3>Historial del pedido</h3>
-      </div>
-      
-      <div className="relative pl-3 before:absolute before:top-4 before:bottom-4 before:left-[21px] before:w-0.5 before:bg-sage/20">
-        <div className="space-y-6">
-          {history.map((event, index) => {
-            const statusKey = typeof event.status === 'string' ? (OrderStatus as Record<string, string | number>)[event.status] ?? event.status : event.status;
-            const statusInfo = getOrderStatusInfo(statusKey, deliveryType);
-            
-            return (
-              <div key={event.id || index} className="relative flex items-start gap-5">
-                {/* Timeline dot */}
-                <div className={`w-5 h-5 mt-1 rounded-full border-[3px] border-white bg-${statusInfo.color} shrink-0 z-10 shadow-sm`} />
-                
-                {/* Content */}
-                <div className="flex-1 bg-[#FAFAFA] border border-sage/10 rounded-xl p-4 shadow-sm hover:border-sage/30 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-${statusInfo.color}/10 text-${statusInfo.color} uppercase tracking-wider`}>
-                      {statusInfo.label}
-                    </span>
-                    <span className="text-xs text-sage font-medium">{formatDate(event.createdAt)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 mb-3 text-xs">
-                    <span className="font-medium text-sage">Aprobado por:</span>
-                    <span className="font-semibold text-brown bg-sage/5 px-2 py-0.5 rounded-md">
-                      {/* @ts-ignore */}
-                      {event.adminName || 'Sistema / Cliente'}
-                    </span>
-                  </div>
-                  
-                  {event.comment && (
-                    <div className="mt-3 flex gap-2.5 text-sm text-brown bg-white p-3 rounded-lg border border-sage/10 shadow-sm">
-                      <MessageSquare size={16} className="text-sage shrink-0 mt-0.5" />
-                      <p className="whitespace-pre-wrap leading-relaxed italic">{event.comment}</p>
-                    </div>
-                  )}
+    <div className="mt-6 border-t border-sage/10 pt-5">
+      <h4 className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-sage">
+        <History size={13} /> Historial
+      </h4>
+      <ol className="space-y-0">
+        {events.map((event, index) => {
+          const statusKey = typeof event.status === 'string' ? (OrderStatus as Record<string, string | number>)[event.status] ?? event.status : event.status;
+          const statusInfo = getOrderStatusInfo(statusKey, deliveryType);
+          const last = index === events.length - 1;
+          return (
+            <li key={event.id || index} className="relative flex gap-3 pb-4 last:pb-0">
+              {!last && <span className="absolute left-[5px] top-4 bottom-0 w-px bg-sage/15" />}
+              <span className={`relative mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full border-2 border-white shadow-sm bg-${statusInfo.color} ${index === 0 ? 'ring-2 ring-gold/30' : ''}`} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <p className="text-sm font-semibold text-brown">{statusInfo.label}</p>
+                  <p className="text-xs text-sage">{formatDate(event.createdAt)}</p>
                 </div>
+                {event.comment && <p className="mt-0.5 text-xs leading-relaxed text-sage">{event.comment}</p>}
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

@@ -2,14 +2,17 @@
 
 import React from 'react';
 import { OrderStatus, DeliveryType } from '@/types/enums';
-import { getOrderStatusInfo, formatDate } from '@/lib/order-helpers';
+import { formatDate } from '@/lib/order-helpers';
 import { AdminOrderDetailResponse } from '@/types/orders';
 
 interface OrderTimelineProps {
   order: AdminOrderDetailResponse;
+  /** El historial va en la misma tarjeta, debajo de las etapas */
+  children?: React.ReactNode;
 }
 
-export function OrderTimeline({ order }: OrderTimelineProps) {
+/** Progreso del pedido (etapas) y, debajo, su historial: antes eran dos tarjetas con lo mismo. */
+export function OrderTimeline({ order, children }: OrderTimelineProps) {
   // Configurar las etapas según el tipo de entrega y si es personalizado
   const getStages = () => {
     const stages = [];
@@ -105,8 +108,8 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
   const stages = getStages();
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-sage/10 mb-6">
-      <h3 className="font-serif text-lg text-brown font-semibold mb-6">Progreso del Pedido</h3>
+    <section className="rounded-[24px] border border-sage/10 bg-white p-5 shadow-sm sm:p-6">
+      <h3 className="mb-6 font-serif text-lg font-bold text-brown">Progreso del pedido</h3>
       
       <div className="relative">
         <div className="absolute top-5 left-0 w-full h-[2px] bg-sage/20 -z-10" />
@@ -136,9 +139,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
                   <p className={`text-[10px] sm:text-xs font-medium leading-tight ${isCurrent || isCompleted ? 'text-brown' : 'text-sage'}`}>
                     {stage.label}
                   </p>
-                  {stage.date && (
-                    <p className="text-[9px] text-sage mt-1 leading-tight hidden sm:block">{stage.date}</p>
-                  )}
+                  {/* Las fechas de cada etapa están en el historial, justo debajo */}
                   {stage.estimated && isCurrent && (
                     <p className="text-[9px] text-gold mt-1 leading-tight border border-gold/30 rounded bg-gold/5 px-1 py-0.5 inline-block">
                       Est: {stage.estimated}
@@ -150,6 +151,7 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
           })}
         </div>
       </div>
-    </div>
+      {children}
+    </section>
   );
 }

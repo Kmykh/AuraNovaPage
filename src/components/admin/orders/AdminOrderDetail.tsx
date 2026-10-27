@@ -8,16 +8,15 @@ import {
 } from 'lucide-react';
 import { useAdminOrder } from '@/hooks/use-admin-orders';
 import { useConfirmPayment, useRejectPayment } from '@/hooks/use-admin-payments';
-import { getOrderStatusInfo, getDeliveryTypeLabel, formatDate, nextAdminAction } from '@/lib/order-helpers';
+import { getOrderStatusInfo, getDeliveryTypeLabel, formatDate } from '@/lib/order-helpers';
 import { formatCurrency, getImageUrl } from '@/lib/formatters';
-import { statusName, deliveryTypeName } from '@/lib/tracking-progress';
+import { statusName } from '@/lib/tracking-progress';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { ApiProblemDetails } from '@/lib/api-errors';
 import { DeliveryType } from '@/types/enums';
 import { AdminOrderDetailResponse } from '@/types/orders';
 
-import { OrderStatusChangeForm } from './OrderStatusChangeForm';
 import { OrderStatusHistory } from './OrderStatusHistory';
 import { OrderNotifications } from './OrderNotifications';
 import { OrderTimeline } from './OrderTimeline';
@@ -131,9 +130,9 @@ export function AdminOrderDetail({ id }: { id: string }) {
   }
 
   const status = statusName(order.status);
-  const delivery = deliveryTypeName(order.deliveryType);
   const statusInfo = getOrderStatusInfo(order.status, order.deliveryType);
-  const action = nextAdminAction(status, delivery);
+  const paid = order.payment?.amountPaid ?? 0;
+  const balance = order.payment?.balanceDue ?? 0;
   const customerPhone = order.customer?.phone;
   const firstName = order.customer?.name?.split(' ')[0] ?? '';
 
@@ -168,7 +167,11 @@ export function AdminOrderDetail({ id }: { id: string }) {
           <p className="font-serif text-2xl font-bold text-brown">
             {order.total != null ? formatCurrency(order.total) : <span className="font-sans text-sm font-semibold text-amber-600">Sin precio</span>}
           </p>
-          {action.label && <p className="text-xs font-semibold text-[#b08a4e]">{action.label}</p>}
+          {order.total != null && status !== 'Cancelled' && (
+            <p className={`text-xs font-semibold ${paid <= 0 ? 'text-sage' : balance > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+              {paid <= 0 ? 'Sin pagar' : balance > 0 ? `Falta ${formatCurrency(balance)}` : 'Pagado'}
+            </p>
+          )}
         </div>
       </div>
 
@@ -222,9 +225,9 @@ export function AdminOrderDetail({ id }: { id: string }) {
             </section>
           )}
 
-          <OrderTimeline order={order} />
-
-          <OrderStatusHistory orderId={id} deliveryType={order.deliveryType} />
+          <OrderTimeline order={order}>
+            <OrderStatusHistory orderId={id} deliveryType={order.deliveryType} />
+          </OrderTimeline>
         </div>
 
         {/* Columna lateral */}
@@ -257,7 +260,6 @@ export function AdminOrderDetail({ id }: { id: string }) {
                   <Mail size={16} /> Escribir por correo
                 </a>
               )}
-              <p className="text-center text-[11px] text-sage">Los correos automáticos y su reenvío están en Notificaciones.</p>
             </div>
           </section>
 
@@ -322,15 +324,6 @@ export function AdminOrderDetail({ id }: { id: string }) {
               </div>
             )}
           </section>
-
-          <OrderStatusChangeForm
-            orderId={id}
-            currentStatus={order.status}
-            deliveryType={order.deliveryType}
-            customerName={order.customer?.name}
-            customerPhone={order.customer?.phone}
-            orderCode={order.orderCode}
-          />
 
           <OrderNotifications orderId={id} />
         </div>
