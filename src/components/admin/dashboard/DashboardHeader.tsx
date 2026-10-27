@@ -17,9 +17,9 @@ export function DashboardHeader({ onRefresh, isFetching, lastUpdated }: Dashboar
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-brown">Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-brown">Inicio</h1>
         <p className="text-sage text-sm sm:text-base mt-1">
-          Resumen de la actividad de Aura Nova.
+          Lo de hoy y lo que te toca.
         </p>
       </div>
       

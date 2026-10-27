@@ -13,10 +13,10 @@ export default function AdminShippingPage() {
   return (
     <div className="py-6 max-w-6xl mx-auto space-y-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-serif font-bold text-brown">Gestión de Envíos</h1>
+        <h1 className="text-3xl font-serif font-bold text-brown">Envíos</h1>
         <p className="text-sage mt-1">
-          Configura tus zonas de delivery local y los puntos de encuentro. 
-          Los envíos nacionales se cotizan automáticamente según la demanda.
+          Zonas de delivery en Huancayo y puntos de encuentro. Los envíos nacionales van por agencia
+          (Shalom u Olva) y el cliente paga el flete al recoger.
         </p>
       </div>
 

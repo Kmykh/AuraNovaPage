@@ -1,31 +1,19 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Menu, LogOut, User, Bell, ChevronDown } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Menu, LogOut, ChevronDown, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { AuthSession } from '@/lib/auth-storage';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
-  title?: string;
 }
 
-const pageTitleMap: Record<string, string> = {
-  '/admin': 'Dashboard',
-  '/admin/pedidos': 'Gestión de Pedidos',
-  '/admin/productos': 'Catálogo de Productos',
-  '/admin/cotizaciones': 'Pedidos Personalizados',
-  '/admin/categorias': 'Categorías',
-  '/admin/pagos': 'Gestión de Pagos',
-  '/admin/envios': 'Configuración de Envíos',
-  '/admin/configuracion': 'Configuración',
-  '/admin/auditoria': 'Auditoría del Sistema',
-};
 
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const queryClient = useQueryClient();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -35,14 +23,6 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     }
     return null;
   });
-
-  // Derive the page title from the current pathname
-  const pageTitle = Object.entries(pageTitleMap).reduce((best, [path, title]) => {
-    if (pathname?.startsWith(path) && path.length > best.pathLen) {
-      return { title, pathLen: path.length };
-    }
-    return best;
-  }, { title: 'Panel Administrativo', pathLen: 0 }).title;
 
   const handleLogout = () => {
     AuthSession.clearSession();
@@ -69,11 +49,17 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       <div className="h-5 w-px bg-sage/15 lg:hidden" aria-hidden="true" />
 
       <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-between items-center">
-        {/* Dynamic page title */}
-        <div className="flex flex-col justify-center">
-          <h1 className="text-base sm:text-lg font-semibold leading-tight text-brown">
-            {pageTitle}
-          </h1>
+        {/* Sin título aquí: cada página ya tiene el suyo (antes salía dos veces) */}
+        <div className="flex items-center gap-3">
+          <span className="font-serif text-base font-semibold text-brown lg:hidden">Aura Nova</span>
+          <Link
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden items-center gap-1.5 rounded-full border border-sage/15 px-3 py-1.5 text-xs font-semibold text-sage transition hover:border-gold/40 hover:text-brown sm:inline-flex"
+          >
+            <ExternalLink size={13} /> Ver tienda
+          </Link>
         </div>
 
         {/* Right side: Admin profile */}
