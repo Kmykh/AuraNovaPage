@@ -1,7 +1,9 @@
 import React from 'react';
 import { Metadata } from 'next';
+import { Truck } from 'lucide-react';
 import { DeliveryZonesList } from '@/components/admin/shipping/DeliveryZonesList';
 import { MeetingPointsList } from '@/components/admin/shipping/MeetingPointsList';
+import { ShippingSummary } from '@/components/admin/shipping/ShippingSummary';
 
 export const metadata: Metadata = {
   title: 'Gestión de Envíos | Aura Nova',
@@ -11,16 +13,17 @@ export const metadata: Metadata = {
 
 export default function AdminShippingPage() {
   return (
-    <div className="py-6 max-w-6xl mx-auto space-y-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-serif font-bold text-brown">Envíos</h1>
-        <p className="text-sage mt-1">
-          Zonas de delivery en Huancayo y puntos de encuentro. Los envíos nacionales van por agencia
-          (Shalom u Olva) y el cliente paga el flete al recoger.
-        </p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div>
+        <h1 className="flex items-center gap-2 font-serif text-2xl font-bold text-brown">
+          <Truck className="text-gold" /> Envíos
+        </h1>
+        <p className="mt-1 text-sage">Cómo recibe el cliente su pedido. Lo que ocultes aquí deja de aparecer al pagar.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+      <ShippingSummary />
+
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
         <DeliveryZonesList />
         <MeetingPointsList />
       </div>
