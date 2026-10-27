@@ -69,8 +69,10 @@ export function OrderPaymentsCard({ orderId, payment }: { orderId: string; payme
                     <span className="ml-1.5 text-xs font-normal text-sage">{t.isDeposit ? '(adelanto 50%)' : ''}</span>
                   </p>
                   <p className="truncate text-xs text-sage">
-                    {formatDate(t.createdAt)}{t.externalOrderId ? ` · ${t.externalOrderId}` : ''}{!t.approved && t.statusDetail ? ` · ${t.statusDetail}` : ''}
+                    {formatDate(t.createdAt)}{t.externalOrderId ? ` · ${t.externalOrderId}` : ''}
                   </p>
+                  {/* Motivo del rechazo tal como lo dio Mercado Pago (completo, para saber qué pasó) */}
+                  {!t.approved && t.statusDetail && <p className="mt-0.5 break-words text-xs text-rose-600">{t.statusDetail}</p>}
                   {t.refundedAmount > 0 && (
                     <p className="text-xs font-semibold text-sky-700">Devuelto: {formatCurrency(t.refundedAmount)}{t.refundedAt ? ` · ${formatDate(t.refundedAt)}` : ''}</p>
                   )}

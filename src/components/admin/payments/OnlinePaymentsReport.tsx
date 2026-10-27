@@ -210,7 +210,7 @@ export function OnlinePaymentsReport() {
                               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
                                 <badge.icon size={11} /> {badge.label}
                               </span>
-                              {!r.approved && r.statusDetail && <p className="mt-0.5 max-w-[180px] truncate text-[11px] text-sage">{r.statusDetail}</p>}
+                              {!r.approved && r.statusDetail && <p className="mt-0.5 max-w-[220px] break-words text-[11px] text-sage" title={r.statusDetail}>{r.statusDetail}</p>}
                             </td>
                             <td className="py-2.5 font-mono text-[11px] text-sage">{r.externalOrderId ?? '—'}</td>
                           </tr>
