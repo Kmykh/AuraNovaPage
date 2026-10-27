@@ -13,6 +13,7 @@ import { TrackingHero } from '@/components/tracking/TrackingHero';
 import { TrackingTimeline } from '@/components/tracking/TrackingTimeline';
 import { TrackingOrderSummary, TrackingCustomBrief, TrackingDeliveryCard } from '@/components/tracking/TrackingDetails';
 import { TrackingOrderDetailsModal } from '@/components/tracking/TrackingOrderDetailsModal';
+import { trackingPayment } from '@/components/tracking/TrackingMoney';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ApiProblemDetails, isTransientApiError } from '@/lib/api-errors';
 import { TransientApiErrorState } from '@/components/shared/TransientApiErrorState';
@@ -105,7 +106,10 @@ interface TrackingViewProps {
 function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTicket, ticket }: TrackingViewProps) {
   const [copied, setCopied] = useState(false);
   const firstName = tracking.customerFirstName || 'AuraLover';
-  const helpMessage = `Hola Aura Nova, tengo una consulta sobre mi pedido ${tracking.orderCode}.`;
+  const moneyState = trackingPayment(tracking).state;
+  const helpMessage = moneyState === 'refund_pending' || moneyState === 'refunded'
+    ? `Hola Aura Nova, tengo una consulta sobre la devolución de mi pedido ${tracking.orderCode}.`
+    : `Hola Aura Nova, tengo una consulta sobre mi pedido ${tracking.orderCode}.`;
 
   const copyCode = async () => {
     try {
@@ -192,7 +196,9 @@ function TrackingView({ tracking, trackingCode, whatsappNumber, onBack, onOpenTi
 
             <section className="rounded-[1.75rem] bg-gradient-to-br from-[#fdf5f5] to-[#fdf8ee] p-6 text-center shadow-[0_10px_30px_-12px_rgba(211,139,139,0.25)]">
               <Sparkles className="mx-auto h-6 w-6 text-[#d38b8b]" />
-              <h3 className="mt-2 font-serif text-lg font-bold text-[#4a3933]">¿Tienes alguna duda?</h3>
+              <h3 className="mt-2 font-serif text-lg font-bold text-[#4a3933]">
+                {moneyState === 'refund_pending' || moneyState === 'refunded' ? '¿Dudas sobre tu devolución?' : '¿Tienes alguna duda?'}
+              </h3>
               <p className="mt-1 text-sm text-[#887870]">Escríbenos y te respondemos por WhatsApp.</p>
               <a
                 href={whatsappLink(whatsappNumber, helpMessage)}

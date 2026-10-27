@@ -1,15 +1,14 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
 import {
-  ArrowRight, Building2, Check, CheckCircle2, ClipboardCheck, CreditCard, Flower2, Gift, Store, Truck,
+  Ban, Building2, Check, ClipboardCheck, CreditCard, Flower2, Gift, Store, Truck, X,
 } from 'lucide-react';
 import { PublicTrackingResponse } from '@/types/tracking';
-import { formatCurrency } from '@/lib/formatters';
 import {
-  buildMilestones, currentMilestoneIndex, deliveryTypeName, MilestoneKey, statusCopy, statusName, timeAgo,
+  buildMilestones, currentMilestoneIndex, deliveryTypeName, formatLongDate, MilestoneKey, statusCopy, statusName, timeAgo,
 } from '@/lib/tracking-progress';
+import { TrackingMoney, trackingPayment } from './TrackingMoney';
 
 const MILESTONE_ICONS: Record<MilestoneKey, React.ElementType> = {
   received: ClipboardCheck,
@@ -25,51 +24,6 @@ function onTheWayIcon(deliveryType: string): React.ElementType {
   return Truck;
 }
 
-/** Cuánto se pagó y cuánto falta, con el botón para pagar si corresponde. */
-function PaymentStrip({ tracking, status }: { tracking: PublicTrackingResponse; status: string }) {
-  const total = tracking.costs?.total ?? null;
-  const paid = tracking.costs?.amountPaid ?? 0;
-  const due = tracking.costs?.balanceDue ?? (total != null ? Math.max(0, total - paid) : 0);
-  const payHref = tracking.orderId ? `/pago/${tracking.orderId}` : null;
-  if (status === 'Cancelled' || total == null || total <= 0) return null;
-
-  if (paid > 0 && due <= 0) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-        <CheckCircle2 className="h-5 w-5 shrink-0" />
-        <span><strong>Pagado por completo</strong> · {formatCurrency(paid)}</span>
-      </div>
-    );
-  }
-
-  const waiting = paid <= 0;
-  if (waiting && !['WaitingPayment', 'PaymentReported'].includes(status)) return null;
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#c8a96b]/30 bg-[#fffbf3] px-4 py-3">
-      <div className="text-sm text-[#6b5a50]">
-        {waiting ? (
-          <><strong className="text-[#4a3933]">Pendiente de pago</strong> · {formatCurrency(total)}</>
-        ) : (
-          <>Pagaste {formatCurrency(paid)} · <strong className="text-[#4a3933]">te falta {formatCurrency(due)}</strong></>
-        )}
-        <span className="mt-0.5 block text-xs text-[#887870]">
-          {waiting
-            ? 'Con tarjeta o Yape: el 50% de adelanto o el total.'
-            : status === 'Ready'
-              ? '¡Ya está listo! Paga el saldo y lo entregamos.'
-              : 'Lo pagas antes de la entrega; te avisamos cuando esté listo.'}
-        </span>
-      </div>
-      {payHref && status !== 'PaymentReported' && (
-        <Link href={payHref} className="inline-flex items-center gap-1.5 rounded-full bg-[#4a3933] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#3a2d28]">
-          {waiting ? 'Ir a pagar' : 'Pagar el saldo'} <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      )}
-    </div>
-  );
-}
-
 export function TrackingHero({ tracking }: { tracking: PublicTrackingResponse }) {
   const status = statusName(tracking.status);
   const deliveryType = deliveryTypeName(tracking.deliveryType);
@@ -78,12 +32,17 @@ export function TrackingHero({ tracking }: { tracking: PublicTrackingResponse })
 
   const milestones = buildMilestones(isCustom, deliveryType);
   const current = currentMilestoneIndex(status);
-  const copy = statusCopy(status, deliveryType, isCustom);
+  // Mientras Mercado Pago confirma un pago, no se invita a pagar de nuevo
+  const copy = trackingPayment(tracking).state === 'processing'
+    ? { title: 'Estamos confirmando tu pago', message: 'En cuanto Mercado Pago lo apruebe, tu pedido pasa al taller. Te avisamos por correo.' }
+    : statusCopy(status, deliveryType, isCustom);
+
+  if (isCancelled) return <CancelledHero tracking={tracking} isCustom={isCustom} deliveryType={deliveryType} />;
 
   const lastUpdate = tracking.timeline?.length ? tracking.timeline[tracking.timeline.length - 1].createdAt : undefined;
   const updatedAgo = timeAgo(lastUpdate);
   // El paso actual cuenta como "a medio camino" para que la barra avance con cada estado
-  const progress = isCancelled ? 0 : status === 'Delivered' ? 100 : Math.round(((current + 0.5) / milestones.length) * 100);
+  const progress = status === 'Delivered' ? 100 : Math.round(((current + 0.5) / milestones.length) * 100);
 
   return (
     <section className="rounded-[2rem] border border-[#ece3da] bg-white p-5 shadow-[0_24px_50px_-36px_rgba(74,57,51,0.45)] sm:p-8">
@@ -91,16 +50,16 @@ export function TrackingHero({ tracking }: { tracking: PublicTrackingResponse })
       <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#b08a4e]">
         {isCustom ? 'Pedido personalizado' : 'Pedido'} · {tracking.orderCode}
       </p>
-      <h2 className={`mt-2 font-serif text-3xl font-bold leading-tight sm:text-4xl ${isCancelled ? 'text-stone-500' : 'text-[#4a3933]'}`}>{copy.title}</h2>
+      <h2 className="mt-2 font-serif text-3xl font-bold leading-tight text-[#4a3933] sm:text-4xl">{copy.title}</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6b5a50] sm:text-base">{copy.message}</p>
       {updatedAgo && <p className="mt-2 text-xs text-[#a3958c]">Última actualización {updatedAgo}</p>}
 
       <div className="mt-5">
-        <PaymentStrip tracking={tracking} status={status} />
+        <TrackingMoney tracking={tracking} />
       </div>
 
       {/* Progreso */}
-      {!isCancelled && (
+      {(
         <div className="mt-8">
           <div className="relative h-1 w-full overflow-hidden rounded-full bg-[#f1e9e4]">
             <div
@@ -137,6 +96,78 @@ export function TrackingHero({ tracking }: { tracking: PublicTrackingResponse })
           </ol>
         </div>
       )}
+    </section>
+  );
+}
+
+/** Pedido cancelado: por qué, cuándo, en qué paso se detuvo y qué pasó con el dinero. */
+function CancelledHero({ tracking, isCustom, deliveryType }: { tracking: PublicTrackingResponse; isCustom: boolean; deliveryType: string }) {
+  const timeline = tracking.timeline ?? [];
+  const cancelEvent = [...timeline].reverse().find(e => e.kind === 'cancelled' || statusName(e.status) === 'Cancelled');
+  const reason = cancelEvent?.description?.startsWith('Motivo:') ? cancelEvent.description.slice('Motivo:'.length).trim() : null;
+  // Último paso que alcanzó antes de cancelarse (los eventos de pago y devolución no cuentan)
+  const lastStep = [...timeline].reverse().find(e =>
+    statusName(e.status) !== 'Cancelled' && e.kind !== 'refund' && e.kind !== 'rejection' && statusName(e.status) !== 'Refunded');
+  const stoppedAt = lastStep ? currentMilestoneIndex(statusName(lastStep.status)) : 0;
+  const milestones = buildMilestones(isCustom, deliveryType);
+  const payment = trackingPayment(tracking);
+
+  const subtitle = payment.state === 'refunded'
+    ? 'Ya te devolvimos tu dinero. Abajo tienes el detalle.'
+    : payment.state === 'refund_pending'
+      ? 'Te devolveremos lo que pagaste. Aquí verás cuando esté hecho.'
+      : 'No se te cobró nada por este pedido.';
+
+  return (
+    <section className="rounded-[2rem] border border-[#ecd9d9] bg-white p-5 shadow-[0_24px_50px_-36px_rgba(74,57,51,0.45)] sm:p-8">
+      <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#b07474]">
+        {isCustom ? 'Pedido personalizado' : 'Pedido'} · {tracking.orderCode}
+      </p>
+      <div className="mt-3 flex items-start gap-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fdf0f0] text-[#c06b6b]">
+          <Ban className="h-6 w-6" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-serif text-3xl font-bold leading-tight text-[#4a3933] sm:text-4xl">Pedido cancelado</h2>
+          <p className="mt-1 text-sm text-[#6b5a50] sm:text-base">
+            {cancelEvent?.createdAt && <>El {formatLongDate(cancelEvent.createdAt, false).toLowerCase()}. </>}
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      {reason && (
+        <p className="mt-4 rounded-2xl border-l-4 border-[#d9a5a5] bg-[#fdf7f7] px-4 py-3 text-sm text-[#5e4a42]">
+          <span className="font-bold text-[#4a3933]">Motivo:</span> {reason}
+        </p>
+      )}
+
+      <div className="mt-5">
+        <TrackingMoney tracking={tracking} />
+      </div>
+
+      {/* Hasta dónde llegó */}
+      <ol className="mt-7 grid grid-cols-5 gap-1" aria-label="Hasta dónde llegó el pedido">
+        {milestones.map((milestone, index) => {
+          const done = index < stoppedAt;
+          const stopped = index === stoppedAt;
+          return (
+            <li key={milestone.key} className="flex flex-col items-center text-center">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-full sm:h-11 sm:w-11 ${
+                  done ? 'bg-stone-300 text-white' : stopped ? 'bg-[#fdf0f0] text-[#c06b6b] ring-2 ring-[#e5b4b4]' : 'border border-dashed border-stone-200 text-stone-300'
+                }`}
+              >
+                {done ? <Check className="h-4 w-4" strokeWidth={3} /> : stopped ? <X className="h-4 w-4" strokeWidth={3} /> : null}
+              </span>
+              <span className={`mt-2 text-[10px] font-semibold leading-tight sm:text-xs ${stopped ? 'text-[#c06b6b]' : done ? 'text-stone-500' : 'text-stone-300'}`}>
+                {milestone.label}
+                {stopped && <span className="block text-[9px] font-bold uppercase tracking-wider">Cancelado</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }

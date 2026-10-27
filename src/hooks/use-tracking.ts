@@ -16,8 +16,13 @@ export function useTracking(trackingCode: string) {
     enabled: !!trackingCode,
     // La API devuelve el estado como texto ("Preparing"); antes se comparaba con el enum numérico y nunca refrescaba
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status !== undefined && ACTIVE_STATUSES.has(statusName(status)) ? 30000 : false;
+      const data = query.state.data;
+      if (!data) return false;
+      // Un pago que Mercado Pago está confirmando: se revisa seguido para mostrarlo apenas se apruebe
+      if (data.payment?.state === 'processing') return 10000;
+      // Cancelado con dinero por devolver: se sigue revisando hasta que figure la devolución
+      if (data.payment?.state === 'refund_pending') return 60000;
+      return ACTIVE_STATUSES.has(statusName(data.status)) ? 30000 : false;
     },
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
