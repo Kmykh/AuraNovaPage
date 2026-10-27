@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useCustomizationOptions } from '@/hooks/use-customization-options';
-import { colorBackground, isLightColor } from '@/lib/product-options';
+import { colorBackground, colorLabel, isLightColor } from '@/lib/product-options';
 
 interface ColorSwatchProps {
   name: string;
@@ -17,7 +17,7 @@ export function ColorSwatch({ name, size = 14, className = '' }: ColorSwatchProp
   return (
     <span
       role="img"
-      aria-label={name}
+      aria-label={colorLabel(name)}
       title={name}
       className={`inline-block shrink-0 rounded-full ${light ? 'ring-1 ring-inset ring-black/15' : 'ring-1 ring-inset ring-black/5'} ${className}`}
       style={{ width: size, height: size, background: colorBackground(name, options.colors) }}

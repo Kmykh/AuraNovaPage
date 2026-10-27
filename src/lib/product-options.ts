@@ -21,6 +21,55 @@ export const DEFAULT_COLORS: ColorOption[] = [
   { name: 'Multicolor', hex: 'multicolor' },
 ];
 
+/**
+ * Color que el cliente pide aunque no esté en la lista: "A pedido: Verde menta (#98FB98)".
+ * Mismo formato que valida el backend; el taller ve el nombre y el tono exacto.
+ */
+export const CUSTOM_COLOR_PREFIX = 'A pedido: ';
+const CUSTOM_COLOR_PATTERN = /^A pedido:\s*(.+?)\s*\((#[0-9a-f]{6})\)$/i;
+/** Letras (con tildes), números, espacios y . ' - (igual que el backend), hasta 30 caracteres */
+export const CUSTOM_COLOR_NAME_MAX = 30;
+export const cleanCustomColorName = (value: string) => value.replace(/[^\p{L}\p{N} .'-]/gu, '').slice(0, CUSTOM_COLOR_NAME_MAX);
+
+export function customColorValue(name: string, hex: string): string {
+  return `${CUSTOM_COLOR_PREFIX}${cleanCustomColorName(name).trim()} (${hex.toUpperCase()})`;
+}
+
+export function parseCustomColor(value: string): { name: string; hex: string } | null {
+  const match = CUSTOM_COLOR_PATTERN.exec(value.trim());
+  return match ? { name: match[1], hex: match[2].toLowerCase() } : null;
+}
+
+/** Texto para mostrar: el color a pedido sin el código ("Verde menta · a pedido"). */
+export function colorLabel(value: string): string {
+  const custom = parseCustomColor(value);
+  return custom ? `${custom.name} · a pedido` : value;
+}
+
+/** Tonos extra para el panel "Otro color" (los que el producto ya ofrece no se repiten). */
+export const EXTRA_TONES: ColorOption[] = [
+  { name: 'Verde menta', hex: '#98e2c6' },
+  { name: 'Verde esmeralda', hex: '#2e8b57' },
+  { name: 'Verde olivo', hex: '#7a8450' },
+  { name: 'Turquesa', hex: '#40c4c4' },
+  { name: 'Azul cielo', hex: '#87ceeb' },
+  { name: 'Azul marino', hex: '#1f3a68' },
+  { name: 'Lavanda', hex: '#b497d6' },
+  { name: 'Fucsia', hex: '#e0218a' },
+  { name: 'Coral', hex: '#ff7f6e' },
+  { name: 'Durazno', hex: '#ffb38a' },
+  { name: 'Salmón', hex: '#f4a08c' },
+  { name: 'Terracota', hex: '#c8643b' },
+  { name: 'Mostaza', hex: '#d4a017' },
+  { name: 'Dorado', hex: '#c9a227' },
+  { name: 'Crema', hex: '#f5ebd7' },
+  { name: 'Beige', hex: '#d8c3a5' },
+  { name: 'Café', hex: '#7b4b2a' },
+  { name: 'Burdeos', hex: '#6d1a36' },
+  { name: 'Plateado', hex: '#c0c0c8' },
+  { name: 'Negro', hex: '#222222' },
+];
+
 export const DEFAULT_FLOWER_TYPES = [
   'Rosas', 'Girasoles', 'Tulipanes', 'Lirios', 'Orquídeas', 'Margaritas', 'Claveles', 'Hortensias',
   'Peonías', 'Crisantemos', 'Gerberas', 'Gypsophila (Lluvia)', 'Astromelias', 'Lavanda', 'Flores Silvestres',
@@ -34,6 +83,8 @@ const normalize = (value: string) => value.trim().toLocaleLowerCase('es');
 /** Fondo CSS de la muestra de un color, buscando por nombre en la paleta. */
 export function colorBackground(name: string, palette: ColorOption[] = DEFAULT_COLORS): string {
   if (normalize(name) === normalize(MIXED_COLORS)) return MULTICOLOR_BACKGROUND;
+  const custom = parseCustomColor(name);
+  if (custom) return custom.hex;
   const option = palette.find(c => normalize(c.name) === normalize(name))
     ?? DEFAULT_COLORS.find(c => normalize(c.name) === normalize(name));
   if (!option) return UNKNOWN_BACKGROUND;
