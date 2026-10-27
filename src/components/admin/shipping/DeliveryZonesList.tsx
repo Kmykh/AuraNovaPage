@@ -6,8 +6,8 @@ import { DeliveryZoneAdminResponse } from '@/types/admin-shipping';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { MapPin, Plus, Edit2, CheckCircle2, XCircle, Map, CircleDollarSign } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatters';
+import { MapPin, Map, CircleDollarSign } from 'lucide-react';
+import { ShippingListHeader, ShippingRow } from './ShippingRow';
 import { toast } from 'sonner';
 
 export function DeliveryZonesList() {
@@ -43,7 +43,7 @@ export function DeliveryZonesList() {
   const handleToggle = (id: string, currentStatus: boolean) => {
     toggleZone({ id, isActive: !currentStatus }, {
       onSuccess: () => {
-        toast.success(`Zona ${currentStatus ? 'desactivada' : 'activada'}`);
+        toast.success(currentStatus ? 'Zona oculta: ya no aparece al pagar' : 'Zona visible al pagar');
       },
       onError: () => toast.error('Error al cambiar el estado de la zona')
     });
@@ -98,65 +98,42 @@ export function DeliveryZonesList() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-sage/10 overflow-hidden">
-      <div className="p-6 border-b border-sage/10 bg-[#FAFAFA] flex justify-between items-center">
-        <h2 className="text-lg font-serif font-semibold text-brown flex items-center gap-2">
-          <MapPin size={20} className="text-gold" /> Zonas de Reparto (Delivery Local)
-        </h2>
-        <Button onClick={openCreateModal} className="bg-brown hover:bg-brown/90 px-4 py-2 rounded-xl text-sm shadow-md">
-          <Plus size={16} className="mr-2 inline" /> Nueva Zona
-        </Button>
-      </div>
+      <ShippingListHeader
+        icon={MapPin}
+        title="Delivery en Huancayo"
+        hint={`${zones?.filter(z => z.isActive).length ?? 0} de ${zones?.length ?? 0} zonas visibles al pagar`}
+        actionLabel="Nueva zona"
+        onAction={openCreateModal}
+      />
 
-      <div className="p-0">
-        {zones && zones.length > 0 ? (
-          <div className="divide-y divide-sage/10">
-            {zones.map((zone) => (
-              <div key={zone.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-cream/20 transition-colors">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`font-semibold text-base ${zone.isActive ? 'text-brown' : 'text-sage line-through'}`}>{zone.name}</h3>
-                    {zone.isActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sage/10 text-sage text-xs font-medium">
-                        <CheckCircle2 size={12} /> Activo
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose/10 text-rose text-xs font-medium">
-                        <XCircle size={12} /> Inactivo
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sage text-sm mb-1">Distritos: {zone.district}</p>
-                  <p className="text-gold font-medium font-mono text-lg">{formatCurrency(zone.cost)}</p>
-                </div>
-
-                <div className="flex gap-2 shrink-0">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleToggle(zone.id, zone.isActive)}
-                    disabled={isToggling}
-                    className={`px-3 py-2 ${zone.isActive ? 'text-rose border-rose/20 hover:bg-rose/5' : 'text-sage border-sage/20 hover:bg-sage/10'}`}
-                  >
-                    {zone.isActive ? 'Desactivar' : 'Activar'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => openEditModal(zone)}
-                    className="px-3 py-2 text-brown border-sage/20 hover:bg-cream"
-                  >
-                    <Edit2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center text-sage">
-            <MapPin size={48} strokeWidth={1} className="mx-auto mb-4 opacity-50" />
-            <p>No tienes zonas de reparto configuradas.</p>
-            <p className="text-sm mt-1">Crea tu primera zona para ofrecer delivery local.</p>
-          </div>
-        )}
-      </div>
+      {zones && zones.length > 0 ? (
+        <div className="divide-y divide-sage/10">
+          {[...zones].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.cost - b.cost).map(zone => (
+            <ShippingRow
+              key={zone.id}
+              name={zone.name}
+              detail={
+                <span className="flex flex-wrap gap-1">
+                  {zone.district.split(',').map(d => d.trim()).filter(Boolean).map(d => (
+                    <span key={d} className="rounded-md bg-sage/10 px-1.5 py-0.5 text-[11px] font-medium text-sage">{d}</span>
+                  ))}
+                </span>
+              }
+              cost={zone.cost}
+              isActive={zone.isActive}
+              onToggle={() => handleToggle(zone.id, zone.isActive)}
+              onEdit={() => openEditModal(zone)}
+              toggling={isToggling}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="p-12 text-center text-sage">
+          <MapPin size={48} strokeWidth={1} className="mx-auto mb-4 opacity-50" />
+          <p>No tienes zonas de reparto configuradas.</p>
+          <p className="text-sm mt-1">Crea tu primera zona para ofrecer delivery local.</p>
+        </div>
+      )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="p-8">

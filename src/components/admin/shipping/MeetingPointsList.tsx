@@ -6,8 +6,8 @@ import { MeetingPointAdminResponse } from '@/types/admin-shipping';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Map, Plus, Edit2, CheckCircle2, XCircle, MapPin, Navigation, CircleDollarSign } from 'lucide-react';
-import { formatCurrency } from '@/lib/formatters';
+import { Map, MapPin, Navigation, CircleDollarSign } from 'lucide-react';
+import { ShippingListHeader, ShippingRow } from './ShippingRow';
 import { toast } from 'sonner';
 
 export function MeetingPointsList() {
@@ -43,7 +43,7 @@ export function MeetingPointsList() {
   const handleToggle = (id: string, currentStatus: boolean) => {
     togglePoint({ id, isActive: !currentStatus }, {
       onSuccess: () => {
-        toast.success(`Punto de encuentro ${currentStatus ? 'desactivado' : 'activado'}`);
+        toast.success(currentStatus ? 'Punto oculto: ya no aparece al pagar' : 'Punto visible al pagar');
       },
       onError: () => toast.error('Error al cambiar el estado del punto de encuentro')
     });
@@ -98,65 +98,36 @@ export function MeetingPointsList() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-sage/10 overflow-hidden">
-      <div className="p-6 border-b border-sage/10 bg-[#FAFAFA] flex justify-between items-center">
-        <h2 className="text-lg font-serif font-semibold text-brown flex items-center gap-2">
-          <Map size={20} className="text-gold" /> Puntos de Encuentro
-        </h2>
-        <Button onClick={openCreateModal} className="bg-brown hover:bg-brown/90 px-4 py-2 rounded-xl text-sm shadow-md">
-          <Plus size={16} className="mr-2 inline" /> Nuevo Punto
-        </Button>
-      </div>
+      <ShippingListHeader
+        icon={Map}
+        title="Puntos de encuentro"
+        hint={`${points?.filter(p => p.isActive).length ?? 0} de ${points?.length ?? 0} puntos visibles al pagar`}
+        actionLabel="Nuevo punto"
+        onAction={openCreateModal}
+      />
 
-      <div className="p-0">
-        {points && points.length > 0 ? (
-          <div className="divide-y divide-sage/10">
-            {points.map((point) => (
-              <div key={point.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-cream/20 transition-colors">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`font-semibold text-base ${point.isActive ? 'text-brown' : 'text-sage line-through'}`}>{point.name}</h3>
-                    {point.isActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sage/10 text-sage text-xs font-medium">
-                        <CheckCircle2 size={12} /> Activo
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose/10 text-rose text-xs font-medium">
-                        <XCircle size={12} /> Inactivo
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sage text-sm mb-1">{point.address}</p>
-                  <p className="text-gold font-medium font-mono text-lg">{formatCurrency(point.cost)}</p>
-                </div>
-
-                <div className="flex gap-2 shrink-0">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleToggle(point.id, point.isActive)}
-                    disabled={isToggling}
-                    className={`px-3 py-2 ${point.isActive ? 'text-rose border-rose/20 hover:bg-rose/5' : 'text-sage border-sage/20 hover:bg-sage/10'}`}
-                  >
-                    {point.isActive ? 'Desactivar' : 'Activar'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => openEditModal(point)}
-                    className="px-3 py-2 text-brown border-sage/20 hover:bg-cream"
-                  >
-                    <Edit2 size={16} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center text-sage">
-            <Map size={48} strokeWidth={1} className="mx-auto mb-4 opacity-50" />
-            <p>No tienes puntos de encuentro configurados.</p>
-            <p className="text-sm mt-1">Crea tu primer punto (ej. Estación Metropolitano).</p>
-          </div>
-        )}
-      </div>
+      {points && points.length > 0 ? (
+        <div className="divide-y divide-sage/10">
+          {[...points].sort((a, b) => Number(b.isActive) - Number(a.isActive)).map(point => (
+            <ShippingRow
+              key={point.id}
+              name={point.name}
+              detail={point.address}
+              cost={point.cost}
+              isActive={point.isActive}
+              onToggle={() => handleToggle(point.id, point.isActive)}
+              onEdit={() => openEditModal(point)}
+              toggling={isToggling}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="p-12 text-center text-sage">
+          <Map size={48} strokeWidth={1} className="mx-auto mb-4 opacity-50" />
+          <p>No tienes puntos de encuentro configurados.</p>
+          <p className="text-sm mt-1">Crea tu primer punto (ej. Parque Huamanmarca).</p>
+        </div>
+      )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="p-8">
