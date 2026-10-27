@@ -7,6 +7,7 @@ import { X, Package, MapPin, Truck, Copy, Check, ExternalLink, Link2 } from 'luc
 import { toast } from 'sonner';
 import { DeliveryType } from '@/types/enums';
 import { trackingUrl } from '@/lib/tracking-code';
+import { trackingPayment } from './TrackingMoney';
 
 interface TrackingOrderDetailsModalProps {
   isOpen: boolean;
@@ -116,7 +117,7 @@ export function TrackingOrderDetailsModal({ isOpen, onClose, tracking, trackingC
                      </a>
                    )}
                    {tracking.customizationNotes && (
-                     <p className="text-xs text-[#4a3933] italic">"{tracking.customizationNotes}"</p>
+                     <p className="text-xs text-[#4a3933] italic">&ldquo;{tracking.customizationNotes}&rdquo;</p>
                    )}
                 </div>
               )}
@@ -218,9 +219,31 @@ export function TrackingOrderDetailsModal({ isOpen, onClose, tracking, trackingC
               </div>
             )}
             <div className="flex justify-between text-sm sm:text-base font-bold text-[#4a3933] pt-3 mt-2 border-t-[2px] border-stone-800">
-              <span>TOTAL PAGADO</span>
+              <span>TOTAL</span>
               <span>S/ {(tracking.costs?.total ?? tracking.total ?? 0).toFixed(2)}</span>
             </div>
+            {/* Lo pagado de verdad: puede ser solo el adelanto, o haberse devuelto */}
+            {(() => {
+              const payment = trackingPayment(tracking);
+              return (
+                <>
+                  {payment.charged > 0 && (
+                    <div className="flex justify-between"><span>PAGADO</span><span>S/ {payment.charged.toFixed(2)}</span></div>
+                  )}
+                  {payment.refunded > 0 && (
+                    <div className="flex justify-between text-emerald-700"><span>DEVUELTO</span><span>- S/ {payment.refunded.toFixed(2)}</span></div>
+                  )}
+                  {payment.balanceDue > 0 && payment.netPaid > 0 && (
+                    <div className="flex justify-between font-bold text-[#4a3933]"><span>FALTA PAGAR</span><span>S/ {payment.balanceDue.toFixed(2)}</span></div>
+                  )}
+                  {(payment.state === 'refunded' || payment.state === 'refund_pending' || payment.state === 'none') && (
+                    <p className="mt-2 rounded border border-stone-400 py-1 text-center font-bold tracking-widest text-stone-600">
+                      {payment.state === 'refunded' ? 'CANCELADO · DINERO DEVUELTO' : payment.state === 'refund_pending' ? 'CANCELADO · DEVOLUCIÓN EN CURSO' : 'CANCELADO · SIN COBRO'}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
             
             <div className="text-center pt-6 pb-2">
                <p className="text-[10px] text-stone-400 font-sans">* Este ticket es generado automáticamente por Aura Nova.</p>

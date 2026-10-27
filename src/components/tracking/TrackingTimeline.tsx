@@ -2,7 +2,7 @@
 
 import React from 'react';
 import {
-  ClipboardCheck, FileText, CreditCard, Receipt, BadgeCheck, Flower2, Gift, Truck, Building2, PackageCheck, Ban, XCircle,
+  ClipboardCheck, FileText, CreditCard, Receipt, BadgeCheck, Flower2, Gift, Truck, Building2, PackageCheck, Ban, XCircle, Undo2, Wallet,
 } from 'lucide-react';
 import { TrackingTimelineEvent } from '@/types/tracking';
 import { getOrderStatusDescription } from '@/lib/tracking-helpers';
@@ -21,7 +21,21 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   DeliveredToAgency: Building2,
   Delivered: PackageCheck,
   Cancelled: Ban,
+  Refunded: Undo2,
 };
+
+/** Pagos y devoluciones con su propio ícono y color: el cliente los reconoce de un vistazo. */
+function eventStyle(event: TrackingTimelineEvent, name: string, isLatest: boolean) {
+  if (event.kind === 'refund' || name === 'Refunded') return { Icon: Undo2, className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' };
+  if (event.kind === 'payment') return { Icon: Wallet, className: 'bg-emerald-50 text-emerald-700' };
+  if (event.kind === 'cancelled' || event.kind === 'rejection' || name === 'Cancelled' || name === 'PaymentRejected') {
+    return { Icon: EVENT_ICONS[name] ?? Ban, className: 'bg-[#fdf0f0] text-[#c06b6b]' };
+  }
+  return {
+    Icon: EVENT_ICONS[name] ?? ClipboardCheck,
+    className: isLatest ? 'bg-gradient-to-br from-[#c8a96b] to-[#b08a4e] text-white shadow-md shadow-[#c8a96b]/30' : 'bg-[#faf7f2] text-[#b08a4e]',
+  };
+}
 
 function eventLabel(event: TrackingTimelineEvent): string {
   return event.label === 'DeliveredToAgency' ? 'Entregado a la agencia' : event.label;
@@ -40,10 +54,9 @@ export function TrackingTimeline({ events }: { events: TrackingTimelineEvent[] }
       <ol className="mt-6">
         {ordered.map((event, index) => {
           const name = statusName(event.status);
-          const Icon = EVENT_ICONS[name] ?? ClipboardCheck;
           const isLatest = index === 0;
           const isLast = index === ordered.length - 1;
-          const isNegative = name === 'Cancelled' || name === 'PaymentRejected';
+          const { Icon, className: iconClass } = eventStyle(event, name, isLatest);
           const date = event.createdAt ? new Date(event.createdAt) : null;
 
           return (
@@ -51,15 +64,7 @@ export function TrackingTimeline({ events }: { events: TrackingTimelineEvent[] }
               {/* Conector */}
               {!isLast && <span className="absolute left-5 top-11 h-[calc(100%-2.25rem)] w-px bg-gradient-to-b from-[#e8dcdc] to-transparent" />}
 
-              <div
-                className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                  isNegative
-                    ? 'bg-[#fdf0f0] text-[#c06b6b]'
-                    : isLatest
-                      ? 'bg-gradient-to-br from-[#c8a96b] to-[#b08a4e] text-white shadow-md shadow-[#c8a96b]/30'
-                      : 'bg-[#faf7f2] text-[#b08a4e]'
-                }`}
-              >
+              <div className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
                 <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
               </div>
 

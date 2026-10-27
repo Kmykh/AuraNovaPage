@@ -3,6 +3,8 @@ import { OrderStatus, DeliveryType } from './enums';
 
 export interface TrackingTimelineEvent {
   status: OrderStatus;
+  /** status, payment, refund, rejection o cancelled */
+  kind?: 'status' | 'payment' | 'refund' | 'rejection' | 'cancelled';
   label: string;
   description?: string;
   completed: boolean;
@@ -30,6 +32,29 @@ export interface TrackingItem {
   hasButterfly?: boolean;
   hasPhraseCard?: boolean;
   phraseText?: string | null;
+}
+
+/** Un cobro o una devolución, con su medio y fecha. */
+export interface TrackingMoneyMovement {
+  kind: 'payment' | 'refund';
+  amount: number;
+  /** Yape, Visa, Mastercard… */
+  method: string;
+  isDeposit: boolean;
+  date?: string | null;
+}
+
+export type TrackingPaymentState = 'unpaid' | 'processing' | 'deposit' | 'paid' | 'none' | 'refund_pending' | 'refunded';
+
+/** El dinero del pedido explicado para el cliente. */
+export interface TrackingPayment {
+  state: TrackingPaymentState;
+  total: number;
+  charged: number;
+  refunded: number;
+  netPaid: number;
+  balanceDue: number;
+  movements: TrackingMoneyMovement[];
 }
 
 export interface PublicTrackingResponse {
@@ -72,6 +97,9 @@ export interface PublicTrackingResponse {
     amountPaid?: number;
     balanceDue?: number;
   };
+
+  /** Lo pagado y lo devuelto (backend nuevo); sin esto se usa `costs` */
+  payment?: TrackingPayment;
 
   estimates?: {
     createdAt: string;
