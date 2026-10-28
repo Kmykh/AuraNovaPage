@@ -67,6 +67,8 @@ export function TrackingMoney({ tracking }: { tracking: PublicTrackingResponse }
   const payment = trackingPayment(tracking);
   const status = statusName(tracking.status);
   const payHref = tracking.orderId ? `/pago/${tracking.orderId}` : null;
+  // El saldo abre directo su formulario de pago
+  const balanceHref = tracking.orderId ? `/pago/${tracking.orderId}?saldo=1` : null;
   const refunds = payment.movements.filter(m => m.kind === 'refund');
   const payments = payment.movements.filter(m => m.kind === 'payment');
   const paidWith = [...new Set(payments.map(m => m.method))].join(' y ');
@@ -113,7 +115,7 @@ export function TrackingMoney({ tracking }: { tracking: PublicTrackingResponse }
           tone="gold"
           icon={<Wallet className="h-5 w-5" />}
           title={`Pagaste ${formatCurrency(payment.netPaid)} · te falta ${formatCurrency(payment.balanceDue)}`}
-          action={payHref && <PayButton href={payHref} label="Pagar el saldo" />}
+          action={balanceHref && <PayButton href={balanceHref} label="Pagar el saldo" />}
         >
           <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#efe6dd]" aria-hidden>
             <div className="h-full rounded-full bg-gradient-to-r from-[#c8a96b] to-[#b08a4e]" style={{ width: `${percent}%` }} />

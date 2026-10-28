@@ -62,7 +62,9 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
   const router = useRouter();
   // Desde que toca "Pagar": la página se cubre con "Procesando…" y en la misma ventana sale la confirmación
   const [overlay, setOverlay] = useState<PaymentOverlayState | null>(null);
-  const [payBalanceNow, setPayBalanceNow] = useState(false);
+  // Desde el seguimiento ("Pagar el saldo") se abre directo el formulario del saldo
+  const [payBalanceNow, setPayBalanceNow] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('saldo') === '1');
   const [reviewTimedOut, setReviewTimedOut] = useState(false);
 
   // Pago en revisión: se consulta solo cada pocos segundos hasta que Mercado Pago lo confirme (máx. 5 min)
@@ -128,10 +130,11 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
 
   const trackingHref = (trackingCode ?? summary.trackingCode) ? `/seguimiento/${trackingCode ?? summary.trackingCode}` : '/seguimiento';
   const closeOverlay = () => {
-    const paidInFull = overlay?.phase === 'success' && overlay.success.balanceDue <= 0;
+    const paid = overlay?.phase === 'success';
     setOverlay(null);
-    // Pagado por completo: el siguiente paso es su seguimiento, no otra pantalla de "pagado"
-    if (paidInFull) router.push(trackingHref);
+    // Pagó (todo o el adelanto): el siguiente paso es su seguimiento. Nunca se vuelve al formulario,
+    // así no se envía un segundo pago con el mismo código de Yape
+    if (paid) router.push(trackingHref);
   };
   const overlayView = overlay && (
     <PaymentOverlay state={overlay} orderCode={summary.orderCode} trackingCode={trackingCode ?? summary.trackingCode} onClose={closeOverlay} />
@@ -214,8 +217,13 @@ export function PaymentClient({ orderId }: PaymentClientProps) {
           {isCheckingPayments ? (
             <Skeleton variant="rect" className="h-96 w-full rounded-[2rem]" />
           ) : onlinePayments ? (
-            // La clave reinicia el formulario después de cada pago (sin mensajes viejos)
-            <MercadoPagoCheckout key={summary.amountPaid} summary={summary} onPaid={handlePaid} onProcessing={handleProcessing} />
+            overlay?.phase === 'success' ? (
+              // Pago aprobado: mientras se ve la confirmación no queda un formulario debajo para volver a pagar
+              <div className="h-96 w-full rounded-[2rem] bg-white/60" aria-hidden />
+            ) : (
+              // La clave reinicia el formulario después de cada pago (sin mensajes viejos)
+              <MercadoPagoCheckout key={summary.amountPaid} summary={summary} onPaid={handlePaid} onProcessing={handleProcessing} />
+            )
           ) : (
             <div className="rounded-[2rem] border border-[#c8a96b]/25 bg-white/95 p-8 text-center">
               <p className="font-serif text-xl font-bold text-[#4a3933]">Los pagos en línea se están activando</p>
