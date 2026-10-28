@@ -1,8 +1,7 @@
 "use client";
 
 import React from 'react';
-import Image from 'next/image';
-import { Sparkles } from 'lucide-react';
+import Image, { StaticImageData } from 'next/image';
 import { HeroSection } from './home/HeroSection';
 import nube2 from './images/nube2.png';
 import { AboutSection } from './home/AboutSection';
@@ -10,17 +9,13 @@ import { FeaturedProductsSection } from './home/FeaturedProductsSection';
 import { CampaignProductsSection } from './home/CampaignProductsSection';
 import { HowItWorksSection } from './home/HowItWorksSection';
 import { DeliveryMethodsSection } from './home/DeliveryMethodsSection';
-import { PaymentInfoSection } from './home/PaymentInfoSection';
-import { FloralDetailsSection } from './home/FloralDetailsSection';
-import { ImportantInfoSection } from './home/ImportantInfoSection';
+import { WankaSection } from './home/WankaSection';
+import { BrandRibbon } from './home/BrandRibbon';
+import { PromiseSection } from './home/PromiseSection';
 import { TrackingPromoSection } from './home/TrackingPromoSection';
 import { ContactSection } from './home/ContactSection';
 import { PersonalizedGiftsSection } from './home/PersonalizedGiftsSection';
 import { YapeOnlineSection } from './home/YapeOnlineSection';
-import flo from './images/flo.png';
-import flo1 from './images/flo1.png';
-import flo2 from './images/flo2.png';
-import flo4 from './images/flo4.png';
 import flo5 from './images/flo5.png';
 import flo6 from './images/flo6.png';
 import muroromano from './images/muroromano.png';
@@ -39,7 +34,7 @@ function CloudDivider({ flip = false, slower = false }: { flip?: boolean; slower
 }
 
 /* ─── Decorative floating flower ─── */
-function FloatingFlower({ src, className }: { src: any; className: string }) {
+function FloatingFlower({ src, className }: { src: StaticImageData; className: string }) {
   return (
     <div className={`absolute pointer-events-none mix-blend-multiply ${className}`}>
       <Image src={src} alt="" className="w-full h-full object-contain" />
@@ -88,50 +83,11 @@ export function HomeClient() {
       {/* ── Cloud after Hero ── */}
       <CloudDivider />
 
-      {/* ══════════════ HUANCAYO ORIGIN (MARCA WANKA) ══════════════ */}
-      <section className="relative w-full z-10 py-16 md:py-24 px-6 overflow-hidden">
-        {/* Decoraciones sutiles de fondo para la sección de origen */}
-        <FloatingFlower src={muroromano} className="top-0 left-0 w-32 md:w-56 opacity-[0.12] column-mask" />
-        <FloatingFlower src={angeles} className="bottom-0 right-0 w-40 md:w-72 opacity-[0.08] -rotate-12 vignette-mask" />
+      {/* ══════════════ MARCA WANKA ══════════════ */}
+      <WankaSection />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 bg-white/40 backdrop-blur-md md:bg-transparent md:backdrop-blur-none p-8 md:p-0 rounded-3xl md:rounded-none shadow-sm md:shadow-none border border-white/50 md:border-none">
-          <p className="font-sans text-xs md:text-sm tracking-[0.4em] uppercase text-[#c8a96b] font-bold mb-4 flex justify-center items-center gap-3">
-            <span className="w-8 h-[1px] bg-[#c8a96b]/50"></span>
-            Orgullo Local
-            <span className="w-8 h-[1px] bg-[#c8a96b]/50"></span>
-          </p>
-          <h2 className="font-serif text-5xl md:text-7xl text-[#4a3933] mb-6 font-light tracking-tight">
-            Somos marca <span className="font-serif italic text-[#c8a96b] font-normal tracking-wide">Wanka</span>
-          </h2>
-          <p className="font-sans text-sm md:text-lg text-[#887870] leading-relaxed max-w-2xl mx-auto mb-10 font-medium">
-            Aura Nova es más que una florería; es un sello de identidad creado con pasión en el corazón de los Andes. Nos dedicamos a diseñar experiencias únicas y a transformar tus emociones en detalles majestuosos. Porque cada arreglo lleva impregnado el arte, la dedicación y el espíritu vibrante de nuestra tierra.
-          </p>
-          <div className="flex justify-center items-center gap-4">
-            <div className="w-16 md:w-32 h-[1px] bg-gradient-to-r from-transparent via-[#c8a96b]/60 to-transparent"></div>
-            <Sparkles className="text-[#c8a96b] w-6 h-6 animate-pulse" />
-            <div className="w-16 md:w-32 h-[1px] bg-gradient-to-r from-transparent via-[#c8a96b]/60 to-transparent"></div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════ FEATURES TYPOGRAPHY ══════════════ */}
-      <div className="w-full relative z-10 flex flex-wrap justify-center gap-10 md:gap-24 px-6 text-center py-10 md:py-14 overflow-hidden">
-        <FloatingFlower src={flo} className="top-0 left-4 w-20 md:w-28 opacity-15 rotate-45 animate-float-gentle" />
-        <FloatingFlower src={flo4} className="bottom-0 right-8 w-24 md:w-36 opacity-10 -rotate-12 animate-float-delayed" />
-
-        <div className="flex flex-col items-center">
-          <h3 className="font-serif text-2xl md:text-4xl italic text-[#c8a96b] mb-2 tracking-wide">Regalos Únicos</h3>
-          <p className="font-sans text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#887870] font-bold">Seleccionados con amor</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <h3 className="font-serif text-2xl md:text-4xl italic text-[#c8a96b] mb-2 tracking-wide">Hechos con Cariño</h3>
-          <p className="font-sans text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#887870] font-bold">Cada detalle importa</p>
-        </div>
-        <div className="flex flex-col items-center">
-          <h3 className="font-serif text-2xl md:text-4xl italic text-[#c8a96b] mb-2 tracking-wide">Envíos Seguros</h3>
-          <p className="font-sans text-[10px] md:text-xs tracking-[0.2em] uppercase text-[#887870] font-bold">Llegamos a donde estés</p>
-        </div>
-      </div>
+      {/* ══════════════ CINTA DE LA MARCA ══════════════ */}
+      <BrandRibbon />
 
       {/* ══════════════ YAPE ONLINE ══════════════ */}
       <YapeOnlineSection />
@@ -174,7 +130,7 @@ export function HomeClient() {
       {/* ══════════════ HOW IT WORKS ══════════════ */}
       {/* Internal: flo1 top-right (40%), flo4 bottom-left (40%) */}
       <div className="relative">
-        <FloatingFlower src={muroromano} className="top-1/2 left-0 w-64 md:w-[28rem] opacity-70 -translate-y-1/2 -translate-x-1/3 column-mask" />
+        <FloatingFlower src={muroromano} className="top-1/2 left-0 hidden w-[28rem] -translate-x-1/2 -translate-y-1/2 opacity-50 column-mask lg:block" />
         <HowItWorksSection />
       </div>
 
@@ -191,19 +147,8 @@ export function HomeClient() {
       {/* ── Cloud transition ── */}
       <CloudDivider flip slower />
 
-      {/* ══════════════ FLORAL DETAILS ══════════════ */}
-      {/* Internal: flo4 top-right (40%), flo2 bottom-left (30%) */}
-      <FloralDetailsSection />
-
-      {/* ── Cloud transition ── */}
-      <CloudDivider />
-
-      {/* ══════════════ IMPORTANT INFO ══════════════ */}
-      {/* Internal: flo5 top-left (30%), flo6 bottom-right (40%) */}
-      <div className="relative">
-        <FloatingFlower src={flortallo} className="top-1/2 right-0 w-36 md:w-52 opacity-12 -translate-y-1/2 translate-x-1/3 vignette-mask" />
-        <ImportantInfoSection />
-      </div>
+      {/* ══════════════ LA PROMESA (frase + hecho por pedido) ══════════════ */}
+      <PromiseSection />
 
       {/* ── Cloud transition ── */}
       <CloudDivider flip slower />

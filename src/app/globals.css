@@ -81,6 +81,34 @@
   --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
   --animate-scale-in: scale-in 0.6s ease-out forwards;
   --animate-waterfall: waterfall 8s linear infinite;
+
+  /* Pétalos que caen meciéndose (portada) */
+  @keyframes petal-fall {
+    0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: var(--petal-opacity, 0.85); }
+    50% { transform: translate3d(var(--petal-drift, 40px), 50vh, 0) rotate(200deg); }
+    90% { opacity: var(--petal-opacity, 0.85); }
+    100% { transform: translate3d(calc(var(--petal-drift, 40px) * -0.5), 105vh, 0) rotate(380deg); opacity: 0; }
+  }
+  /* Cinta de texto infinita */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  /* Palabra que cambia en la portada */
+  @keyframes word-in {
+    0% { opacity: 0; transform: translateY(60%) rotateX(-60deg); filter: blur(4px); }
+    100% { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); }
+  }
+  /* Brillo dorado que recorre un borde */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-marquee-reverse: marquee 48s linear infinite reverse;
+  --animate-word-in: word-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-shimmer: shimmer 6s linear infinite;
 }
 
 :root {

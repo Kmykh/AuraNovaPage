@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { CreditCard, Gift, ShoppingBag, Sparkles } from 'lucide-react';
 
 import flo1 from '../images/flo1.png';
 import flo4 from '../images/flo4.png';
@@ -9,21 +10,25 @@ import flo4 from '../images/flo4.png';
 const steps = [
   {
     num: '01',
+    icon: Sparkles,
     title: 'Elige tu detalle',
     desc: 'Explora nuestro catálogo y encuentra el detalle que deseas regalar.',
   },
   {
     num: '02',
+    icon: ShoppingBag,
     title: 'Realiza tu pedido',
     desc: 'Selecciona tu detalle y completa los datos necesarios para coordinar tu pedido.',
   },
   {
     num: '03',
+    icon: CreditCard,
     title: 'Confirma reserva',
     desc: 'Paga en la web con tarjeta o Yape: un adelanto del 50% o el total.',
   },
   {
     num: '04',
+    icon: Gift,
     title: 'Recibe o recoge',
     desc: 'Elige entre delivery, punto de encuentro o envío a otras ciudades.',
   }
@@ -65,8 +70,10 @@ export function HowItWorksSection() {
         {/* Horizontal Timeline */}
         <div className="relative mt-12">
           
-          {/* Connector Line (Desktop) */}
-          <div className="hidden lg:block absolute top-8 left-12 right-12 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+          {/* Línea que se dibuja al aparecer (computadora) */}
+          <div className="absolute left-[12%] right-[12%] top-10 hidden h-px bg-gold/15 lg:block">
+            <div className={`h-full origin-left bg-gradient-to-r from-[#e9a4b4] via-gold to-[#e9a4b4] transition-transform duration-[1800ms] ease-out ${isVisible ? 'scale-x-100' : 'scale-x-0'}`} />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
             {steps.map((step, index) => (
@@ -75,15 +82,14 @@ export function HowItWorksSection() {
                 className={`relative flex flex-col items-center text-center transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
                 style={{ transitionDelay: `${index * 150 + 200}ms` }}
               >
-                {/* Number Circle */}
-                <div className="w-16 h-16 rounded-full bg-cream border border-gold/30 flex items-center justify-center mb-6 shadow-sm relative z-10 group hover:scale-110 hover:border-gold transition-all duration-500">
-                  <span className="font-serif text-2xl text-gold font-bold">{step.num}</span>
-                  {/* Outer glowing ring on hover */}
-                  <div className="absolute inset-0 rounded-full border border-gold/20 scale-125 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                {/* Ícono con su número */}
+                <div className="group relative z-10 mb-6 flex h-20 w-20 items-center justify-center rounded-[1.75rem] border border-gold/30 bg-white shadow-[0_18px_30px_-20px_rgba(74,57,51,0.5)] transition-all duration-500 hover:-translate-y-1 hover:rotate-3 hover:border-gold">
+                  <step.icon className="h-8 w-8 text-[#b08a4e] transition-transform duration-500 group-hover:scale-110" strokeWidth={1.5} />
+                  <span className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#4a3933] font-serif text-xs font-bold text-[#e8c98a] shadow">{step.num}</span>
                 </div>
-                
-                <h3 className="font-serif text-xl font-semibold text-brown mb-3">{step.title}</h3>
-                <p className="text-sage text-sm leading-relaxed px-4">{step.desc}</p>
+
+                <h3 className="mb-3 font-serif text-xl font-semibold text-brown">{step.title}</h3>
+                <p className="max-w-[16rem] px-4 text-sm leading-relaxed text-sage">{step.desc}</p>
               </div>
             ))}
           </div>
