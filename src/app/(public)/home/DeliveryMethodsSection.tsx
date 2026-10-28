@@ -11,19 +11,19 @@ const shippingOptions = [
   {
     icon: <MapPin size={28} strokeWidth={1.5} />,
     title: "Delivery Local",
-    description: "Entrega directa a tu puerta en diversos distritos de Lima. Calcula el costo exacto al finalizar tu compra.",
+    description: "Te lo llevamos a tu puerta en Huancayo. El costo depende de tu zona y lo ves antes de pagar.",
     badge: "Popular"
   },
   {
     icon: <Map size={28} strokeWidth={1.5} />,
     title: "Puntos de Encuentro",
-    description: "Opciones súper económicas en puntos estratégicos y seguros de la ciudad para tu mayor comodidad.",
+    description: "Recógelo en un punto conocido de la ciudad, en el horario que coordinemos contigo.",
     badge: "Económico"
   },
   {
     icon: <Plane size={28} strokeWidth={1.5} />,
     title: "Envíos Nacionales",
-    description: "Llegamos a todo el Perú mediante Olva Courier o Shalom con entrega segura y código de seguimiento hasta tu ciudad.",
+    description: "Llegamos a todo el Perú por Shalom u Olva. El flete lo pagas al recoger en la agencia.",
     badge: "Todo el país"
   }
 ];
@@ -75,14 +75,16 @@ export function DeliveryMethodsSection() {
           </p>
         </div>
 
-        {/* Options Grid (No Cards) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+        {/* Tres formas de entrega en arcos */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
           {shippingOptions.map((option, index) => (
             <div 
               key={index} 
-              className={`group flex flex-col items-center text-center transition-all duration-700 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
+              className={`group relative flex flex-col items-center overflow-hidden rounded-b-[2rem] rounded-t-[5rem] md:rounded-t-[10rem] border border-[#ece3da] bg-white/75 px-6 pb-8 pt-10 text-center backdrop-blur transition-all duration-700 hover:-translate-y-2 hover:border-[#c8a96b]/60 hover:shadow-[0_30px_50px_-30px_rgba(74,57,51,0.5)] ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
               style={{ transitionDelay: `${index * 200}ms` }}
             >
+              {/* Brillo dorado en el borde superior */}
+              <span className="absolute inset-x-10 top-0 h-[3px] rounded-full bg-[linear-gradient(90deg,transparent,#e8c98a,#e9a4b4,#e8c98a,transparent)] bg-[length:200%_100%] animate-shimmer" />
               {/* Badge */}
               <div className="mb-6 bg-white/50 backdrop-blur-sm text-gold border border-gold/20 text-[10px] uppercase tracking-widest font-bold px-4 py-1.5 rounded-full">
                 {option.badge}
