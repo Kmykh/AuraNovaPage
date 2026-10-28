@@ -1,10 +1,14 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
-import Image from 'next/image';
+import Image, { StaticImageData } from 'next/image';
 import { ArrowUpDown, Check, Flame, Flower2, Gift, LayoutGrid, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { Category } from '@/types/categories';
 import { getImageUrl } from '@/lib/formatters';
+
+import floRosa from '@/app/(public)/images/flo2.png';
+import floAmarilla from '@/app/(public)/images/flowera.png';
+import floNaranja from '@/app/(public)/images/flo6.png';
 
 export type CatalogSort = 'recomendados' | 'precio-asc' | 'precio-desc' | 'nuevos';
 export type CatalogAudience = '' | 'Chicas' | 'Chicos' | 'Unisex';
@@ -16,12 +20,36 @@ export const SORTS: { value: CatalogSort; label: string }[] = [
   { value: 'precio-desc', label: 'Mayor precio' },
 ];
 
-export const AUDIENCES: { value: CatalogAudience; label: string; emoji: string }[] = [
-  { value: '', label: 'Todos', emoji: '✨' },
-  { value: 'Chicas', label: 'Para ella', emoji: '🌷' },
-  { value: 'Chicos', label: 'Para él', emoji: '🌻' },
-  { value: 'Unisex', label: 'Unisex', emoji: '💐' },
+/** Cada público con una acuarela de la marca ("Todos": las tres juntas). */
+export const AUDIENCES: { value: CatalogAudience; label: string; images: StaticImageData[] }[] = [
+  { value: '', label: 'Todos', images: [floRosa, floAmarilla, floNaranja] },
+  { value: 'Chicas', label: 'Para ella', images: [floRosa] },
+  { value: 'Chicos', label: 'Para él', images: [floAmarilla] },
+  { value: 'Unisex', label: 'Unisex', images: [floNaranja] },
 ];
+
+/** Flor (o ramillete de tres) junto al texto del público. */
+function AudienceIcon({ images, size = 22 }: { images: StaticImageData[]; size?: number }) {
+  if (images.length === 1) {
+    return <Image src={images[0]} alt="" width={size} height={size} sizes={`${size}px`} className="shrink-0 object-contain mix-blend-multiply" style={{ width: size, height: size }} />;
+  }
+  return (
+    <span className="relative inline-block shrink-0" style={{ width: size * 1.45, height: size }} aria-hidden>
+      {images.map((img, i) => (
+        <Image
+          key={i}
+          src={img}
+          alt=""
+          width={size}
+          height={size}
+          sizes={`${size}px`}
+          className="absolute top-0 object-contain mix-blend-multiply"
+          style={{ left: i * size * 0.22, width: size * 0.9, height: size * 0.9, zIndex: 3 - i, transform: `rotate(${(i - 1) * 14}deg)` }}
+        />
+      ))}
+    </span>
+  );
+}
 
 export interface CategoryChip {
   category: Category;
@@ -141,11 +169,14 @@ export function CatalogFilterBar(props: CatalogFilterBarProps) {
                 role="radio"
                 aria-checked={audience === a.value}
                 onClick={() => props.onAudience(a.value)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-                  audience === a.value ? 'bg-[#4a3933] text-white shadow-sm' : 'text-[#6b5a50] hover:text-[#4a3933]'
+                className={`inline-flex items-center gap-1.5 rounded-full py-1 pl-1.5 pr-3.5 text-xs font-semibold transition ${
+                  audience === a.value ? 'bg-white text-[#4a3933] shadow-sm ring-1 ring-[#c8a96b]/50' : 'text-[#6b5a50] hover:bg-white/60 hover:text-[#4a3933]'
                 }`}
               >
-                <span aria-hidden className="mr-1">{a.emoji}</span>{a.label}
+                <span className={`flex items-center justify-center rounded-full transition ${audience === a.value ? 'bg-[#fdf3ea]' : ''}`} style={{ height: 26, minWidth: 26 }}>
+                  <AudienceIcon images={a.images} />
+                </span>
+                {a.label}
               </button>
             ))}
           </div>
@@ -261,12 +292,12 @@ function FilterSheet({ audience, sort, resultCount, onAudience, onSort, onClose 
               key={a.label}
               type="button"
               onClick={() => onAudience(a.value)}
-              className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                audience === a.value ? 'border-[#4a3933] bg-[#4a3933] text-white' : 'border-[#e8dcdc] bg-white text-[#4a3933]'
+              className={`flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left text-sm font-semibold transition ${
+                audience === a.value ? 'border-[#c8a96b] bg-[#fffaf0] text-[#4a3933] ring-2 ring-[#c8a96b]/20' : 'border-[#e8dcdc] bg-white text-[#4a3933]'
               }`}
             >
-              <span aria-hidden className="text-lg">{a.emoji}</span> {a.label}
-              {audience === a.value && <Check className="ml-auto h-4 w-4 text-[#e8c98a]" />}
+              <AudienceIcon images={a.images} size={28} /> {a.label}
+              {audience === a.value && <Check className="ml-auto h-4 w-4 text-[#c8a96b]" />}
             </button>
           ))}
         </div>

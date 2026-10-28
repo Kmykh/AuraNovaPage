@@ -154,24 +154,11 @@ export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZ
           )
         )}
 
-        {isNational && (
-          <>
-            <NationalShippingFields value={value} set={set} />
-            {!value.isGift && (
-              <Input
-                label="Tu DNI *"
-                inputMode="numeric"
-                maxLength={8}
-                value={value.recipientDocument}
-                onChange={e => set({ recipientDocument: e.target.value.replace(/\D/g, '') })}
-                placeholder="8 dígitos"
-                helperText="La agencia lo pide para entregarte el paquete."
-              />
-            )}
-          </>
-        )}
+        {/* Envío nacional: agencia, distrito, sucursal y quién recoge (con su DNI) */}
+        {isNational && <NationalShippingFields value={value} set={set} />}
 
-        {/* ¿Quién recibe? */}
+        {/* ¿Quién recibe? (delivery y punto de encuentro) */}
+        {!isNational && (
         <div className="rounded-2xl border border-[#e8dcdc] bg-white p-4">
           <label className="flex cursor-pointer items-center gap-3">
             <input
@@ -213,6 +200,7 @@ export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZ
             <p className="mt-3 text-xs text-[#887870]">Coordinamos con esa persona la entrega para que la sorpresa salga perfecta.</p>
           )}
         </div>
+        )}
       </div>
     </div>
   );

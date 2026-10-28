@@ -14,6 +14,8 @@ export interface DeliveryFormValue {
   province: string;
   district: string;
   agency: ShippingAgency | '';
+  /** Envío nacional: no sabe la sucursal y pide que elijamos la más cercana (si no, la sucursal es obligatoria) */
+  branchUnknown: boolean;
   /** Lo recibe otra persona (regalo) */
   isGift: boolean;
   recipientName: string;
@@ -35,6 +37,7 @@ export const emptyDelivery = (): DeliveryFormValue => ({
   province: LOCAL_PROVINCE,
   district: '',
   agency: '',
+  branchUnknown: false,
   isGift: false,
   recipientName: '',
   recipientPhone: '',
@@ -57,7 +60,10 @@ export function validateDelivery(value: DeliveryFormValue): string | null {
   if (value.type === DeliveryType.NationalShipping) {
     if (!value.agency) return 'Elige la agencia (Shalom u Olva).';
     if (!value.department || !value.province.trim() || !value.district.trim()) return 'Elige el distrito a donde lo enviamos.';
-    if (!isValidDni(value.recipientDocument)) return 'Ingresa el DNI de 8 dígitos de quien recoge en la agencia.';
+    // En un distrito hay varias sucursales: la escribe o marca a propósito que no la sabe
+    if (!value.branchUnknown && value.address.trim().length < 3) return `Escribe la sucursal de ${value.agency} o marca "No sé cuál sucursal".`;
+    if (value.isGift && value.recipientName.trim().split(/\s+/).length < 2) return 'Escribe el nombre y apellido de quien recoge (como figura en su DNI).';
+    if (!isValidDni(value.recipientDocument)) return value.isGift ? 'Ingresa el DNI de 8 dígitos de quien recoge.' : 'Ingresa tu DNI de 8 dígitos: la agencia lo pide al entregar.';
   }
   if (value.isGift) {
     if (value.recipientName.trim().length < 2) return 'Escribe el nombre de quien recibe.';
@@ -97,8 +103,8 @@ export function toDeliveryRequest(value: DeliveryFormValue, zones?: DeliveryZone
 
   return {
     type: value.type.toString(),
-    // Sucursal opcional: sin ella se envía a la agencia más cercana del distrito
-    deliveryAddress: value.address.trim() || undefined,
+    // La sucursal elegida o, si no la sabe, el pedido de que elijamos la más cercana
+    deliveryAddress: branchText(value),
     deliveryReference: value.reference.trim() || undefined,
     department: value.department,
     province: value.province.trim(),
@@ -107,6 +113,13 @@ export function toDeliveryRequest(value: DeliveryFormValue, zones?: DeliveryZone
     recipientDocument: value.recipientDocument.replace(/\s/g, ''),
     ...recipient,
   };
+}
+
+/** Sucursal de la agencia tal como la ve el taller. */
+export function branchText(value: DeliveryFormValue): string {
+  return value.branchUnknown
+    ? `Elegir la más cercana a ${value.district || 'su distrito'} y confirmar por WhatsApp`
+    : value.address.trim();
 }
 
 /** Texto corto para resúmenes y el mensaje de WhatsApp de respaldo. */
@@ -120,6 +133,6 @@ export function describeDelivery(value: DeliveryFormValue, zones?: DeliveryZoneR
     return `Punto de encuentro: ${point?.name ?? 'por elegir'}`;
   }
   const destination = [value.district, value.province, value.department].filter(Boolean).join(', ');
-  const branch = value.address.trim() ? ` — sucursal: ${value.address.trim()}` : ' — agencia más cercana';
+  const branch = ` — sucursal: ${branchText(value)}`;
   return `Envío por ${value.agency || 'agencia'} a ${destination}${branch} (el envío se paga al recoger)`;
 }
