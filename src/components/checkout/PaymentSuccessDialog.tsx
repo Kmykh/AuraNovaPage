@@ -85,9 +85,9 @@ function Success({ success, orderCode, trackingCode, onClose }: { success: Payme
       <div className="relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#5f8f6b] to-[#3f6b4c] text-white shadow-lg shadow-emerald-900/20">
         <Check className="h-10 w-10" strokeWidth={3} />
       </div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#4f755b]">Pago aprobado</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#4f755b]">{fullyPaid ? 'Pago aprobado' : 'Adelanto pagado'}</p>
       <h2 className="mt-1 font-serif text-3xl font-bold text-[#4a3933]">
-        {fullyPaid ? '¡Tu pedido está pagado!' : '¡Recibimos tu adelanto!'}
+        {fullyPaid ? '¡Tu pedido está pagado!' : '¡Adelanto pagado!'}
       </h2>
 
       <div className="mx-auto mt-5 inline-flex items-center gap-3 rounded-2xl border border-[#e8dcdc] bg-[#fffdf9] px-5 py-3">
@@ -103,7 +103,7 @@ function Success({ success, orderCode, trackingCode, onClose }: { success: Payme
       <p className="mx-auto mt-5 max-w-xs text-sm leading-relaxed text-[#6b5a50]">
         {fullyPaid
           ? 'Empezamos a preparar tu detalle y te avisamos en cada paso hasta la entrega.'
-          : <>Ya empezamos tu pedido. Te falta <strong className="text-[#4a3933]">{formatCurrency(success.balanceDue)}</strong>; te avisamos cuando esté listo para que lo pagues.</>}
+          : <>Ya empezamos tu pedido. Te falta <strong className="text-[#4a3933]">{formatCurrency(success.balanceDue)}</strong>: lo pagas antes de la entrega desde tu seguimiento, con un código de Yape nuevo o tu tarjeta. Te avisamos cuando esté listo.</>}
       </p>
       <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#887870]">
         <Mail className="h-3.5 w-3.5 text-[#c8a96b]" /> Te enviamos la confirmación a tu correo.
@@ -111,8 +111,9 @@ function Success({ success, orderCode, trackingCode, onClose }: { success: Payme
 
       <div className="mt-6 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <Link href={trackingHref} className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#4a3933] text-sm font-bold text-white transition hover:bg-[#3a2d28]">
-          <PackageCheck className="h-4 w-4 text-[#e8c98a]" /> Ver mi pedido
+          <PackageCheck className="h-4 w-4 text-[#e8c98a]" /> Ver mi seguimiento
         </Link>
+        {/* También lleva al seguimiento: después de pagar no se vuelve al formulario */}
         <button type="button" onClick={onClose} className="h-12 rounded-full border border-[#e8dcdc] bg-white text-sm font-bold text-[#4a3933] transition hover:border-[#c8a96b]">
           Entendido
         </button>
