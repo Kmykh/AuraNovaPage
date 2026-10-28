@@ -269,7 +269,8 @@ export function ProductDetailClient({ id }: ProductDetailClientProps) {
 
         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-2 lg:gap-14">
           {/* Galería */}
-          <div className="md:sticky md:top-24">
+          {/* z-20: el recuadro de zoom se muestra encima de la columna de personalización */}
+          <div className="md:sticky md:top-24 md:z-20">
             <ProductGallery
               images={productImages(product)}
               name={product.name}
