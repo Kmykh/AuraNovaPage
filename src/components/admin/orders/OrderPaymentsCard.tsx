@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, CreditCard, RotateCcw, Smartphone, Undo2, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Copy, CreditCard, RotateCcw, Smartphone, Undo2, XCircle } from 'lucide-react';
 import { AdminOrderPayment, AdminPaymentTransaction } from '@/types/orders';
 import { formatCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/order-helpers';
@@ -14,7 +14,16 @@ export const CARD_BRANDS: Record<string, string> = {
   amex: 'American Express', diners: 'Diners', yape: 'Yape',
 };
 
-export function paymentStatusBadge(t: Pick<AdminPaymentTransaction, 'approved' | 'status' | 'refundedAmount' | 'amount'>) {
+/** Mercado Pago respondió 409: el cliente volvió a enviar el mismo código de Yape (o la misma tarjeta). No se cobró. */
+export const isRepeatedAttempt = (t: { approved: boolean; statusDetail?: string | null }) =>
+  !t.approved && !!t.statusDetail?.includes('idempotency_key_already_used');
+
+/** Texto para el panel en lugar del error técnico de Mercado Pago. */
+export const attemptDetail = (t: { approved: boolean; statusDetail?: string | null }) =>
+  isRepeatedAttempt(t) ? 'Se envió otra vez el mismo código: Mercado Pago no cobró de nuevo.' : t.statusDetail;
+
+export function paymentStatusBadge(t: Pick<AdminPaymentTransaction, 'approved' | 'status' | 'refundedAmount' | 'amount' | 'statusDetail'>) {
+  if (isRepeatedAttempt(t)) return { label: 'Repetido · no se cobró', className: 'bg-stone-100 text-stone-600', icon: Copy };
   if (t.approved && t.refundedAmount >= t.amount) return { label: 'Devuelto', className: 'bg-stone-100 text-stone-600', icon: Undo2 };
   if (t.approved && t.refundedAmount > 0) return { label: 'Devuelto en parte', className: 'bg-sky-50 text-sky-700', icon: Undo2 };
   if (t.approved) return { label: 'Aprobado', className: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 };
@@ -88,7 +97,7 @@ export function OrderPaymentsCard({ orderId, payment }: { orderId: string; payme
                     {formatDate(t.createdAt)}{t.externalOrderId ? ` · ${t.externalOrderId}` : ''}
                   </p>
                   {/* Motivo del rechazo tal como lo dio Mercado Pago (completo, para saber qué pasó) */}
-                  {!t.approved && t.statusDetail && <p className="mt-0.5 break-words text-xs text-rose-600">{t.statusDetail}</p>}
+                  {!t.approved && t.statusDetail && <p className={`mt-0.5 break-words text-xs ${isRepeatedAttempt(t) ? 'text-sage' : 'text-rose-600'}`}>{attemptDetail(t)}</p>}
                   {t.refundedAmount > 0 && (
                     <p className="text-xs font-semibold text-sky-700">Devuelto: {formatCurrency(t.refundedAmount)}{t.refundedAt ? ` · ${formatDate(t.refundedAt)}` : ''}</p>
                   )}

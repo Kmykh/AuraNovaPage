@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Download, RefreshCw, Search } from 'lucide-react';
 import { useOnlinePaymentsReport } from '@/hooks/use-admin-payments';
 import { OnlinePaymentReportRow } from '@/types/orders';
-import { CARD_BRANDS, paymentStatusBadge } from '@/components/admin/orders/OrderPaymentsCard';
+import { CARD_BRANDS, attemptDetail, paymentStatusBadge } from '@/components/admin/orders/OrderPaymentsCard';
 import { formatCurrency } from '@/lib/formatters';
 import { formatDate } from '@/lib/order-helpers';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -63,7 +63,7 @@ function toCsv(rows: OnlinePaymentReportRow[]) {
     r.amount.toFixed(2),
     r.refundedAmount.toFixed(2),
     paymentStatusBadge(r).label,
-    r.approved ? '' : r.statusDetail,
+    r.approved ? '' : attemptDetail(r),
     r.externalOrderId,
   ].map(quote).join(','));
   // BOM para que Excel lea bien las tildes
@@ -210,7 +210,7 @@ export function OnlinePaymentsReport() {
                               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
                                 <badge.icon size={11} /> {badge.label}
                               </span>
-                              {!r.approved && r.statusDetail && <p className="mt-0.5 max-w-[220px] break-words text-[11px] text-sage" title={r.statusDetail}>{r.statusDetail}</p>}
+                              {!r.approved && r.statusDetail && <p className="mt-0.5 max-w-[220px] break-words text-[11px] text-sage" title={r.statusDetail}>{attemptDetail(r)}</p>}
                             </td>
                             <td className="py-2.5 font-mono text-[11px] text-sage">{r.externalOrderId ?? '—'}</td>
                           </tr>

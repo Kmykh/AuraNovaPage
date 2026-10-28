@@ -72,13 +72,12 @@ export function YapeForm({ amount, disabled, onPay }: YapeFormProps) {
     sending.current = true;
     setPaying(true);
     try {
-      const approved = await onPay(phone, codeValue);
-      // El código es de un solo uso: si no se aprobó, se pide uno nuevo
-      if (!approved) {
-        setCode(Array(CODE_LENGTH).fill(''));
-        setSubmitted(false);
-      }
+      await onPay(phone, codeValue);
     } finally {
+      // El código es de un solo uso (también si se aprobó): reenviarlo hace que Mercado Pago lo rechace.
+      // Para pagar el saldo se necesita uno nuevo.
+      setCode(Array(CODE_LENGTH).fill(''));
+      setSubmitted(false);
       sending.current = false;
       setPaying(false);
     }
