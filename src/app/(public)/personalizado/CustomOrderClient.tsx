@@ -17,7 +17,9 @@ import { CreateOrderResponse, DeliveryType } from '@/types/checkout';
 import { CreateCustomOrderRequest } from '@/types/orders';
 import { OrdersService } from '@/services/orders.service';
 import { useMounted } from '@/hooks/use-mounted';
-import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
+import { readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
+import { isAbroadPhone, isValidCustomerPhone, phoneError } from '@/lib/phone';
+import { PhoneField } from '@/components/checkout/PhoneField';
 import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDeliveryRequest, validateDelivery } from '@/lib/delivery-form';
 import { ApiProblemDetails } from '@/lib/api-errors';
 
@@ -112,7 +114,7 @@ export function CustomOrderClient() {
 
   // Paso 2: contacto y entrega
   const [customer, setCustomer] = useState(readSavedCustomer);
-  const [delivery, setDelivery] = useState<DeliveryFormValue>(emptyDelivery);
+  const [delivery, setDelivery] = useState<DeliveryFormValue>(() => ({ ...emptyDelivery(), isGift: isAbroadPhone(readSavedCustomer().phone) }));
 
   const hasReference = images.length > 0 || links.length > 0;
   const estimatedDeliveryCost = deliveryCost(delivery, deliveryZones, meetingPoints);
@@ -184,15 +186,15 @@ export function CustomOrderClient() {
       toast.error('Escribe tu nombre completo');
       return;
     }
-    if (!isValidPeruPhone(customer.phone)) {
-      toast.error('Revisa tu WhatsApp', { description: 'Debe tener 9 dígitos y empezar con 9 (ej. 987654321).' });
+    if (!isValidCustomerPhone(customer.phone)) {
+      toast.error('Revisa tu WhatsApp', { description: phoneError(customer.phone) });
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(customer.email.trim())) {
       toast.error('Revisa tu correo', { description: 'Ahí te enviamos la cotización y el seguimiento.' });
       return;
     }
-    const deliveryError = validateDelivery(delivery);
+    const deliveryError = validateDelivery(delivery, isAbroadPhone(customer.phone));
     if (deliveryError) {
       toast.error('Revisa los datos de entrega', { description: deliveryError });
       return;
@@ -478,16 +480,17 @@ export function CustomOrderClient() {
                 <SectionTitle number={3} title="Tus datos" hint="Te enviamos la cotización por WhatsApp y correo." />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Input label="Nombre completo *" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="Ej. María López" autoComplete="name" />
-                  <Input
-                    label="WhatsApp *"
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={9}
-                    value={customer.phone}
-                    onChange={e => setCustomer({ ...customer, phone: e.target.value.replace(/\D/g, '') })}
-                    placeholder="987654321"
-                    autoComplete="tel-national"
-                  />
+                  <div>
+                    <label htmlFor="custom-phone" className="mb-1.5 ml-1 block text-xs font-bold uppercase tracking-widest text-[#887870]">WhatsApp *</label>
+                    <PhoneField
+                      id="custom-phone"
+                      value={customer.phone}
+                      onChange={phone => {
+                        setCustomer(c => ({ ...c, phone }));
+                        if (isAbroadPhone(phone)) setDelivery(d => (d.isGift ? d : { ...d, isGift: true }));
+                      }}
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <Input label="Correo *" type="email" value={customer.email} onChange={e => setCustomer({ ...customer, email: e.target.value })} placeholder="tucorreo@ejemplo.com" autoComplete="email" />
                   </div>
@@ -503,6 +506,7 @@ export function CustomOrderClient() {
                   points={meetingPoints}
                   isLoadingZones={isLoadingZones}
                   isLoadingPoints={isLoadingPoints}
+                  buyerAbroad={isAbroadPhone(customer.phone)}
                 />
               </section>
             </div>

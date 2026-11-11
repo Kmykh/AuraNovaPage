@@ -18,6 +18,8 @@ const AGENCY_HINT: Record<ShippingAgency, string> = {
 interface Props {
   value: DeliveryFormValue;
   set: (patch: Partial<DeliveryFormValue>) => void;
+  /** Compra desde otro país: recoge otra persona en el Perú */
+  buyerAbroad?: boolean;
 }
 
 const sectionTitle = 'mb-2 ml-1 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#887870]';
@@ -27,7 +29,7 @@ const stepBadge = 'flex h-5 w-5 items-center justify-center rounded-full bg-[#4a
  * Envío a provincias como lo pide el cliente ("por Shalom a Carabayllo"), en orden: agencia, distrito,
  * sucursal (o "no sé cuál" a propósito) y quién lo recoge con su DNI. Hoy paga sus detalles; el envío, al recoger.
  */
-export function NationalShippingFields({ value, set }: Props) {
+export function NationalShippingFields({ value, set, buyerAbroad = false }: Props) {
   const { data: ubigeo, isLoading } = useQuery({ queryKey: ['ubigeo-pe'], queryFn: loadUbigeo, staleTime: Infinity });
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -208,14 +210,18 @@ export function NationalShippingFields({ value, set }: Props) {
             { other: true, icon: Users, title: 'Otra persona', hint: 'Con su nombre y DNI' },
           ].map(option => {
             const active = value.isGift === option.other;
+            // Desde otro país no puede recogerlo uno mismo
+            const blocked = buyerAbroad && !option.other;
             return (
               <button
                 key={option.title}
                 type="button"
                 role="radio"
                 aria-checked={active}
+                disabled={blocked}
+                title={blocked ? 'Estás fuera del Perú: lo recoge otra persona' : undefined}
                 onClick={() => set({ isGift: option.other })}
-                className={`flex flex-col items-start gap-2 rounded-2xl border p-3.5 text-left transition sm:flex-row sm:items-center sm:gap-3 ${
+                className={`flex flex-col items-start gap-2 rounded-2xl border p-3.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40 sm:flex-row sm:items-center sm:gap-3 ${
                   active ? 'border-[#c8a96b] bg-white shadow-sm ring-2 ring-[#c8a96b]/20' : 'border-[#e8dcdc] bg-white/70 hover:border-[#c8a96b]/40'
                 }`}
               >
@@ -231,6 +237,9 @@ export function NationalShippingFields({ value, set }: Props) {
           })}
         </div>
 
+        {buyerAbroad && (
+          <p className="ml-1 mt-2 text-xs font-medium text-[#8f6d28]">Como compras desde otro país, lo recoge alguien en el Perú con su DNI.</p>
+        )}
         <div className="mt-3 rounded-2xl border border-[#efe6dd] bg-white p-4">
           {value.isGift ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

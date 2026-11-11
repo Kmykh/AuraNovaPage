@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { AlertCircle, Check, Info, Loader2, Lock } from 'lucide-react';
+import { AlertCircle, Check, Globe, Info, Loader2, Lock } from 'lucide-react';
 import { OrderPaymentSummary, OnlinePaymentResult } from '@/types/orders';
 import { OnlinePaymentsService } from '@/services/online-payments.service';
 import { useMercadoPago } from '@/hooks/use-mercadopago';
@@ -54,6 +54,9 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   const [payFull, setPayFull] = useState(true);
   const [method, setMethod] = useState<PaymentMethodChoice>('card');
   const [notice, setNotice] = useState<Notice>(null);
+  // Desde otro país se paga con tarjeta; Yape (solo de Perú) queda a mano por si tiene una cuenta peruana
+  const abroad = !!summary.internationalBuyer;
+  const [showYape, setShowYape] = useState(!abroad);
 
   const offersDeposit = !isBalance && deposit != null && deposit < total;
   const amount = isBalance ? summary.balanceDue : payFull || !offersDeposit ? total : deposit!;
@@ -155,9 +158,9 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
   }
 
   const methods = [
-    { key: 'card' as const, label: 'Tarjeta', hint: 'Crédito o débito', icon: CardMethodIcon, ring: 'border-[#4a3933]' },
+    { key: 'card' as const, label: 'Tarjeta', hint: abroad ? 'De cualquier país' : 'Crédito o débito', icon: CardMethodIcon, ring: 'border-[#4a3933]' },
     { key: 'yape' as const, label: 'Yape', hint: 'Código de aprobación', icon: YapeLogo, ring: 'border-[#742284]' },
-  ];
+  ].filter(item => item.key === 'card' || showYape);
 
   return (
     <section className="overflow-hidden rounded-[2rem] border border-[#e8dcdc] bg-white shadow-[0_24px_50px_-30px_rgba(74,57,51,0.45)]">
@@ -214,7 +217,25 @@ export function MercadoPagoCheckout({ summary, onPaid, onProcessing }: MercadoPa
         {/* 2. Cómo paga */}
         <div>
           <StepTitle number={isBalance || !offersDeposit ? 1 : 2}>¿Cómo quieres pagar?</StepTitle>
-          <div className="grid grid-cols-2 gap-2.5" role="tablist" aria-label="Medio de pago">
+          {/* Compra desde otro país: se cobra en soles y su banco lo convierte */}
+          {abroad && (
+            <div className="mb-3 flex items-start gap-3 rounded-2xl border border-[#c8a96b]/35 bg-[#fffaf0] p-4 text-sm text-[#5e4a42]">
+              <Globe className="mt-0.5 h-5 w-5 shrink-0 text-[#b08a4e]" />
+              <div>
+                <p className="font-bold text-[#4a3933]">Pagas desde otro país</p>
+                <p className="mt-0.5 leading-relaxed">
+                  Se cobra en soles ({formatCurrency(amount)}). Tu banco lo convierte a tu moneda y puede cobrarte una comisión o impuestos
+                  por compra en el exterior. Usa una tarjeta habilitada para compras internacionales por internet.
+                </p>
+                {!showYape && (
+                  <button type="button" onClick={() => setShowYape(true)} className="mt-2 text-xs font-bold text-[#742284] underline-offset-2 hover:underline">
+                    ¿Tienes Yape de Perú? Pagar con Yape
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          <div className={`grid gap-2.5 ${methods.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`} role="tablist" aria-label="Medio de pago">
             {methods.map(item => {
               const active = method === item.key;
               return (

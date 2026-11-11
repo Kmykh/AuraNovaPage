@@ -50,8 +50,12 @@ export function deliveryCost(value: DeliveryFormValue, zones?: DeliveryZoneRespo
   return 0;
 }
 
-/** Primer dato que falta o está mal, o null si se puede continuar. */
-export function validateDelivery(value: DeliveryFormValue): string | null {
+/**
+ * Primer dato que falta o está mal, o null si se puede continuar.
+ * buyerAbroad: el cliente compra desde otro país, así que alguien en el Perú recibe (o recoge) el pedido.
+ */
+export function validateDelivery(value: DeliveryFormValue, buyerAbroad = false): string | null {
+  if (buyerAbroad && !value.isGift) return 'Como estás fuera del Perú, indícanos quién recibe el pedido aquí.';
   if (value.type === DeliveryType.Delivery) {
     if (!value.zoneId) return 'Elige tu zona de reparto.';
     if (value.address.trim().length < 6) return 'Escribe la dirección exacta de entrega.';
