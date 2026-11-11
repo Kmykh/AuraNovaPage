@@ -22,7 +22,9 @@ import { DeliveryFormValue, deliveryCost, describeDelivery, emptyDelivery, toDel
 import { itemAccessories, itemColors, itemFlowers } from '@/lib/product-options';
 import { cardSummary } from '@/lib/card-design';
 import { PurchaseSteps } from '../carrito/CartClient';
-import { isValidPeruPhone, readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
+import { readSavedCustomer, saveCustomer } from '@/lib/saved-customer';
+import { isAbroadPhone, isValidCustomerPhone, phoneError } from '@/lib/phone';
+import { PhoneField } from '@/components/checkout/PhoneField';
 
 export function CheckoutClient() {
   const isMounted = useMounted();
@@ -42,9 +44,15 @@ export function CheckoutClient() {
   const [customer, setCustomer] = useState(readSavedCustomer);
   
   // Entrega: solo los datos que aplican a cada modalidad
-  const [delivery, setDelivery] = useState<DeliveryFormValue>(emptyDelivery);
+  const [delivery, setDelivery] = useState<DeliveryFormValue>(() => ({ ...emptyDelivery(), isGift: isAbroadPhone(readSavedCustomer().phone) }));
   const deliveryType = delivery.type;
   const address = delivery.address;
+  // Compra desde otro país: paga con tarjeta y alguien en el Perú recibe el pedido
+  const buyerAbroad = isAbroadPhone(customer.phone);
+  const changePhone = (phone: string) => {
+    setCustomer(c => ({ ...c, phone }));
+    if (isAbroadPhone(phone)) setDelivery(d => (d.isGift ? d : { ...d, isGift: true }));
+  };
 
   // Redirigir si el carrito está vacío y no hay orden creada
   useEffect(() => {
@@ -89,12 +97,12 @@ export function CheckoutClient() {
       return;
     }
     
-    if (!isValidPeruPhone(customer.phone)) {
-      toast.error('Revisa tu número de WhatsApp', { description: 'Debe tener 9 dígitos y empezar con 9 (ej. 987654321).' });
+    if (!isValidCustomerPhone(customer.phone)) {
+      toast.error('Revisa tu número de WhatsApp', { description: phoneError(customer.phone) });
       return;
     }
 
-    const deliveryError = validateDelivery(delivery);
+    const deliveryError = validateDelivery(delivery, buyerAbroad);
     if (deliveryError) {
       toast.error('Revisa los datos de entrega', { description: deliveryError });
       return;
@@ -285,17 +293,9 @@ export function CheckoutClient() {
                   <span>WhatsApp / Teléfono *</span>
                 </span>
               </div>
-              <Input 
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9]*"
+              <PhoneField
                 value={customer.phone}
-                onChange={e => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setCustomer({ ...customer, phone: val });
-                }}
-                required
-                placeholder="Ej. 987654321"
+                onChange={changePhone}
                 helperText="Te enviaremos foto de tu detalle terminado antes de despacharlo."
               />
             </div>
@@ -352,6 +352,7 @@ export function CheckoutClient() {
             points={meetingPoints}
             isLoadingZones={isLoadingZones}
             isLoadingPoints={isLoadingPoints}
+            buyerAbroad={buyerAbroad}
           />
         </section>
       </div>

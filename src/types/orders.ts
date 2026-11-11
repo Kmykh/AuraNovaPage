@@ -115,6 +115,8 @@ export interface AdminOrderCountsResponse {
 export interface OrderPaymentSummary {
   orderId: string;
   orderCode: string;
+  /** WhatsApp de otro país: paga con tarjeta (Yape es solo de Perú) */
+  internationalBuyer?: boolean;
   /** Código de seguimiento (para llevar al cliente a su pedido después de pagar) */
   trackingCode?: string;
   status: string;

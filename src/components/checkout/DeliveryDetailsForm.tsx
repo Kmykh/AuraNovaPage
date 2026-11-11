@@ -15,6 +15,8 @@ interface DeliveryDetailsFormProps {
   points?: MeetingPointResponse[];
   isLoadingZones?: boolean;
   isLoadingPoints?: boolean;
+  /** El cliente compra desde otro país: alguien en el Perú recibe (o recoge) el pedido */
+  buyerAbroad?: boolean;
 }
 
 const selectClass =
@@ -39,7 +41,7 @@ function FieldLabel({ htmlFor, children, hint }: { htmlFor?: string; children: R
  * Entrega del pedido: solo pide lo que aplica a cada modalidad. Delivery: zona y dirección (la zona ya define
  * el distrito). Punto de encuentro: el punto. Provincias: destino, agencia y DNI de quien recoge.
  */
-export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZones, isLoadingPoints }: DeliveryDetailsFormProps) {
+export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZones, isLoadingPoints, buyerAbroad = false }: DeliveryDetailsFormProps) {
   const set = (patch: Partial<DeliveryFormValue>) => onChange({ ...value, ...patch });
   const zone = zones?.find(z => z.id === value.zoneId);
   const point = points?.find(p => p.id === value.meetingPointId);
@@ -155,24 +157,30 @@ export function DeliveryDetailsForm({ value, onChange, zones, points, isLoadingZ
         )}
 
         {/* Envío nacional: agencia, distrito, sucursal y quién recoge (con su DNI) */}
-        {isNational && <NationalShippingFields value={value} set={set} />}
+        {isNational && <NationalShippingFields value={value} set={set} buyerAbroad={buyerAbroad} />}
 
         {/* ¿Quién recibe? (delivery y punto de encuentro) */}
         {!isNational && (
         <div className="rounded-2xl border border-[#e8dcdc] bg-white p-4">
-          <label className="flex cursor-pointer items-center gap-3">
+          <label className={`flex items-center gap-3 ${buyerAbroad ? '' : 'cursor-pointer'}`}>
             <input
               type="checkbox"
-              checked={value.isGift}
+              checked={value.isGift || buyerAbroad}
+              disabled={buyerAbroad}
               onChange={e => set({ isGift: e.target.checked })}
               className="h-5 w-5 rounded border-[#e8dcdc] accent-[#c8a96b]"
             />
             <span className="flex items-center gap-2 text-sm font-semibold text-[#4a3933]">
               <Gift className="h-4 w-4 text-[#d38b8b]" />
-              {isNational ? 'Lo recoge otra persona' : 'Es un regalo: lo recibe otra persona'}
+              {buyerAbroad ? '¿Quién lo recibe en el Perú?' : 'Es un regalo: lo recibe otra persona'}
             </span>
           </label>
-          {value.isGift && (
+          {buyerAbroad && (
+            <p className="mt-2 text-xs font-medium text-[#8f6d28]">
+              Como compras desde otro país, dinos quién lo recibe aquí: le escribimos a su celular peruano para coordinar la entrega.
+            </p>
+          )}
+          {(value.isGift || buyerAbroad) && (
             <div className={`mt-4 grid grid-cols-1 gap-4 ${isNational ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               <Input label="Nombre de quien recibe *" value={value.recipientName} onChange={e => set({ recipientName: e.target.value })} placeholder="Ej. Ana Pérez" maxLength={120} />
               <Input
